@@ -1,7 +1,8 @@
 <script lang="ts">
-  import CVTemplate from '$lib/../components/CVTemplate.svelte';
+  import TemplateSelector from '$lib/../components/TemplateSelector.svelte';
+  import type { ProfileData } from '$lib/types';
   
-  let sampleData = {
+  let sampleData: ProfileData = {
     name: 'I Gede Agus Ananda Putra',
     avatar: 'G',
     about: "I'm a software engineer specializing in building full-stack AI applications using TypeScript, React and Next.js. In AI also have a combined 4 million users and 2.5k stars. I currently lead developer relations at Together AI where I help developers build with AI.",
@@ -27,10 +28,15 @@
         degree: 'Bachelor of Science - BS, Computer Engineering',
         period: '2018 - 2021'
       }
-    ]
+    ],
+    skills: ['TypeScript', 'React', 'Next.js', 'AI/ML', 'Developer Relations'],
+    contact: {
+      email: 'agus@example.com',
+      location: 'San Francisco, CA'
+    }
   };
   
-  let customData = {
+  let customData: ProfileData = {
     name: 'Your Name',
     avatar: 'Y',
     about: 'Your professional summary goes here...',
@@ -49,7 +55,12 @@
         degree: 'Your Degree',
         period: 'Start - End'
       }
-    ]
+    ],
+    skills: ['Skill 1', 'Skill 2', 'Skill 3'],
+    contact: {
+      email: 'your@email.com',
+      location: 'Your Location'
+    }
   };
 </script>
 
@@ -77,7 +88,7 @@
         <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
           Static Preview
         </h2>
-        <CVTemplate profileData={sampleData} customizable={false} />
+        <TemplateSelector profileData={sampleData} customizable={false} />
       </div>
       
       <!-- Customizable Version -->
@@ -85,7 +96,7 @@
         <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
           Customizable Template
         </h2>
-        <CVTemplate bind:profileData={customData} customizable={true} />
+        <TemplateSelector bind:profileData={customData} customizable={true} />
         
         <!-- Instructions -->
         <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -180,7 +191,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <div class="prose dark:prose-invert max-w-none">
           <h3>1. Import the Component</h3>
-          <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto"><code>import CVTemplate from '$lib/components/CVTemplate.svelte';</code></pre>
+          <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto"><code>import TemplateSelector from '$lib/components/TemplateSelector.svelte';</code></pre>
           
           <h3>2. Prepare Your Data</h3>
           <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto"><code>let profileData = &#123;
@@ -192,10 +203,10 @@
 &#125;;</code></pre>
           
           <h3>3. Use the Component</h3>
-          <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto"><code>&lt;CVTemplate &#123;profileData&#125; customizable=&#123;true&#125; /&gt;</code></pre>
+          <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto"><code>&lt;TemplateSelector &#123;profileData&#125; customizable=&#123;true&#125; /&gt;</code></pre>
           
           <h3>4. Customize as Needed</h3>
-          <p>The template is fully customizable. You can modify the styling, add new sections, or integrate it with your existing design system.</p>
+          <p>The template selector provides multiple template styles and color themes. You can modify the styling, add new sections, or integrate it with your existing design system.</p>
         </div>
       </div>
     </div>
