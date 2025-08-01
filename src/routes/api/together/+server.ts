@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { TOGETHER_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
-// Fallback to VITE_ prefixed version if the private one is not available
-const API_KEY = TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY;
+// Get API key from environment variables
+const API_KEY = env.TOGETHER_API_KEY || env.VITE_TOGETHER_API_KEY;
 const TOGETHER_BASE_URL = 'https://api.together.xyz';
 
 export const POST: RequestHandler = async ({ request }) => {
