@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { supabase } from '$lib/supabase';
+  import { supabase, getValidSession } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { ArrowLeft, Mail, Lock, Eye, EyeOff, Github, User } from 'lucide-svelte';
   import { toasts } from '$lib/stores/toast';
@@ -15,13 +15,17 @@
   let errorMessage = '';
   let successMessage = '';
 
-  onMount(() => {
+  onMount(async () => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    try {
+      const { session } = await getValidSession();
       if (session) {
         goto('/dashboard');
       }
-    });
+    } catch (error) {
+      // Ignore errors on signup page, user can try to signup again
+      console.log('Session check failed on signup page:', error);
+    }
   });
 
   async function handleSignup() {

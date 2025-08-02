@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { supabase, getProfile, updateProfile } from '$lib/supabase';
+  import { supabase, getProfile, updateProfile, handleAuthError, getValidSession } from '$lib/supabase';
   import { extractTextFromPDF, validatePDFFile, isPDFLikelyResume, detectPDFIssues } from '$lib/pdf';
   import { extractTextFromPDFSimple, validatePDFFileSimple } from '$lib/pdf-simple';
   import { extractResumeData, type ResumeData } from '$lib/ai';
@@ -62,14 +62,21 @@
 
   onMount(async () => {
     // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+      const { session, error } = await getValidSession();
+      if (error || !session) {
+        goto('/login');
+        return;
+      }
+
+      user = session.user;
+      await loadProfile();
+    } catch (error) {
+      console.error('Dashboard auth error:', error);
+      await handleAuthError(error);
       goto('/login');
       return;
     }
-
-    user = session.user;
-    await loadProfile();
     
     // Show onboarding for new users
     const hasSeenOnboarding = localStorage.getItem('siteme-onboarding-completed');

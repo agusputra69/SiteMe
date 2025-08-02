@@ -7,7 +7,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  }
+});
 
 export interface Database {
   public: {
@@ -74,4 +81,44 @@ export async function getProfileByUsername(username: string) {
     .single();
   
   return { data, error };
-} 
+}
+
+// Helper function to handle auth errors and clear corrupted sessions
+export async function handleAuthError(error: any) {
+  if (error?.message?.includes('refresh') || 
+      error?.message?.includes('JWT') || 
+      error?.message?.includes('Invalid Refresh Token')) {
+    console.log('Clearing corrupted session due to auth error:', error.message);
+    await supabase.auth.signOut();
+    // Clear any stored session data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+    }
+    return true; // Indicates auth error was handled
+  }
+  return false; // Not an auth error
+}
+
+// Enhanced session check with error recovery
+export async function getValidSession() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      const wasAuthError = await handleAuthError(error);
+      if (wasAuthError) {
+        return { session: null, error: null }; // Session cleared, no error to propagate
+      }
+      return { session: null, error };
+    }
+    
+    return { session, error: null };
+  } catch (error) {
+    const wasAuthError = await handleAuthError(error);
+    if (wasAuthError) {
+      return { session: null, error: null };
+    }
+    return { session: null, error };
+  }
+}

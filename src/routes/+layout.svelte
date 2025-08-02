@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Moon, Sun, Menu, X, User, Copy, Check, LogOut } from 'lucide-svelte';
-  import { supabase } from '$lib/supabase';
+  import { supabase, handleAuthError, getValidSession } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import ToastContainer from '$lib/components/ToastContainer.svelte';
@@ -41,20 +41,47 @@
     
     // Initialize auth separately
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      user = session?.user || null;
-      
-      if (user) {
-        await loadProfile();
+      try {
+        const { session, error } = await getValidSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          user = null;
+          profile = null;
+        } else {
+          user = session?.user || null;
+          
+          if (user) {
+            await loadProfile();
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        await handleAuthError(error);
+        user = null;
+        profile = null;
       }
 
       // Listen for auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
-        user = session?.user || null;
-        if (user) {
-          await loadProfile();
-        } else {
+        console.log('Auth state change:', event, session);
+        
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+        }
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          user = null;
           profile = null;
+          // Redirect to login if on protected route
+          if ($page.url.pathname.startsWith('/dashboard')) {
+            goto('/login');
+          }
+        } else {
+          user = session?.user || null;
+          if (user) {
+            await loadProfile();
+          }
         }
       });
     })();
@@ -93,14 +120,38 @@
         .eq('id', user.id)
         .single();
       
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error);
-        return;
-      }
+      if (error) {
+         if (error.code === 'PGRST116') {
+           // Profile not found, this is okay for new users
+           profile = null;
+         } else {
+           const wasAuthError = await handleAuthError(error);
+           if (wasAuthError) {
+             // Authentication error, redirect if needed
+             user = null;
+             profile = null;
+             if ($page.url.pathname.startsWith('/dashboard')) {
+               goto('/login');
+             }
+           } else {
+             console.error('Error loading profile:', error);
+           }
+         }
+         return;
+       }
       
       profile = data;
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Check if it's an auth-related error
+      const wasAuthError = await handleAuthError(error);
+      if (wasAuthError) {
+        user = null;
+        profile = null;
+        if ($page.url.pathname.startsWith('/dashboard')) {
+          goto('/login');
+        }
+      }
     }
   }
 
