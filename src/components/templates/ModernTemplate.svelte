@@ -60,14 +60,30 @@
 		normal: 'space-y-4',
 		relaxed: 'space-y-6'
 	}[customization.spacing] || 'space-y-4';
+
+	// Check if avatar is an image URL or text
+	$: isImageUrl = profileData.avatar && (profileData.avatar.startsWith('http') || profileData.avatar.startsWith('data:') || profileData.avatar.includes('.'));
+	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
 <div class="rounded-xl shadow-2xl overflow-hidden max-w-4xl mx-auto {fontClass} {sizeClass}" style="background-color: {customization.backgroundColor}; color: {customization.textColor};">
 	<!-- Header Section -->
 	<div class="text-white p-4 sm:p-8" style="background: linear-gradient(135deg, {customization.accentColor}, {customization.accentColor}dd);">
 		<div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-			<div class="w-16 sm:w-24 h-16 sm:h-24 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-3xl font-bold backdrop-blur-sm">
-				{profileData.avatar}
+			<div class="w-16 sm:w-24 h-16 sm:h-24 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-3xl font-bold backdrop-blur-sm overflow-hidden">
+				{#if isImageUrl}
+					<img 
+						src={profileData.avatar} 
+						alt="Profile photo of {profileData.name}"
+						class="w-full h-full object-cover"
+						on:error={() => {
+							// Fallback to initial if image fails to load
+							isImageUrl = false;
+						}}
+					/>
+				{:else}
+					<span class="text-white font-bold" aria-label="Profile initial">{avatarInitial}</span>
+				{/if}
 			</div>
 			<div class="flex-1 text-center sm:text-left">
 				<h1 class="text-2xl sm:text-4xl font-bold mb-2">
@@ -76,21 +92,22 @@
 							bind:value={profileData.name}
 							class="bg-transparent border-none outline-none w-full text-white placeholder-white/70"
 							placeholder="Your Name"
+							aria-label="Enter your name"
 						/>
 					{:else}
 						{profileData.name}
 					{/if}
 				</h1>
 				{#if profileData.contact}
-					<div class="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4 text-xs sm:text-sm opacity-90">
+					<div class="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4 text-xs sm:text-sm text-white/95">
 						{#if profileData.contact.email}
-							<span>📧 {profileData.contact.email}</span>
+							<span aria-label="Email address" class="flex items-center gap-1">📧 {profileData.contact.email}</span>
 						{/if}
 						{#if profileData.contact.phone}
-							<span>📱 {profileData.contact.phone}</span>
+							<span aria-label="Phone number" class="flex items-center gap-1">📱 {profileData.contact.phone}</span>
 						{/if}
 						{#if profileData.contact.location}
-							<span>📍 {profileData.contact.location}</span>
+							<span aria-label="Location" class="flex items-center gap-1">📍 {profileData.contact.location}</span>
 						{/if}
 					</div>
 				{/if}
@@ -105,18 +122,19 @@
 			<div class="md:col-span-2 space-y-4 sm:space-y-8">
 				<!-- About Section -->
 				<section>
-					<h2 class="text-xl sm:text-2xl font-bold text-{theme.text} dark:text-white mb-3 sm:mb-4 border-b-2 border-{theme.primary} pb-2">
+					<h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 border-b-2 border-blue-600 pb-2">
 						About
 					</h2>
 					{#if customizable}
 						<textarea 
 							bind:value={profileData.about}
-							class="w-full text-{theme.textSecondary} dark:text-gray-300 leading-relaxed bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-{theme.primary} resize-none"
+							class="w-full text-gray-700 dark:text-gray-200 leading-relaxed bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 resize-none"
 							rows="4"
 							placeholder="Tell us about yourself..."
+							aria-label="Professional summary"
 						></textarea>
 					{:else}
-						<p class="text-{theme.textSecondary} dark:text-gray-300 leading-relaxed">
+						<p class="text-gray-700 dark:text-gray-200 leading-relaxed">
 							{profileData.about}
 						</p>
 					{/if}
@@ -124,51 +142,54 @@
 
 				<!-- Work Experience Section -->
 				<section>
-					<h2 class="text-2xl font-bold text-{theme.text} dark:text-white mb-4 border-b-2 border-{theme.primary} pb-2">
+					<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 border-b-2 border-blue-600 pb-2">
 						Work Experience
 					</h2>
 					<div class="space-y-6">
 						{#each profileData.workExperience as experience, index}
-							<div class="relative pl-8 border-l-4 border-{theme.accent} dark:border-{theme.secondary}">
-								<div class="absolute -left-2 top-0 w-4 h-4 bg-{theme.primary} rounded-full"></div>
+							<div class="relative pl-8 border-l-4 border-blue-100 dark:border-blue-500">
+								<div class="absolute -left-2 top-0 w-4 h-4 bg-blue-600 rounded-full" aria-hidden="true"></div>
 								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
 									<div class="flex justify-between items-start mb-2">
-										<h3 class="text-lg font-semibold text-{theme.text} dark:text-white">
+										<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
 											{#if customizable}
 												<input 
 													bind:value={experience.title}
-													class="bg-transparent border-none outline-none w-full font-semibold"
+													class="bg-transparent border-none outline-none w-full font-semibold focus:ring-2 focus:ring-blue-500/20"
 													placeholder="Job Title"
+													aria-label="Job title"
 												/>
 											{:else}
 												{experience.title}
 											{/if}
 										</h3>
-										<span class="text-sm text-{theme.primary} font-medium">
+										<span class="text-sm text-blue-600 font-medium">
 											{#if customizable}
 												<input 
 													bind:value={experience.period}
-													class="bg-transparent border-none outline-none text-right w-32 text-sm"
+													class="bg-transparent border-none outline-none text-right w-32 text-sm focus:ring-2 focus:ring-blue-500/20"
 													placeholder="Period"
+													aria-label="Employment period"
 												/>
 											{:else}
 												{experience.period}
 											{/if}
 										</span>
 									</div>
-									<p class="text-{theme.textSecondary} dark:text-gray-300 font-medium mb-2">
+									<p class="text-gray-700 dark:text-gray-200 font-medium mb-2">
 										{#if customizable}
 											<input 
 												bind:value={experience.company}
-												class="bg-transparent border-none outline-none w-full"
+												class="bg-transparent border-none outline-none w-full focus:ring-2 focus:ring-blue-500/20"
 												placeholder="Company Name"
+												aria-label="Company name"
 											/>
 										{:else}
 											{experience.company}
 										{/if}
 									</p>
 									{#if experience.description}
-										<p class="text-sm text-{theme.textSecondary} dark:text-gray-400">
+										<p class="text-sm text-gray-600 dark:text-gray-300">
 											{experience.description}
 										</p>
 									{/if}
@@ -184,12 +205,12 @@
 				<!-- Skills Section -->
 				{#if profileData.skills && profileData.skills.length > 0}
 					<section>
-						<h2 class="text-xl font-bold text-{theme.text} dark:text-white mb-4">
+						<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
 							Skills
 						</h2>
 						<div class="flex flex-wrap gap-2">
 							{#each profileData.skills as skill}
-								<span class="px-3 py-1 bg-{theme.accent} dark:bg-{theme.secondary}/20 text-{theme.primary} dark:text-{theme.secondary} rounded-full text-sm font-medium">
+								<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-100 rounded-full text-sm font-medium border border-blue-200 dark:border-blue-700">
 									{skill}
 								</span>
 							{/each}
@@ -199,40 +220,43 @@
 
 				<!-- Education Section -->
 				<section>
-					<h2 class="text-xl font-bold text-{theme.text} dark:text-white mb-4">
+					<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
 						Education
 					</h2>
 					<div class="space-y-4">
 						{#each profileData.education as edu, index}
 							<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-								<h3 class="font-semibold text-{theme.text} dark:text-white mb-1">
+								<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
 									{#if customizable}
 										<input 
 											bind:value={edu.degree}
-											class="bg-transparent border-none outline-none w-full font-semibold"
+											class="bg-transparent border-none outline-none w-full font-semibold focus:ring-2 focus:ring-blue-500/20"
 											placeholder="Degree"
+											aria-label="Degree or qualification"
 										/>
 									{:else}
 										{edu.degree}
 									{/if}
 								</h3>
-								<p class="text-{theme.textSecondary} dark:text-gray-300 text-sm">
+								<p class="text-gray-700 dark:text-gray-200 text-sm">
 									{#if customizable}
 										<input 
 											bind:value={edu.institution}
-											class="bg-transparent border-none outline-none w-full text-sm"
+											class="bg-transparent border-none outline-none w-full text-sm focus:ring-2 focus:ring-blue-500/20"
 											placeholder="Institution"
+											aria-label="Educational institution"
 										/>
 									{:else}
 										{edu.institution}
 									{/if}
 								</p>
-								<p class="text-{theme.primary} text-sm font-medium">
+								<p class="text-blue-600 dark:text-blue-400 text-sm font-medium">
 									{#if customizable}
 										<input 
 											bind:value={edu.period}
-											class="bg-transparent border-none outline-none w-full text-sm"
+											class="bg-transparent border-none outline-none w-full text-sm focus:ring-2 focus:ring-blue-500/20"
 											placeholder="Period"
+											aria-label="Education period"
 										/>
 									{:else}
 										{edu.period}
@@ -249,6 +273,6 @@
 
 <style>
 	input:focus, textarea:focus {
-		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 	}
 </style>

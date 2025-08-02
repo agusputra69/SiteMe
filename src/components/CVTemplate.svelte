@@ -186,8 +186,22 @@
   <div class="p-6 {spacingClass}">
     <!-- Profile Header -->
     <div class="flex items-start space-x-4 mb-6">
-      <div class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style="background: linear-gradient(135deg, {customization.accentColor}, {customization.accentColor}dd);">
-        {profileData.avatar}
+      <div class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden" style="background: linear-gradient(135deg, {customization.accentColor}, {customization.accentColor}dd);">
+        {#if profileData.avatar && (profileData.avatar.startsWith('http') || profileData.avatar.startsWith('data:') || profileData.avatar.includes('.'))}
+          <img 
+            src={profileData.avatar} 
+            alt="Profile photo of {profileData.name}"
+            class="w-full h-full object-cover"
+            on:error={() => {
+              // Fallback to initial if image fails to load
+              profileData.avatar = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
+            }}
+          />
+        {:else}
+          <span class="text-white font-bold" aria-label="Profile initial">
+            {profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U'}
+          </span>
+        {/if}
       </div>
       <div class="flex-1">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">

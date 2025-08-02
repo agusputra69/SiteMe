@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { supabase, getProfile, updateProfile } from '$lib/supabase';
-  import { extractTextFromPDF, validatePDFFile } from '$lib/pdf';
-  import { extractTextFromPDFSimple } from '$lib/pdf-simple';
+  import { extractTextFromPDF, validatePDFFile, isPDFLikelyResume, detectPDFIssues } from '$lib/pdf';
+  import { extractTextFromPDFSimple, validatePDFFileSimple } from '$lib/pdf-simple';
   import { extractResumeData, type ResumeData } from '$lib/ai';
+  import { extractBasicResumeData, convertToResumeData } from '$lib/pdf-processor';
   import { goto } from '$app/navigation';
 
   import OnboardingTour from '../../components/OnboardingTour.svelte';
@@ -23,6 +24,10 @@
     Check
   } from 'lucide-svelte';
   import ConfirmDialog from '../../components/ConfirmDialog.svelte';
+  import PDFErrorHandler from '../../components/PDFErrorHandler.svelte';
+  import PDFSuccessModal from '../../components/PDFSuccessModal.svelte';
+  import PDFProcessingModal from '../../components/PDFProcessingModal.svelte';
+  import RateLimitModal from '../../components/RateLimitModal.svelte';
 
   let user: any = null;
   let profile: any = null;
@@ -38,6 +43,22 @@
   let tutorialContext: 'dashboard' | 'upload' | 'edit' | 'preview' = 'dashboard';
   let showDeleteConfirm = false;
   let showProfileEditor = false;
+  let showPDFError = false;
+  let pdfError = '';
+  let currentFile: File | null = null;
+  let showPDFSuccess = false;
+  let extractedData: any = null;
+  let processedFileName = '';
+  let showPDFProcessing = false;
+  let processingStep: 'uploading' | 'extracting' | 'processing' | 'saving' = 'uploading';
+  let processingProgress = 0;
+  let processingError = '';
+  let processingUsedFallback = false;
+  let profileStatus: 'draft' | 'published' = 'draft';
+  let showRateLimitModal = false;
+  let rateLimitRetryAfter = 60;
+  let rateLimitMessage = '';
+  let useAIProcessing = true; // Toggle for AI vs basic processing
 
   onMount(async () => {
     // Check authentication
@@ -56,6 +77,16 @@
       showOnboarding = true;
     }
   });
+
+  // Monitor processing state to prevent loops
+  $: if (showPDFProcessing && !uploading && !processing) {
+    console.warn('Processing modal is showing but no processing is active - forcing close');
+    setTimeout(() => {
+      if (showPDFProcessing && !uploading && !processing) {
+        forceCloseProcessingModal();
+      }
+    }, 5000); // Wait 5 seconds before forcing close
+  }
 
   async function loadProfile() {
     if (!user) return;
@@ -79,6 +110,10 @@
         summary: '',
         experience: [],
         education: [],
+        certifications: [],
+        languages: [],
+        projects: [],
+        awards: [],
         skills: [],
         links: []
       };
@@ -91,65 +126,259 @@
     
     if (!file) return;
 
-    if (!validatePDFFile(file)) {
-      toasts.error('Please upload a valid PDF file (max 10MB)');
+    // Enhanced validation with detailed error messages
+    const validation = validatePDFFile(file);
+    if (!validation.isValid) {
+      toasts.error(validation.error || 'Invalid PDF file');
       return;
     }
 
-    uploading = true;
-    errorMessage = '';
-    successMessage = '';
-    toasts.info('Starting PDF upload and processing...');
-      tutorialContext = 'upload';
+    // Show warnings if any
+    if (validation.warnings) {
+      validation.warnings.forEach(warning => {
+        toasts.warning(warning);
+      });
+    }
+
+    // Show processing modal
+    showPDFProcessing = true;
+    processingStep = 'uploading';
+    processingProgress = 10;
+    processingError = '';
+    processingUsedFallback = false;
+    tutorialContext = 'upload';
+
+    // Set a maximum processing time to prevent infinite loops
+    const processingTimeout = setTimeout(() => {
+      if (showPDFProcessing) {
+        console.error('Processing timeout - forcing modal close');
+        showPDFProcessing = false;
+        toasts.error('Processing took too long. Please try again.');
+      }
+    }, 120000); // 2 minutes timeout
 
     try {
       console.log('Starting PDF processing...');
       
-      // Extract text from PDF with fallback
-      let text: string;
-      try {
-        text = await extractTextFromPDF(file);
-        console.log('PDF text extracted with PDF.js, length:', text.length);
-      } catch (pdfError) {
-        console.warn('PDF.js failed, using simple extraction:', pdfError);
-        text = await extractTextFromPDFSimple(file);
-        console.log('PDF text extracted with simple method, length:', text.length);
+      // Check if PDF.js is available
+      if (typeof window !== 'undefined' && !(window as any).pdfjsLib) {
+        console.warn('PDF.js library not found in window object');
       }
       
-      // Process with AI
+      // Update progress for extraction step
+      processingStep = 'extracting';
+      processingProgress = 30;
+      
+      // Extract text from PDF with enhanced error handling
+      let text: string;
+      let usedFallback = false;
+      
+      console.log('Starting PDF extraction process...');
+      console.log('File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      
+      try {
+        console.log('Attempting PDF.js extraction...');
+        text = await extractTextFromPDF(file);
+        console.log('PDF text extracted with PDF.js, length:', text.length);
+        console.log('Text preview:', text.substring(0, 200) + '...');
+      } catch (pdfError) {
+        console.warn('PDF.js failed, using simple extraction:', pdfError);
+        console.error('PDF.js error details:', {
+          message: pdfError instanceof Error ? pdfError.message : 'Unknown error',
+          stack: pdfError instanceof Error ? pdfError.stack : undefined
+        });
+        usedFallback = true;
+        processingUsedFallback = true;
+        
+        // Validate file for simple extraction
+        const simpleValidation = validatePDFFileSimple(file);
+        if (!simpleValidation.isValid) {
+          throw new Error(simpleValidation.error || 'File validation failed for fallback extraction');
+        }
+        
+        console.log('Attempting simple extraction...');
+        text = await extractTextFromPDFSimple(file);
+        console.log('PDF text extracted with simple method, length:', text.length);
+        console.log('Fallback text preview:', text.substring(0, 200) + '...');
+      }
+      
+      // Validate extracted text
+      if (!text || text.trim().length === 0) {
+        throw new Error('No text could be extracted from the PDF. Please ensure the document contains text and is not password-protected.');
+      }
+      
+      // Check if text is likely a resume
+      if (!isPDFLikelyResume(text)) {
+        toasts.warning('The document may not be a resume. Processing will continue but results may be limited.');
+      }
+      
+      // Detect potential issues
+      const issues = detectPDFIssues(text);
+      if (issues.length > 0) {
+        issues.forEach(issue => {
+          toasts.warning(issue);
+        });
+      }
+      
+      // Show fallback warning
+      if (usedFallback) {
+        toasts.warning('Using fallback PDF extraction. Results may be limited. Please ensure your PDF is text-based and not password-protected.');
+      }
+      
+      // Update progress for AI processing step
+      processingStep = 'processing';
+      processingProgress = 60;
+      
+      // Process with AI or basic processing
       processing = true;
-      console.log('Sending text to AI for processing, length:', text.length);
+      console.log('Processing text, length:', text.length);
       console.log('Text preview:', text.substring(0, 200) + '...');
-      const extractedData = await extractResumeData(text);
+      console.log('Using AI processing:', useAIProcessing);
+      
+      let extractedData: ResumeData;
+      
+      if (useAIProcessing) {
+        // AI Processing
+        console.log('Using AI processing...');
+        const aiProcessingPromise = extractResumeData(text);
+        const aiTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('AI processing timeout')), 60000) // 60 seconds timeout
+        );
+        
+        try {
+          extractedData = await Promise.race([aiProcessingPromise, aiTimeoutPromise]) as ResumeData;
+        } catch (aiError) {
+          console.error('AI processing error:', aiError);
+          
+          // Handle rate limiting specifically
+          if (aiError instanceof Error && aiError.message.includes('Rate limit exceeded')) {
+            // Extract retry time from error message if available
+            const retryMatch = aiError.message.match(/(\d+) seconds/);
+            rateLimitRetryAfter = retryMatch ? parseInt(retryMatch[1]) : 60;
+            rateLimitMessage = aiError.message;
+            showRateLimitModal = true;
+            showPDFProcessing = false;
+            throw new Error('AI service rate limit exceeded. Please wait before trying again.');
+          }
+          
+          if (aiError instanceof Error && aiError.message.includes('timeout')) {
+            toasts.error('AI processing took too long. Please try again.');
+            throw new Error('AI processing timeout. Please try again.');
+          }
+          
+          // If AI fails and we're using AI processing, try basic processing as fallback
+          if (useAIProcessing) {
+            console.log('AI processing failed, trying basic processing as fallback...');
+            try {
+              const basicData = extractBasicResumeData(text);
+              extractedData = convertToResumeData(basicData);
+              processingUsedFallback = true;
+              toasts.warning('AI processing failed. Using basic processing instead. Results may be limited.');
+            } catch (basicError) {
+              console.error('Basic processing fallback also failed:', basicError);
+              throw aiError; // Throw the original AI error
+            }
+          } else {
+            throw aiError;
+          }
+        }
+      } else {
+        // Basic Processing (no AI)
+        console.log('Using basic processing...');
+        try {
+          const basicData = extractBasicResumeData(text);
+          extractedData = convertToResumeData(basicData);
+          processingUsedFallback = true;
+          toasts.info('Using basic processing (no AI). Results may be limited.');
+        } catch (basicError) {
+          console.error('Basic processing error:', basicError);
+          throw new Error('Failed to process resume with basic extraction.');
+        }
+      }
       console.log('AI processing completed:', extractedData);
       console.log('Extracted data type:', typeof extractedData);
       console.log('Extracted data keys:', Object.keys(extractedData || {}));
       
-      // Save to database
-      const { error } = await updateProfile(user.id, {
-        data: extractedData,
-        full_name: extractedData.name
-      });
+      // Validate extracted data
+      if (!extractedData || !extractedData.name) {
+        throw new Error('Failed to extract meaningful data from the PDF. Please ensure the document is a valid resume.');
+      }
+      
+      // Update progress for saving step
+      processingStep = 'saving';
+      processingProgress = 80;
+      
+      console.log('Starting database save...');
+      console.log('User ID:', user.id);
+      console.log('Data to save:', extractedData);
+      
+      try {
+        // Save to database with timeout
+        const savePromise = updateProfile(user.id, {
+          data: extractedData,
+          full_name: extractedData.name
+        });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database save timeout')), 30000)
+        );
+        
+        const { error } = await Promise.race([savePromise, timeoutPromise]) as any;
 
-      if (error) {
-        console.error('Database error:', error);
-        toasts.error('Failed to save profile data: ' + error.message);
-      } else {
+        if (error) {
+          console.error('Database error:', error);
+          throw new Error('Failed to save profile data: ' + error.message);
+        }
+        
         console.log('Database save successful, updating local state');
         console.log('Before assignment - resumeData:', resumeData);
+        
+        // Update local state
         resumeData = extractedData;
         profile = { ...profile, data: extractedData, full_name: extractedData.name };
+        
         console.log('After assignment - resumeData:', resumeData);
         console.log('Updated profile:', profile);
-        toasts.success('Resume processed successfully! Your profile has been updated.');
+        
+        // Complete processing
+        processingProgress = 100;
+        
+        // Hide processing modal and show success modal
+        showPDFProcessing = false;
+        processedFileName = file.name;
+        showPDFSuccess = true;
+        
         tutorialContext = 'edit';
         showTutorial = false; // Hide tutorial after successful PDF processing
-        // Don't reload profile to avoid overwriting the extracted data
+        
+        console.log('Processing completed successfully');
+        
+        // Clear the timeout since processing completed successfully
+        clearTimeout(processingTimeout);
+        
+      } catch (saveError) {
+        console.error('Save operation failed:', saveError);
+        clearTimeout(processingTimeout);
+        throw saveError;
       }
     } catch (error) {
       console.error('Error processing resume:', error);
+      
+      // Clear the timeout
+      clearTimeout(processingTimeout);
+      
+      // Hide processing modal
+      showPDFProcessing = false;
+      
       if (error instanceof Error) {
-        toasts.error(error.message);
+        pdfError = error.message;
+        currentFile = file;
+        showPDFError = true;
       } else {
         toasts.error('Failed to process resume. Please try again.');
       }
@@ -176,6 +405,78 @@
     } else {
       toasts.warning('Please set a username first to get your profile URL');
     }
+  }
+
+  function handlePDFErrorRetry() {
+    showPDFError = false;
+    if (currentFile) {
+      handleFileUpload({ target: { files: [currentFile] } } as any);
+    }
+  }
+
+  function handlePDFErrorUploadNew() {
+    showPDFError = false;
+    // Trigger file input click
+    const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  function handlePDFSuccessEdit() {
+    showPDFSuccess = false;
+    showProfileEditor = true;
+  }
+
+  function handlePDFSuccessProceed() {
+    showPDFSuccess = false;
+    // User can view their profile normally
+  }
+
+  function handlePDFSuccessDownload() {
+    showPDFSuccess = false;
+    // Download the extracted data as JSON
+    const dataStr = JSON.stringify(resumeData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'extracted-resume-data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toasts.success('Resume data downloaded successfully!');
+  }
+
+  function handlePDFSuccessClose() {
+    showPDFSuccess = false;
+  }
+
+  function handlePDFProcessingCancel() {
+    showPDFProcessing = false;
+    uploading = false;
+    processing = false;
+    toasts.info('PDF processing cancelled');
+  }
+
+  // Function to force close processing modal if stuck
+  function forceCloseProcessingModal() {
+    if (showPDFProcessing) {
+      console.warn('Force closing processing modal');
+      showPDFProcessing = false;
+      uploading = false;
+      processing = false;
+      toasts.warning('Processing was interrupted. Please try again.');
+    }
+  }
+
+  // Debug function to test PDF processing
+  function testPDFProcessing() {
+    console.log('Testing PDF processing...');
+    console.log('PDF.js available:', typeof window !== 'undefined' && !!(window as any).pdfjsLib);
+    console.log('PDF.js version:', typeof window !== 'undefined' ? (window as any).pdfjsLib?.version : 'Not available');
+    console.log('File input available:', !!document.getElementById('resume-upload'));
   }
 
   function handleOnboardingComplete() {
@@ -223,7 +524,7 @@
       // Update profile in database
       const { error } = await updateProfile(user.id, {
         data: newResumeData,
-        full_name: newResumeData.name,
+        full_name: newResumeData.name || '',
         username: newUsername
       });
       
@@ -235,6 +536,7 @@
       // Update local state
       resumeData = newResumeData;
       profile = { ...profile, data: newResumeData, full_name: newResumeData.name, username: newUsername };
+      profileStatus = 'draft'; // Default to draft when saving
       
       // Close the profile editor modal
       showProfileEditor = false;
@@ -253,6 +555,140 @@
     const { resumeData: newResumeData } = event.detail;
     resumeData = newResumeData;
     toasts.success('Manual resume template created! Start filling in your information.');
+  }
+
+  // Handle profile publishing
+  async function handleProfilePublish(event: CustomEvent) {
+    const { resumeData: newResumeData, profilePhoto } = event.detail;
+    
+    try {
+      uploading = true;
+      
+      // Handle profile photo upload if provided
+      if (profilePhoto) {
+        const photoUrl = await uploadProfilePhoto(profilePhoto);
+        newResumeData.photo_url = photoUrl;
+      }
+      
+      // Update profile in database
+      const { error } = await updateProfile(user.id, {
+        data: newResumeData,
+        full_name: newResumeData.name || ''
+      });
+      
+      if (error) {
+        toasts.error('Failed to publish profile: ' + error.message);
+        return;
+      }
+      
+      // Update local state
+      resumeData = newResumeData;
+      profile = { ...profile, data: newResumeData, full_name: newResumeData.name || '' };
+      profileStatus = 'published';
+      
+      toasts.success('Profile published successfully!');
+    } catch (error) {
+      console.error('Error publishing profile:', error);
+      toasts.error('Failed to publish profile');
+    } finally {
+      uploading = false;
+    }
+  }
+
+  // Handle profile status changes
+  async function handleProfileStatusChange(event: CustomEvent) {
+    const { resumeData: newResumeData, profilePhoto } = event.detail;
+    
+    try {
+      uploading = true;
+      
+      // Handle profile photo upload if provided
+      if (profilePhoto) {
+        const photoUrl = await uploadProfilePhoto(profilePhoto);
+        newResumeData.photo_url = photoUrl;
+      }
+      
+      // Update profile in database
+      const { error } = await updateProfile(user.id, {
+        data: newResumeData,
+        full_name: newResumeData.name || ''
+      });
+      
+      if (error) {
+        toasts.error('Failed to update profile status: ' + error.message);
+        return;
+      }
+      
+      // Update local state
+      resumeData = newResumeData;
+      profile = { ...profile, data: newResumeData, full_name: newResumeData.name || '' };
+      profileStatus = 'published'; // Default to published for this action
+      
+      toasts.success('Profile published successfully!');
+    } catch (error) {
+      console.error('Error updating profile status:', error);
+      toasts.error('Failed to update profile status');
+    } finally {
+      uploading = false;
+    }
+  }
+
+  // Handle template application
+  function handleTemplateApply(event: CustomEvent) {
+    const { template, theme, customization } = event.detail;
+    if (resumeData) {
+      resumeData = { ...resumeData, template, theme, customization };
+      toasts.success('Template applied successfully!');
+    }
+  }
+
+  // Handle theme application
+  function handleThemeApply(event: CustomEvent) {
+    const { template, theme, customization } = event.detail;
+    if (resumeData) {
+      resumeData = { ...resumeData, template, theme, customization };
+      toasts.success('Theme applied successfully!');
+    }
+  }
+
+  // Handle customization application
+  function handleCustomizationApply(event: CustomEvent) {
+    const { template, theme, customization } = event.detail;
+    if (resumeData) {
+      resumeData = { ...resumeData, template, theme, customization };
+      toasts.success('Customization applied successfully!');
+    }
+  }
+
+  // Handle preview toggle
+  function handleTogglePreview(event: CustomEvent) {
+    const { showPreview } = event.detail;
+    // This is handled internally by the ProfileEditor component
+    console.log('Preview toggled:', showPreview);
+  }
+
+  // Handle photo upload
+  async function handlePhotoUpload(event: CustomEvent) {
+    const { file } = event.detail;
+    try {
+      const photoUrl = await uploadProfilePhoto(file);
+      if (resumeData) {
+        resumeData = { ...resumeData, photo_url: photoUrl };
+      }
+      toasts.success('Profile photo uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toasts.error('Failed to upload profile photo');
+    }
+  }
+
+  // Handle rate limit retry
+  function handleRateLimitRetry() {
+    showRateLimitModal = false;
+    // Retry the last file upload
+    if (currentFile) {
+      handleFileUpload({ target: { files: [currentFile] } } as any);
+    }
   }
 
   async function handleDeleteData() {
@@ -342,6 +778,10 @@
         summary: '',
         experience: [],
         education: [],
+        certifications: [],
+        languages: [],
+        projects: [],
+        awards: [],
         skills: [],
         links: []
       };
@@ -423,6 +863,39 @@
             <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
               Choose how you'd like to create your professional website
             </p>
+            
+            <!-- Processing Mode Toggle -->
+            <div class="flex items-center justify-center space-x-4 mt-4">
+              <span class="text-sm text-gray-600 dark:text-gray-300">Processing Mode:</span>
+              <div class="flex items-center space-x-2">
+                <button
+                  on:click={() => useAIProcessing = true}
+                  class="px-3 py-1 text-sm font-medium rounded-lg transition-colors {useAIProcessing ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
+                >
+                  AI Processing
+                </button>
+                <button
+                  on:click={() => useAIProcessing = false}
+                  class="px-3 py-1 text-sm font-medium rounded-lg transition-colors {!useAIProcessing ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
+                >
+                  Basic Processing
+                </button>
+              </div>
+            </div>
+            
+            {#if !useAIProcessing}
+              <div class="mt-2 text-center">
+                <p class="text-xs text-green-600 dark:text-green-400">
+                  💰 Cost-free processing • Limited extraction • Manual editing recommended
+                </p>
+              </div>
+            {:else}
+              <div class="mt-2 text-center">
+                <p class="text-xs text-blue-600 dark:text-blue-400">
+                  🤖 AI-powered extraction • More accurate results • Uses API credits
+                </p>
+              </div>
+            {/if}
           </div>
 
           {#if errorMessage}
@@ -487,7 +960,7 @@
               <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
                 Create your profile step by step
               </p>
-              <button 
+                              <button 
                 on:click={() => {
                   resumeData = {
                     name: '',
@@ -497,6 +970,10 @@
                     summary: '',
                     experience: [],
                     education: [],
+                    certifications: [],
+                    languages: [],
+                    projects: [],
+                    awards: [],
                     skills: [],
                     links: []
                   };
@@ -688,8 +1165,17 @@
           {resumeData}
           username={profile?.username || ''}
           uploading={uploading}
+          profileStatus={profileStatus}
+          saveSuccess={false}
           on:save={handleProfileSave}
           on:manualCreate={handleManualCreate}
+          on:publish={handleProfilePublish}
+          on:statusChange={handleProfileStatusChange}
+          on:templateApply={handleTemplateApply}
+          on:themeApply={handleThemeApply}
+          on:customizationApply={handleCustomizationApply}
+          on:togglePreview={handleTogglePreview}
+          on:photoUpload={handlePhotoUpload}
         />
       </div>
     </div>
@@ -723,3 +1209,41 @@
   on:confirm={confirmDeleteData}
   on:cancel={() => showDeleteConfirm = false}
 />
+
+<!-- PDF Error Handler -->
+    <PDFErrorHandler
+      show={showPDFError}
+      error={pdfError}
+      file={currentFile}
+      on:retry={handlePDFErrorRetry}
+      on:uploadNew={handlePDFErrorUploadNew}
+    />
+
+    <PDFSuccessModal
+      show={showPDFSuccess}
+      extractedData={resumeData}
+      fileName={processedFileName}
+      on:edit={handlePDFSuccessEdit}
+      on:proceed={handlePDFSuccessProceed}
+      on:download={handlePDFSuccessDownload}
+      on:close={handlePDFSuccessClose}
+    />
+
+    <PDFProcessingModal
+      show={showPDFProcessing}
+      fileName={currentFile?.name || ''}
+      currentStep={processingStep}
+      progress={processingProgress}
+      error={processingError}
+      usedFallback={processingUsedFallback}
+      processingMode={useAIProcessing ? 'ai' : 'basic'}
+      on:cancel={handlePDFProcessingCancel}
+    />
+
+    <RateLimitModal
+      show={showRateLimitModal}
+      retryAfter={rateLimitRetryAfter}
+      message={rateLimitMessage}
+      on:retry={handleRateLimitRetry}
+      on:close={() => showRateLimitModal = false}
+    />

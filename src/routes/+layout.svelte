@@ -142,22 +142,22 @@
 
 <div class="min-h-screen bg-white dark:bg-gray-900">
   <!-- Header -->
-  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40">
+  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40" role="banner">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
         <!-- Logo / Dashboard Title -->
         {#if isOnDashboard}
           <div class="flex items-center space-x-4">
-            <a href="/" class="flex items-center space-x-2">
-              <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+            <a href="/" class="flex items-center space-x-2" aria-label="Return to dashboard">
+              <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center" role="img" aria-label="SiteMe logo">
                 <span class="text-white font-bold text-lg">S</span>
               </div>
             </a>
 
           </div>
         {:else}
-          <a href="/" class="flex items-center space-x-2 group transition-all duration-300 hover:scale-105">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3">
+          <a href="/" class="flex items-center space-x-2 group transition-all duration-300 hover:scale-105" aria-label="Go to SiteMe homepage">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3" role="img" aria-label="SiteMe logo">
               <span class="text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300">S</span>
             </div>
             <span class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">SiteMe</span>
@@ -165,30 +165,30 @@
         {/if}
 
         <!-- Desktop Navigation -->
-        <nav class="hidden md:flex items-center space-x-8">
+        <nav class="hidden md:flex items-center space-x-8" role="navigation" aria-label="Main navigation">
           {#if isOnDashboard}
             <!-- Dashboard Navigation -->
-            <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/dashboard' ? 'page' : undefined}>
               Dashboard
             </a>
-            <a href="/dashboard/profile" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/dashboard/profile" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/dashboard/profile' ? 'page' : undefined}>
               Profile Editor
             </a>
-            <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/templates' ? 'page' : undefined}>
               Templates
             </a>
           {:else}
             <!-- Marketing Navigation -->
-            <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/features' ? 'page' : undefined}>
               Features
             </a>
-            <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/template' ? 'page' : undefined}>
               Template
             </a>
-            <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/pricing' ? 'page' : undefined}>
               Pricing
             </a>
-            <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+            <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/docs' ? 'page' : undefined}>
               Docs
             </a>
           {/if}
@@ -200,12 +200,13 @@
           <button
             on:click={toggleTheme}
             class="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            aria-label="Toggle theme"
+            aria-label="Toggle {theme === 'light' ? 'dark' : 'light'} theme"
+            aria-pressed={theme === 'dark'}
           >
             {#if theme === 'light'}
-              <Moon class="w-5 h-5" />
+              <Moon class="w-5 h-5" aria-hidden="true" />
             {:else}
-              <Sun class="w-5 h-5" />
+              <Sun class="w-5 h-5" aria-hidden="true" />
             {/if}
           </button>
 
@@ -222,12 +223,14 @@
                   <button
                     on:click={copyProfileUrl}
                     class="inline-flex items-center px-2 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                    aria-label="{copied ? 'Profile URL copied to clipboard' : 'Copy profile URL to clipboard'}"
+                    aria-pressed={copied}
                   >
                     {#if copied}
-                      <Check class="w-4 h-4 lg:mr-2" />
+                      <Check class="w-4 h-4 lg:mr-2" aria-hidden="true" />
                       <span class="hidden lg:inline">Copied!</span>
                     {:else}
-                      <Copy class="w-4 h-4 lg:mr-2" />
+                      <Copy class="w-4 h-4 lg:mr-2" aria-hidden="true" />
                       <span class="hidden lg:inline">Share</span>
                     {/if}
                   </button>
@@ -235,8 +238,9 @@
                 <button
                   on:click={handleLogout}
                   class="inline-flex items-center px-2 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  aria-label="Sign out of your account"
                 >
-                  <LogOut class="w-4 h-4 lg:mr-2" />
+                  <LogOut class="w-4 h-4 lg:mr-2" aria-hidden="true" />
                   <span class="hidden lg:inline">Sign Out</span>
                 </button>
               {:else}
@@ -262,17 +266,19 @@
             on:click={toggleMobileMenu}
             class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             aria-label="Toggle mobile menu"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
             <div class="relative w-5 h-5">
-              <X class="w-5 h-5 absolute inset-0 transition-all duration-300 {mobileMenuOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}" />
-              <Menu class="w-5 h-5 absolute inset-0 transition-all duration-300 {mobileMenuOpen ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}" />
+              <X class="w-5 h-5 absolute inset-0 transition-all duration-300 {mobileMenuOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}" aria-hidden="true" />
+              <Menu class="w-5 h-5 absolute inset-0 transition-all duration-300 {mobileMenuOpen ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}" aria-hidden="true" />
             </div>
           </button>
         </div>
       </div>
 
       <!-- Mobile Navigation -->
-      <div class="md:hidden overflow-hidden transition-all duration-300 {mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}">
+      <div id="mobile-menu" class="md:hidden overflow-hidden transition-all duration-300 {mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}" role="navigation" aria-label="Mobile navigation">
         <div class="py-4 border-t border-gray-200 dark:border-gray-700">
           <nav class="flex flex-col space-y-4 transform transition-transform duration-300 {mobileMenuOpen ? 'translate-y-0' : '-translate-y-4'}">
             {#if isOnDashboard}

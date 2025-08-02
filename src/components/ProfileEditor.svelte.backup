@@ -325,8 +325,9 @@
 
 	function saveProfile() {
 		dispatch('save', { 
-			resumeData: resumeData, 
+			resumeData, 
 			profilePhoto: profilePhotoFile,
+			status: profileStatus,
 			username: username
 		});
 	}
@@ -339,8 +340,9 @@
 	function publishProfile() {
 		profileStatus = 'published';
 		dispatch('publish', { 
-			resumeData: resumeData, 
-			profilePhoto: profilePhotoFile
+			resumeData, 
+			profilePhoto: profilePhotoFile,
+			status: 'published'
 		});
 	}
 
@@ -375,7 +377,8 @@
 			});
 			dispatch('save', { 
 				resumeData: dataToSave, 
-				profilePhoto: profilePhotoFile
+				profilePhoto: profilePhotoFile,
+				status: 'draft'
 			});
 		}, 100);
 	}
@@ -384,8 +387,9 @@
 		const newStatus = profileStatus === 'published' ? 'draft' : 'published';
 		profileStatus = newStatus;
 		dispatch('statusChange', { 
-			resumeData: resumeData, 
-			profilePhoto: profilePhotoFile
+			resumeData, 
+			profilePhoto: profilePhotoFile,
+			status: newStatus
 		});
 	}
 

@@ -1,6 +1,6 @@
 // AI integration with Together.ai API (inspired by self.so)
 const TOGETHER_API_KEY = import.meta.env.VITE_TOGETHER_API_KEY;
-const TOGETHER_MODEL = import.meta.env.VITE_TOGETHER_MODEL || 'gpt2';
+const TOGETHER_MODEL = import.meta.env.VITE_TOGETHER_MODEL || 'meta-llama/Llama-2-70b-chat-hf';
 
 export interface ResumeData {
   name: string;
@@ -14,17 +14,71 @@ export interface ResumeData {
     company: string;
     duration: string;
     description: string;
+    startDate?: string;
+    endDate?: string;
+    isCurrent?: boolean;
+    location?: string;
+    contractType?: string;
   }>;
   education: Array<{
     degree: string;
     institution: string;
     year: string;
+    startDate?: string;
+    endDate?: string;
+    isCurrent?: boolean;
   }>;
   skills: string[];
+  certifications: Array<{
+    name: string;
+    issuer: string;
+    date: string;
+    description?: string;
+    credentialId?: string;
+  }>;
+  languages: Array<{
+    language: string;
+    proficiency: string; // e.g., "Native", "Fluent", "Intermediate", "Basic"
+  }>;
+  projects: Array<{
+    name: string;
+    description: string;
+    technologies: string[];
+    url?: string;
+    duration?: string;
+  }>;
+  awards: Array<{
+    title: string;
+    organization: string;
+    date: string;
+    description?: string;
+  }>;
   links?: Array<{
     type: string;
     url: string;
   }>;
+  // Template and theme settings
+  template?: string;
+  theme?: string;
+  customization?: {
+    theme: string;
+    fontFamily: string;
+    fontSize: string;
+    layout: string;
+    spacing: string;
+    borderRadius: string;
+    shadow: string;
+    accentColor: string;
+    textColor: string;
+    backgroundColor: string;
+    sectionOrder: string[];
+    lineHeight: string;
+    letterSpacing: string;
+    headingFont: string;
+    containerWidth: string;
+    verticalSpacing: string;
+    horizontalPadding: string;
+  };
 }
 
 export async function extractResumeData(text: string): Promise<ResumeData> {
@@ -32,7 +86,7 @@ export async function extractResumeData(text: string): Promise<ResumeData> {
     throw new Error('Together.ai API key is not configured');
   }
 
-  // Inspired by self.so - using structured JSON output
+  // Enhanced prompt to extract additional sections
   const prompt = `You are a professional resume parser. Extract structured data from the following resume and return it as valid JSON.
 
 Please extract the following information and format it as a JSON object:
@@ -46,25 +100,66 @@ Please extract the following information and format it as a JSON object:
     {
       "title": "Job title",
       "company": "Company name",
-      "duration": "Duration (e.g., 2020-2023)",
+      "duration": "Duration (e.g., '2020-2023' or 'Jan 2020 - Present')",
       "description": "Job description and achievements"
     }
   ],
   "education": [
     {
       "degree": "Degree name",
-      "institution": "Institution name",
-      "year": "Graduation year"
+      "institution": "University/Institution name",
+      "year": "Year or duration"
     }
   ],
-  "skills": ["skill1", "skill2", "skill3"],
+  "skills": ["Skill 1", "Skill 2", "Skill 3"],
+  "certifications": [
+    {
+      "name": "Certification name",
+      "issuer": "Issuing organization",
+      "date": "Date obtained",
+      "description": "Description (optional)",
+      "credentialId": "Credential ID (optional)"
+    }
+  ],
+  "languages": [
+    {
+      "language": "Language name",
+      "proficiency": "Proficiency level (e.g., 'Native', 'Fluent', 'Intermediate', 'Basic')"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project name",
+      "description": "Project description",
+      "technologies": ["Tech 1", "Tech 2"],
+      "url": "Project URL (optional)",
+      "duration": "Duration (optional)"
+    }
+  ],
+  "awards": [
+    {
+      "title": "Award name",
+      "organization": "Awarding organization",
+      "date": "Date received",
+      "description": "Description (optional)"
+    }
+  ],
   "links": [
     {
-      "type": "LinkedIn/GitHub/Portfolio",
+      "type": "Link type (e.g., 'LinkedIn', 'GitHub', 'Portfolio')",
       "url": "URL"
     }
   ]
 }
+
+Extract all available information from the resume text. If a section is not present, include an empty array. For the following sections, extract as much detail as possible:
+- Work experience with job titles, companies, durations, and descriptions
+- Education with degrees, institutions, and years
+- Skills (technical and soft skills)
+- Certifications with issuing organizations and dates
+- Languages with proficiency levels
+- Projects, personal projects, or portfolio items
+- Awards, honors, recognitions, or achievements
 
 Resume text:
 ${text}
@@ -92,9 +187,16 @@ Return only the JSON object, no additional text or explanations.`;
     console.log('Response status:', response.status);
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('API Error Response:', errorData);
+      
+      // Handle rate limiting specifically
+      if (response.status === 429) {
+        const retryAfter = errorData.retryAfter || 60000;
+        throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(retryAfter / 1000)} seconds before trying again.`);
+      }
+      
+      throw new Error(`API request failed: ${response.status} - ${errorData.error || errorData.message || 'Unknown error'}`);
     }
 
     const data = await response.json();
@@ -158,6 +260,10 @@ Return only the JSON object, no additional text or explanations.`;
   } catch (error) {
     console.error('AI extraction error:', error);
     if (error instanceof Error) {
+      // Check if it's a rate limit error
+      if (error.message.includes('Rate limit exceeded')) {
+        throw new Error(`AI service is currently busy. ${error.message}`);
+      }
       throw new Error(`Failed to extract resume data: ${error.message}`);
     }
     throw new Error('Failed to extract resume data');

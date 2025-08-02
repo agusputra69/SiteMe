@@ -11,7 +11,7 @@
   let resumeData: any = null;
   let loading = false;
   let saving = false;
-  let showPreview = false;
+  let saveSuccess = false;
 
   onMount(async () => {
     // Check authentication
@@ -80,10 +80,18 @@
   }
 
   async function handleSaveProfile(eventData: any) {
+    // Prevent multiple simultaneous saves
+    if (saving) {
+      console.log('Save already in progress, ignoring duplicate request');
+      return;
+    }
+    
     saving = true;
     toasts.info('Saving profile changes...');
 
     try {
+      console.log('Starting save process with data:', eventData);
+      
       let photoUrl = eventData.resumeData.photo_url || profile?.photo_url;
       
       if (eventData.profilePhoto) {
@@ -95,6 +103,8 @@
         photo_url: photoUrl
       };
 
+      console.log('Updated resume data:', updatedResumeData);
+
       // Store resume data in the 'data' JSONB column
       const { error } = await updateProfile(user.id, {
         data: updatedResumeData,
@@ -102,46 +112,125 @@
         username: profile?.username
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
 
       // Update local state
       resumeData = updatedResumeData;
       profile = { ...profile, data: updatedResumeData, full_name: updatedResumeData.name };
       
+      console.log('Save completed successfully');
       toasts.success('Profile updated successfully!');
+      
+      // Set success state
+      saveSuccess = true;
     } catch (error) {
       console.error('Error saving profile:', error);
       toasts.error('Failed to save profile. Please try again.');
     } finally {
       saving = false;
+      console.log('Save process finished, saving state reset');
     }
-  }
-
-  function togglePreview() {
-    showPreview = !showPreview;
   }
 
   function goBack() {
     goto('/dashboard');
   }
 
-  function handleTemplateApply(event: CustomEvent) {
+  async function handleTemplateApply(event: CustomEvent) {
     console.log('Template applied:', event.detail);
-    toasts.success('Template applied successfully!');
-    // Here you could save the template settings to the database
-    // or update the profile with the new template configuration
+    const { template, theme, customization } = event.detail;
+    
+    try {
+      // Update the profile data to include template settings
+      const updatedData = {
+        ...resumeData,
+        template: template,
+        theme: theme,
+        customization: customization
+      };
+
+      const { error } = await updateProfile(user.id, {
+        data: updatedData,
+        full_name: resumeData.name,
+        username: profile?.username
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      resumeData = updatedData;
+      profile = { ...profile, data: updatedData };
+      
+      toasts.success('Template applied successfully!');
+    } catch (error) {
+      console.error('Error saving template settings:', error);
+      toasts.error('Failed to save template settings');
+    }
   }
 
-  function handleThemeApply(event: CustomEvent) {
+  async function handleThemeApply(event: CustomEvent) {
     console.log('Theme applied:', event.detail);
-    toasts.success('Theme applied successfully!');
-    // Here you could save the theme settings
+    const { template, theme, customization } = event.detail;
+    
+    try {
+      // Update the profile data to include theme settings
+      const updatedData = {
+        ...resumeData,
+        template: template,
+        theme: theme,
+        customization: customization
+      };
+
+      const { error } = await updateProfile(user.id, {
+        data: updatedData,
+        full_name: resumeData.name,
+        username: profile?.username
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      resumeData = updatedData;
+      profile = { ...profile, data: updatedData };
+      
+      toasts.success('Theme applied successfully!');
+    } catch (error) {
+      console.error('Error saving theme settings:', error);
+      toasts.error('Failed to save theme settings');
+    }
   }
 
-  function handleCustomizationApply(event: CustomEvent) {
+  async function handleCustomizationApply(event: CustomEvent) {
     console.log('Customization applied:', event.detail);
-    toasts.success('Customization applied successfully!');
-    // Here you could save the customization settings
+    const customization = event.detail;
+    
+    try {
+      // Update the profile data to include customization settings
+      const updatedData = {
+        ...resumeData,
+        customization: customization
+      };
+
+      const { error } = await updateProfile(user.id, {
+        data: updatedData,
+        full_name: resumeData.name,
+        username: profile?.username
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      resumeData = updatedData;
+      profile = { ...profile, data: updatedData };
+      
+      toasts.success('Customization applied successfully!');
+    } catch (error) {
+      console.error('Error saving customization settings:', error);
+      toasts.error('Failed to save customization settings');
+    }
   }
 </script>
 
@@ -162,33 +251,18 @@
         Back to Dashboard
       </button>
       
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-            <User class="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-              Profile Editor
-            </h1>
-            <p class="text-gray-600 dark:text-gray-300">
-              Manage your professional information
-            </p>
-          </div>
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+          <User class="w-6 h-6 text-white" />
         </div>
-        
-        <button
-          on:click={togglePreview}
-          class="inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 hover:shadow-md"
-        >
-          {#if showPreview}
-            <Edit3 class="w-4 h-4 mr-2" />
-            Edit Mode
-          {:else}
-            <Eye class="w-4 h-4 mr-2" />
-            Preview Mode
-          {/if}
-        </button>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Profile Editor
+          </h1>
+          <p class="text-gray-600 dark:text-gray-300">
+            Manage your professional information
+          </p>
+        </div>
       </div>
     </div>
 
@@ -200,89 +274,16 @@
           <span class="ml-3 text-gray-600 dark:text-gray-300">Loading profile...</span>
         </div>
       {:else if resumeData}
-        {#if showPreview}
-          <!-- Preview Mode -->
-          <div class="space-y-8">
-            <div class="text-center pb-6 border-b border-gray-200 dark:border-gray-700">
-              {#if resumeData.photo_url}
-                <img src="{resumeData.photo_url}" alt="Profile" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover" />
-              {/if}
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {resumeData.name || 'Your Name'}
-              </h2>
-              {#if resumeData.email}
-                <p class="text-gray-600 dark:text-gray-300">{resumeData.email}</p>
-              {/if}
-              {#if resumeData.phone}
-                <p class="text-gray-600 dark:text-gray-300">{resumeData.phone}</p>
-              {/if}
-              {#if resumeData.location}
-                <p class="text-gray-600 dark:text-gray-300">{resumeData.location}</p>
-              {/if}
-            </div>
-
-            {#if resumeData.summary}
-              <div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Summary</h3>
-                <p class="text-gray-600 dark:text-gray-300 leading-relaxed">{resumeData.summary}</p>
-              </div>
-            {/if}
-
-            {#if resumeData.experience && resumeData.experience.length > 0}
-              <div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Experience</h3>
-                <div class="space-y-4">
-                  {#each resumeData.experience as exp}
-                    <div class="border-l-4 border-blue-600 pl-6 py-2">
-                      <h4 class="font-semibold text-gray-900 dark:text-white">{exp.title}</h4>
-                      <p class="text-blue-600 dark:text-blue-400 font-medium">{exp.company}</p>
-                      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">{exp.duration}</p>
-                      <p class="text-gray-600 dark:text-gray-300">{exp.description}</p>
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            {#if resumeData.education && resumeData.education.length > 0}
-              <div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Education</h3>
-                <div class="space-y-3">
-                  {#each resumeData.education as edu}
-                    <div>
-                      <h4 class="font-semibold text-gray-900 dark:text-white">{edu.degree}</h4>
-                      <p class="text-blue-600 dark:text-blue-400">{edu.institution}</p>
-                      <p class="text-sm text-gray-500 dark:text-gray-400">{edu.year}</p>
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            {#if resumeData.skills && resumeData.skills.length > 0}
-              <div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Skills</h3>
-                <div class="flex flex-wrap gap-2">
-                  {#each resumeData.skills as skill}
-                    <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
-                      {skill}
-                    </span>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </div>
-        {:else}
-          <!-- Edit Mode -->
-          <ProfileEditor 
-            {resumeData}
-            uploading={saving}
-            on:save={(event) => handleSaveProfile(event.detail)}
-            on:templateApply={handleTemplateApply}
-            on:themeApply={handleThemeApply}
-            on:customizationApply={handleCustomizationApply}
-          />
-        {/if}
+        <!-- Profile Editor with built-in preview functionality -->
+        <ProfileEditor 
+          {resumeData}
+          uploading={saving}
+          {saveSuccess}
+          on:save={(event) => handleSaveProfile(event.detail)}
+          on:templateApply={handleTemplateApply}
+          on:themeApply={handleThemeApply}
+          on:customizationApply={handleCustomizationApply}
+        />
       {:else}
         <div class="text-center py-12">
           <p class="text-gray-600 dark:text-gray-300">No profile data found. Please upload a resume first.</p>

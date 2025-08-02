@@ -25,6 +25,43 @@
 		horizontalPadding: 'normal'
 	};
 
+	// Accessibility state
+	let focusableElements: HTMLElement[] = [];
+	let currentFocusIndex = 0;
+
+	// Keyboard navigation support
+	function handleKeydown(event: KeyboardEvent) {
+		switch (event.key) {
+			case 'Escape':
+				// Close any open modals or return to previous state
+				break;
+			case 'Tab':
+				// Handle tab navigation
+				break;
+		}
+	}
+
+	// Focus management
+	function focusFirstElement() {
+		const firstButton = document.querySelector('button') as HTMLElement;
+		if (firstButton) {
+			firstButton.focus();
+		}
+	}
+
+	// Announce changes to screen readers
+	function announceChange(message: string) {
+		const announcement = document.createElement('div');
+		announcement.setAttribute('aria-live', 'polite');
+		announcement.setAttribute('aria-atomic', 'true');
+		announcement.className = 'sr-only';
+		announcement.textContent = message;
+		document.body.appendChild(announcement);
+		setTimeout(() => {
+			document.body.removeChild(announcement);
+		}, 1000);
+	}
+
 	const themes = [
 		{ name: 'blue', color: '#3B82F6', label: 'Professional Blue' },
 		{ name: 'green', color: '#10B981', label: 'Fresh Green' },
@@ -161,6 +198,9 @@
 		}
 		customization = { ...customization, [key]: value };
 		dispatch('update', customization);
+		
+		// Announce changes to screen readers
+		announceChange(`${key} updated to ${value}`);
 	}
 
 	function resetToDefaults() {
@@ -184,6 +224,7 @@
 			horizontalPadding: 'normal'
 		};
 		dispatch('update', customization);
+		announceChange('Customization reset to defaults');
 	}
 
 	// Drag and drop functions for section reordering
@@ -192,6 +233,7 @@
 		if (event.dataTransfer) {
 			event.dataTransfer.effectAllowed = 'move';
 		}
+		announceChange(`Started dragging ${sectionLabels[customization.sectionOrder[index]] || customization.sectionOrder[index]} section`);
 	}
 
 	function handleDragOver(event: DragEvent, index: number) {
@@ -210,6 +252,7 @@
 			const draggedItem = newOrder.splice(draggedIndex, 1)[0];
 			newOrder.splice(dropIndex, 0, draggedItem);
 			updateCustomization('sectionOrder', newOrder);
+			announceChange(`${sectionLabels[draggedItem] || draggedItem} section moved to position ${dropIndex + 1}`);
 		}
 		draggedIndex = -1;
 		dragOverIndex = -1;
@@ -229,45 +272,50 @@
 		link.download = `${selectedTemplate}-customization.json`;
 		link.click();
 		URL.revokeObjectURL(url);
+		announceChange('Customization settings exported');
 	}
 
 	function previewTemplate() {
 		dispatch('preview', { template: selectedTemplate, customization });
+		announceChange('Template preview opened');
 	}
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6" role="main" aria-label="Template Customizer">
 	<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+		<h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="customizer-title">
 			Customize Template
 		</h3>
 		<div class="flex gap-2">
 			<button
 				on:click={resetToDefaults}
 				class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+				aria-label="Reset all customization settings to defaults"
 				title="Reset to defaults"
 			>
-				<RotateCcw class="w-4 h-4" />
+				<RotateCcw class="w-4 h-4" aria-hidden="true" />
 			</button>
 			<button
 				on:click={exportCustomization}
 				class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+				aria-label="Export customization settings as JSON file"
 				title="Export customization"
 			>
-				<Download class="w-4 h-4" />
+				<Download class="w-4 h-4" aria-hidden="true" />
 			</button>
 			<button
 				on:click={previewTemplate}
 				class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+				aria-label="Preview template with current customization settings"
 			>
-				<Eye class="w-4 h-4 mr-1" />
+				<Eye class="w-4 h-4 mr-1" aria-hidden="true" />
 				Preview
 			</button>
 		</div>
 	</div>
 
 	<!-- Tab Navigation -->
-	<div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6">
+	<div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6" role="tablist" aria-labelledby="customizer-title">
 		<button
 			on:click={() => activeTab = 'colors'}
 			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
@@ -275,8 +323,12 @@
 			class:text-blue-600={activeTab === 'colors'}
 			class:border-transparent={activeTab !== 'colors'}
 			class:text-gray-500={activeTab !== 'colors'}
+			role="tab"
+			aria-selected={activeTab === 'colors'}
+			aria-controls="tabpanel-colors"
+			id="tab-colors"
 		>
-			<Palette class="w-4 h-4 mr-1 sm:mr-2" />
+			<Palette class="w-4 h-4 mr-1 sm:mr-2" aria-hidden="true" />
 			<span class="hidden sm:inline">Colors & Themes</span>
 			<span class="sm:hidden">Colors</span>
 		</button>
@@ -287,8 +339,12 @@
 			class:text-blue-600={activeTab === 'typography'}
 			class:border-transparent={activeTab !== 'typography'}
 			class:text-gray-500={activeTab !== 'typography'}
+			role="tab"
+			aria-selected={activeTab === 'typography'}
+			aria-controls="tabpanel-typography"
+			id="tab-typography"
 		>
-			<Type class="w-4 h-4 mr-1 sm:mr-2" />
+			<Type class="w-4 h-4 mr-1 sm:mr-2" aria-hidden="true" />
 			<span class="hidden sm:inline">Typography</span>
 			<span class="sm:hidden">Type</span>
 		</button>
@@ -299,21 +355,14 @@
 			class:text-blue-600={activeTab === 'layout'}
 			class:border-transparent={activeTab !== 'layout'}
 			class:text-gray-500={activeTab !== 'layout'}
+			role="tab"
+			aria-selected={activeTab === 'layout'}
+			aria-controls="tabpanel-layout"
+			id="tab-layout"
 		>
-			<Layout class="w-4 h-4 mr-1 sm:mr-2" />
-			Layout
-		</button>
-		<button
-			on:click={() => activeTab = 'spacing'}
-			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
-			class:border-blue-500={activeTab === 'spacing'}
-			class:text-blue-600={activeTab === 'spacing'}
-			class:border-transparent={activeTab !== 'spacing'}
-			class:text-gray-500={activeTab !== 'spacing'}
-		>
-			<Sliders class="w-4 h-4 mr-1 sm:mr-2" />
-			<span class="hidden sm:inline">Spacing & Effects</span>
-			<span class="sm:hidden">Effects</span>
+			<Layout class="w-4 h-4 mr-1 sm:mr-2" aria-hidden="true" />
+			<span class="hidden sm:inline">Layout & Spacing</span>
+			<span class="sm:hidden">Layout</span>
 		</button>
 		<button
 			on:click={() => activeTab = 'sections'}
@@ -322,396 +371,343 @@
 			class:text-blue-600={activeTab === 'sections'}
 			class:border-transparent={activeTab !== 'sections'}
 			class:text-gray-500={activeTab !== 'sections'}
+			role="tab"
+			aria-selected={activeTab === 'sections'}
+			aria-controls="tabpanel-sections"
+			id="tab-sections"
 		>
-			<Move class="w-4 h-4 mr-1 sm:mr-2" />
+			<Sliders class="w-4 h-4 mr-1 sm:mr-2" aria-hidden="true" />
 			<span class="hidden sm:inline">Section Order</span>
 			<span class="sm:hidden">Sections</span>
 		</button>
 	</div>
 
-	<!-- Tab Content -->
-	{#if activeTab === 'colors'}
-		<div class="space-y-6">
-			<!-- Theme Selection -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Predefined Themes
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each themes as theme}
-						<button
-							on:click={() => updateCustomization('theme', theme.name)}
-							class="p-3 rounded-lg border-2 transition-all hover:scale-105"
-							class:border-blue-500={customization?.theme === theme.name}
-					class:border-gray-200={customization?.theme !== theme.name}
-					class:dark:border-gray-600={customization?.theme !== theme.name}
-							aria-label="Select {theme.label} theme"
-						>
-							<div class="w-8 h-8 rounded-full mx-auto mb-2" style="background-color: {theme.color}"></div>
-							<div class="text-xs font-medium text-gray-700 dark:text-gray-300">{theme.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Custom Colors -->
-			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+	<!-- Tab Panels -->
+	<div class="space-y-6">
+		{#if activeTab === 'colors'}
+			<div role="tabpanel" id="tabpanel-colors" aria-labelledby="tab-colors" class="space-y-6">
+				<!-- Theme Selection -->
 				<div>
-					<label for="accent-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Accent Color
-					</label>
-					<input
-						id="accent-color"
-						type="color"
-						bind:value={customization.accentColor}
-						on:change={() => updateCustomization('accentColor', customization.accentColor)}
-						class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
-					/>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</h4>
+					<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+						{#each themes as theme}
+							<button
+								on:click={() => updateCustomization('theme', theme.name)}
+								class="relative p-3 rounded-lg border-2 transition-all {customization.theme === theme.name ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Select {theme.label} theme"
+								aria-pressed={customization.theme === theme.name}
+							>
+								<div class="w-full h-8 rounded-md mb-2" style="background: {theme.color}"></div>
+								<span class="text-xs font-medium text-gray-900 dark:text-white">{theme.label}</span>
+							</button>
+						{/each}
+					</div>
 				</div>
-				<div>
-					<label for="text-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Text Color
-					</label>
-					<input
-						id="text-color"
-						type="color"
-						bind:value={customization.textColor}
-					on:change={() => updateCustomization('textColor', customization.textColor)}
-						class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
-					/>
-				</div>
-				<div>
-					<label for="background-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Background Color
-					</label>
-					<input
-						id="background-color"
-						type="color"
-						bind:value={customization.backgroundColor}
-					on:change={() => updateCustomization('backgroundColor', customization.backgroundColor)}
-						class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
-					/>
-				</div>
-			</div>
-		</div>
-	{:else if activeTab === 'typography'}
-		<div class="space-y-6">
-			<!-- Font Family -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Body Font Family
-				</legend>
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-					{#each fontFamilies as font}
-						<button
-							on:click={() => updateCustomization('fontFamily', font.value)}
-							class="p-3 text-left rounded-lg border-2 transition-all {font.class}"
-							class:border-blue-500={customization?.fontFamily === font.value}
-					class:border-gray-200={customization?.fontFamily !== font.value}
-					class:dark:border-gray-600={customization?.fontFamily !== font.value}
-							aria-label="Set font family to {font.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white">{font.label}</div>
-							<div class="text-sm text-gray-500 dark:text-gray-400">{font.preview}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
 
-			<!-- Heading Font -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Heading Font
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each headingFonts as font}
-						<button
-							on:click={() => updateCustomization('headingFont', font.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.headingFont === font.value}
-					class:border-gray-200={customization?.headingFont !== font.value}
-					class:dark:border-gray-600={customization?.headingFont !== font.value}
-							aria-label="Set heading font to {font.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white text-sm">{font.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Font Size -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Font Size
-				</legend>
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-					{#each fontSizes as size}
-						<button
-							on:click={() => updateCustomization('fontSize', size.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all {size.class}"
-							class:border-blue-500={customization?.fontSize === size.value}
-					class:border-gray-200={customization?.fontSize !== size.value}
-					class:dark:border-gray-600={customization?.fontSize !== size.value}
-							aria-label="Set font size to {size.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white">{size.label}</div>
-							<div class="text-gray-500 dark:text-gray-400">Sample text</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Line Height -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Line Height
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each lineHeightOptions as option}
-						<button
-							on:click={() => updateCustomization('lineHeight', option.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.lineHeight === option.value}
-					class:border-gray-200={customization?.lineHeight !== option.value}
-					class:dark:border-gray-600={customization?.lineHeight !== option.value}
-							aria-label="Set line height to {option.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white text-sm">{option.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Letter Spacing -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Letter Spacing
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each letterSpacingOptions as option}
-						<button
-							on:click={() => updateCustomization('letterSpacing', option.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all {option.class}"
-							class:border-blue-500={customization?.letterSpacing === option.value}
-					class:border-gray-200={customization?.letterSpacing !== option.value}
-					class:dark:border-gray-600={customization?.letterSpacing !== option.value}
-							aria-label="Set letter spacing to {option.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white text-sm">{option.label}</div>
-							<div class="text-xs text-gray-500 dark:text-gray-400">Sample</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-		</div>
-	{:else if activeTab === 'layout'}
-		<div class="space-y-6">
-			<!-- Layout Options -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Layout Style
-				</legend>
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-					{#each layouts as layout}
-						<button
-							on:click={() => updateCustomization('layout', layout.value)}
-							class="p-4 text-left rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.layout === layout.value}
-					class:border-gray-200={customization?.layout !== layout.value}
-					class:dark:border-gray-600={customization?.layout !== layout.value}
-							aria-label="Set layout to {layout.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white mb-1">{layout.label}</div>
-							<div class="text-sm text-gray-500 dark:text-gray-400">{layout.description}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Container Width -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Container Width
-				</legend>
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-					{#each containerWidthOptions as option}
-						<button
-							on:click={() => updateCustomization('containerWidth', option.value)}
-							class="p-3 text-left rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.containerWidth === option.value}
-					class:border-gray-200={customization?.containerWidth !== option.value}
-					class:dark:border-gray-600={customization?.containerWidth !== option.value}
-							aria-label="Set container width to {option.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white">{option.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-		</div>
-	{:else if activeTab === 'spacing'}
-		<div class="space-y-6">
-			<!-- Vertical Spacing -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Vertical Spacing
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each verticalSpacingOptions as spacing}
-						<button
-							on:click={() => updateCustomization('verticalSpacing', spacing.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.verticalSpacing === spacing.value}
-					class:border-gray-200={customization?.verticalSpacing !== spacing.value}
-					class:dark:border-gray-600={customization?.verticalSpacing !== spacing.value}
-							aria-label="Set vertical spacing to {spacing.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white">{spacing.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Horizontal Padding -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Horizontal Padding
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each horizontalPaddingOptions as padding}
-						<button
-							on:click={() => updateCustomization('horizontalPadding', padding.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.horizontalPadding === padding.value}
-					class:border-gray-200={customization?.horizontalPadding !== padding.value}
-					class:dark:border-gray-600={customization?.horizontalPadding !== padding.value}
-							aria-label="Set horizontal padding to {padding.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white">{padding.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Legacy Spacing -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					General Spacing
-				</legend>
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					{#each spacingOptions as spacing}
-						<button
-							on:click={() => updateCustomization('spacing', spacing.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization?.spacing === spacing.value}
-					class:border-gray-200={customization?.spacing !== spacing.value}
-					class:dark:border-gray-600={customization?.spacing !== spacing.value}
-							aria-label="Set spacing to {spacing.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white">{spacing.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Border Radius -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Border Radius
-				</legend>
-				<div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
-					{#each borderRadiusOptions as radius}
-						<button
-							on:click={() => updateCustomization('borderRadius', radius.value)}
-							class="p-3 text-center border-2 transition-all {radius.class}"
-							class:border-blue-500={customization?.borderRadius === radius.value}
-					class:border-gray-200={customization?.borderRadius !== radius.value}
-					class:dark:border-gray-600={customization?.borderRadius !== radius.value}
-							aria-label="Set border radius to {radius.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white text-xs">{radius.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-
-			<!-- Shadow -->
-			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Shadow
-				</legend>
-				<div class="grid grid-cols-5 gap-3">
-					{#each shadowOptions as shadow}
-						<button
-							on:click={() => updateCustomization('shadow', shadow.value)}
-							class="p-3 text-center rounded-lg border-2 transition-all {shadow.class}"
-							class:border-blue-500={customization?.shadow === shadow.value}
-					class:border-gray-200={customization?.shadow !== shadow.value}
-					class:dark:border-gray-600={customization?.shadow !== shadow.value}
-							aria-label="Set shadow to {shadow.label}"
-						>
-							<div class="font-medium text-gray-900 dark:text-white text-xs">{shadow.label}</div>
-						</button>
-					{/each}
-				</div>
-			</fieldset>
-		</div>
-	{:else if activeTab === 'sections'}
-		<div class="space-y-6">
-			<!-- Section Reordering -->
-			<div>
-				<h4 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Drag to Reorder Sections
-				</h4>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-					Customize the order of sections in your profile by dragging them up or down.
-				</p>
-				<div class="space-y-2">
-					{#each customization?.sectionOrder || [] as section, index}
-						<div
-							draggable="true"
-							on:dragstart={(e) => handleDragStart(e, index)}
-							on:dragover={(e) => handleDragOver(e, index)}
-							on:dragleave={handleDragLeave}
-							on:drop={(e) => handleDrop(e, index)}
-							on:dragend={handleDragEnd}
-							class="flex items-center p-4 bg-white dark:bg-gray-700 rounded-lg border-2 transition-all cursor-move hover:shadow-md"
-							class:border-blue-500={dragOverIndex === index}
-							class:border-gray-200={dragOverIndex !== index}
-							class:dark:border-gray-600={dragOverIndex !== index}
-							class:opacity-50={draggedIndex === index}
-							class:scale-105={dragOverIndex === index && draggedIndex !== index}
-						>
-							<GripVertical class="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
-							<div class="flex-1">
-								<div class="font-medium text-gray-900 dark:text-white">
-									{sectionLabels[section] || section}
-								</div>
-								<div class="text-sm text-gray-500 dark:text-gray-400">
-									Position {index + 1}
-								</div>
-							</div>
-							<div class="text-sm text-gray-400 dark:text-gray-500">
-								{#if draggedIndex === index}
-									Dragging...
-								{:else}
-									Drag to move
-								{/if}
-							</div>
-						</div>
-					{/each}
-				</div>
-				<div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-					<div class="flex items-start space-x-2">
-						<div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-							<span class="text-white text-xs font-bold">i</span>
-						</div>
-						<div class="text-sm text-blue-700 dark:text-blue-300">
-							<strong>Tip:</strong> The order you set here will be reflected in your published profile. The header section typically works best at the top, followed by your summary and experience.
-						</div>
+				<!-- Color Customization -->
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+					<div>
+						<label for="accent-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							Accent Color
+						</label>
+						<input
+							id="accent-color"
+							type="color"
+							bind:value={customization.accentColor}
+							on:change={() => updateCustomization('accentColor', customization.accentColor)}
+							class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
+							aria-label="Choose accent color"
+						/>
+					</div>
+					<div>
+						<label for="text-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							Text Color
+						</label>
+						<input
+							id="text-color"
+							type="color"
+							bind:value={customization.textColor}
+							on:change={() => updateCustomization('textColor', customization.textColor)}
+							class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
+							aria-label="Choose text color"
+						/>
+					</div>
+					<div>
+						<label for="bg-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							Background Color
+						</label>
+						<input
+							id="bg-color"
+							type="color"
+							bind:value={customization.backgroundColor}
+							on:change={() => updateCustomization('backgroundColor', customization.backgroundColor)}
+							class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
+							aria-label="Choose background color"
+						/>
 					</div>
 				</div>
 			</div>
-		</div>
-	{/if}
+
+		{:else if activeTab === 'typography'}
+			<div role="tabpanel" id="tabpanel-typography" aria-labelledby="tab-typography" class="space-y-6">
+				<!-- Font Family -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Font Family</h4>
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+						{#each fontFamilies as font}
+							<button
+								on:click={() => updateCustomization('fontFamily', font.value)}
+								class="text-left p-3 rounded-lg border-2 transition-all {customization.fontFamily === font.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set font family to {font.label}"
+								aria-pressed={customization.fontFamily === font.value}
+							>
+								<div class="font-medium text-gray-900 dark:text-white mb-1 {font.class}">{font.label}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">{font.preview}</div>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Heading Font -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Heading Font</h4>
+					<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+						{#each headingFonts as font}
+							<button
+								on:click={() => updateCustomization('headingFont', font.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.headingFont === font.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set heading font to {font.label}"
+								aria-pressed={customization.headingFont === font.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{font.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Font Size -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Font Size</h4>
+					<div class="grid grid-cols-3 gap-3">
+						{#each fontSizes as size}
+							<button
+								on:click={() => updateCustomization('fontSize', size.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.fontSize === size.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set font size to {size.label}"
+								aria-pressed={customization.fontSize === size.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{size.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Line Height -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Line Height</h4>
+					<div class="grid grid-cols-4 gap-3">
+						{#each lineHeightOptions as option}
+							<button
+								on:click={() => updateCustomization('lineHeight', option.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.lineHeight === option.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set line height to {option.label}"
+								aria-pressed={customization.lineHeight === option.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Letter Spacing -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Letter Spacing</h4>
+					<div class="grid grid-cols-4 gap-3">
+						{#each letterSpacingOptions as option}
+							<button
+								on:click={() => updateCustomization('letterSpacing', option.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.letterSpacing === option.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set letter spacing to {option.label}"
+								aria-pressed={customization.letterSpacing === option.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+		{:else if activeTab === 'layout'}
+			<div role="tabpanel" id="tabpanel-layout" aria-labelledby="tab-layout" class="space-y-6">
+				<!-- Layout Type -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Layout</h4>
+					<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+						{#each layouts as layout}
+							<button
+								on:click={() => updateCustomization('layout', layout.value)}
+								class="text-left p-3 rounded-lg border-2 transition-all {customization.layout === layout.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set layout to {layout.label}"
+								aria-pressed={customization.layout === layout.value}
+							>
+								<div class="font-medium text-gray-900 dark:text-white mb-1">{layout.label}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">{layout.description}</div>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Container Width -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Container Width</h4>
+					<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+						{#each containerWidthOptions as option}
+							<button
+								on:click={() => updateCustomization('containerWidth', option.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.containerWidth === option.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set container width to {option.label}"
+								aria-pressed={customization.containerWidth === option.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Vertical Spacing -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Vertical Spacing</h4>
+					<div class="grid grid-cols-4 gap-3">
+						{#each verticalSpacingOptions as spacing}
+							<button
+								on:click={() => updateCustomization('verticalSpacing', spacing.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.verticalSpacing === spacing.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set vertical spacing to {spacing.label}"
+								aria-pressed={customization.verticalSpacing === spacing.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{spacing.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Horizontal Padding -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Horizontal Padding</h4>
+					<div class="grid grid-cols-4 gap-3">
+						{#each horizontalPaddingOptions as padding}
+							<button
+								on:click={() => updateCustomization('horizontalPadding', padding.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.horizontalPadding === padding.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set horizontal padding to {padding.label}"
+								aria-pressed={customization.horizontalPadding === padding.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{padding.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Spacing -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Spacing</h4>
+					<div class="grid grid-cols-4 gap-3">
+						{#each spacingOptions as spacing}
+							<button
+								on:click={() => updateCustomization('spacing', spacing.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.spacing === spacing.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set spacing to {spacing.label}"
+								aria-pressed={customization.spacing === spacing.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{spacing.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Border Radius -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Border Radius</h4>
+					<div class="grid grid-cols-5 gap-3">
+						{#each borderRadiusOptions as radius}
+							<button
+								on:click={() => updateCustomization('borderRadius', radius.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.borderRadius === radius.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set border radius to {radius.label}"
+								aria-pressed={customization.borderRadius === radius.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{radius.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Shadow -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Shadow</h4>
+					<div class="grid grid-cols-5 gap-3">
+						{#each shadowOptions as shadow}
+							<button
+								on:click={() => updateCustomization('shadow', shadow.value)}
+								class="p-3 rounded-lg border-2 transition-all {customization.shadow === shadow.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set shadow to {shadow.label}"
+								aria-pressed={customization.shadow === shadow.value}
+							>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{shadow.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+		{:else if activeTab === 'sections'}
+			<div role="tabpanel" id="tabpanel-sections" aria-labelledby="tab-sections" class="space-y-6">
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Section Order</h4>
+					<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+						Drag and drop sections to reorder them in your profile
+					</p>
+					<div class="space-y-2">
+						{#each customization.sectionOrder as section, index}
+							<div
+								class="flex items-center p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg cursor-move {draggedIndex === index ? 'opacity-50' : ''} {dragOverIndex === index ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}"
+								draggable="true"
+								on:dragstart={(e) => handleDragStart(e, index)}
+								on:dragover={(e) => handleDragOver(e, index)}
+								on:dragleave={handleDragLeave}
+								on:drop={(e) => handleDrop(e, index)}
+								on:dragend={handleDragEnd}
+								role="button"
+								aria-label="Drag to reorder {sectionLabels[section] || section} section"
+								tabindex="0"
+							>
+								<GripVertical class="w-4 h-4 text-gray-400 mr-3" aria-hidden="true" />
+								<span class="flex-1 text-sm font-medium text-gray-900 dark:text-white">
+									{sectionLabels[section] || section}
+								</span>
+								<span class="text-xs text-gray-500 dark:text-gray-400">
+									{index + 1}
+								</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+		{/if}
+	</div>
 </div>
+
+<style>
+	/* Screen reader only class */
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+</style>

@@ -122,6 +122,14 @@
 	let showCustomizer = false;
 	let activeView = 'templates'; // templates, themes, customizer
 
+	// Update current template and theme when props change
+	$: if (selectedTemplate) {
+		currentTemplate = templates.find(t => t.id === selectedTemplate) || templates[0];
+	}
+	$: if (selectedTheme && currentTemplate) {
+		currentTheme = currentTemplate.themes.find(t => t.name.toLowerCase() === selectedTheme) || currentTemplate.themes[0];
+	}
+
 	function selectTemplate(templateId: string) {
 		selectedTemplate = templateId;
 		currentTemplate = templates.find(t => t.id === templateId) || templates[0];
@@ -257,6 +265,7 @@
 
 	<!-- Template Render -->
 	<div>
+		<!-- Debug: Current template: {selectedTemplate}, theme: {selectedTheme} -->
 		{#if selectedTemplate === 'classic'}
 			<CVTemplate {profileData} {customizable} {customization} />
 		{:else if selectedTemplate === 'modern'}

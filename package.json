@@ -5,6 +5,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite dev",
+    "dev:network": "vite dev --host",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -34,7 +35,11 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "lucide-svelte": "^0.294.0",
-    "pdfjs-dist": "^3.11.174"
+    "multer": "^2.0.2",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^3.11.174",
+    "sharp": "^0.34.3",
+    "tesseract.js": "^6.0.1"
   },
   "type": "module"
 }

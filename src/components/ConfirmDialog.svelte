@@ -59,6 +59,7 @@
 		aria-modal="true"
 		aria-labelledby="dialog-title"
 		aria-describedby="dialog-description"
+		tabindex="-1"
 	>
 		<!-- Dialog -->
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
