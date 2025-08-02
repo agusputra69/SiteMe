@@ -78,8 +78,8 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- Theme Selection -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme Color</label>
-        <select bind:value={selectedTheme} class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <label for="theme-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme Color</label>
+        <select id="theme-select" bind:value={selectedTheme} class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="blue">Blue</option>
           <option value="green">Green</option>
           <option value="purple">Purple</option>
@@ -90,22 +90,24 @@
       
       <!-- Layout Options -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Layout</label>
-        <div class="space-y-2">
-          <label class="flex items-center">
-            <input type="checkbox" bind:checked={compactMode} class="mr-2">
-            <span class="text-sm text-gray-600 dark:text-gray-300">Compact Mode</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" bind:checked={showBorders} class="mr-2">
-            <span class="text-sm text-gray-600 dark:text-gray-300">Show Borders</span>
-          </label>
-        </div>
+        <fieldset>
+          <legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Layout</legend>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="checkbox" bind:checked={compactMode} class="mr-2">
+              <span class="text-sm text-gray-600 dark:text-gray-300">Compact Mode</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" bind:checked={showBorders} class="mr-2">
+              <span class="text-sm text-gray-600 dark:text-gray-300">Show Borders</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
       
       <!-- Action Buttons -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Sections</label>
+        <div class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Sections</div>
         <div class="space-y-2">
           <button on:click={addWorkExperience} class="w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">+ Work Experience</button>
           <button on:click={addEducation} class="w-full px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors">+ Education</button>

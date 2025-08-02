@@ -227,11 +227,10 @@
     <slot />
   </main>
 
-  <!-- Footer -->
+  <!-- Footer - Hidden as requested, can be restored later if needed
   <footer class="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
     <div class="container mx-auto px-4 py-12">
       <div class="grid md:grid-cols-4 gap-8">
-        <!-- Brand -->
         <div class="md:col-span-2">
           <div class="flex items-center space-x-2 mb-4 group">
             <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300">
@@ -244,8 +243,6 @@
             Build your online brand in minutes.
           </p>
         </div>
-
-        <!-- Product -->
         <div>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product</h3>
           <ul class="space-y-2">
@@ -254,8 +251,6 @@
             <li><a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Documentation</a></li>
           </ul>
         </div>
-
-        <!-- Company -->
         <div>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Company</h3>
           <ul class="space-y-2">
@@ -265,7 +260,6 @@
           </ul>
         </div>
       </div>
-
       <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
         <p class="text-gray-600 dark:text-gray-300 text-sm">
           © 2024 SiteMe. All rights reserved.
@@ -281,4 +275,5 @@
       </div>
     </div>
   </footer>
+  -->
 </div>
