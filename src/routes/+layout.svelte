@@ -153,15 +153,7 @@
                 <span class="text-white font-bold text-lg">S</span>
               </div>
             </a>
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <User class="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 class="text-lg font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Welcome back!</p>
-              </div>
-            </div>
+
           </div>
         {:else}
           <a href="/" class="flex items-center space-x-2 group transition-all duration-300 hover:scale-105">
@@ -174,18 +166,32 @@
 
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center space-x-8">
-          <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-            Features
-          </a>
-          <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-            Template
-          </a>
-          <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-            Pricing
-          </a>
-          <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-            Docs
-          </a>
+          {#if isOnDashboard}
+            <!-- Dashboard Navigation -->
+            <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Dashboard
+            </a>
+            <a href="/dashboard/profile" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Profile Editor
+            </a>
+            <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Templates
+            </a>
+          {:else}
+            <!-- Marketing Navigation -->
+            <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Features
+            </a>
+            <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Template
+            </a>
+            <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Pricing
+            </a>
+            <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+              Docs
+            </a>
+          {/if}
         </nav>
 
         <!-- Right side actions -->
@@ -269,18 +275,32 @@
       <div class="md:hidden overflow-hidden transition-all duration-300 {mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}">
         <div class="py-4 border-t border-gray-200 dark:border-gray-700">
           <nav class="flex flex-col space-y-4 transform transition-transform duration-300 {mobileMenuOpen ? 'translate-y-0' : '-translate-y-4'}">
-            <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-              Features
-            </a>
-            <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-              Template
-            </a>
-            <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-              Pricing
-            </a>
-            <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-              Docs
-            </a>
+            {#if isOnDashboard}
+              <!-- Dashboard Mobile Navigation -->
+              <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Dashboard
+              </a>
+              <a href="/dashboard/profile" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Profile Editor
+              </a>
+              <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Templates
+              </a>
+            {:else}
+              <!-- Marketing Mobile Navigation -->
+              <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Features
+              </a>
+              <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Template
+              </a>
+              <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Pricing
+              </a>
+              <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Docs
+              </a>
+            {/if}
             <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
               {#if user}
                 {#if !isOnDashboard}

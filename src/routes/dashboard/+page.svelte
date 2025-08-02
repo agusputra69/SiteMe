@@ -5,7 +5,7 @@
   import { extractTextFromPDFSimple } from '$lib/pdf-simple';
   import { extractResumeData, type ResumeData } from '$lib/ai';
   import { goto } from '$app/navigation';
-  import ProfileEditor from '../../components/ProfileEditor.svelte';
+
   import OnboardingTour from '../../components/OnboardingTour.svelte';
   import InteractiveTutorial from '../../components/InteractiveTutorial.svelte';
   import { toasts } from '$lib/stores/toast';
@@ -18,7 +18,6 @@
     Sparkles, 
     Edit3, 
     Eye,
-    Globe,
     Copy,
     Check
   } from 'lucide-svelte';
@@ -29,11 +28,9 @@
   let loading = false;
   let uploading = false;
   let processing = false;
-  let saving = false;
   let errorMessage = '';
   let successMessage = '';
   let resumeData: ResumeData | null = null;
-  let showPreview = false;
   let copied = false;
   let showOnboarding = false;
   let showTutorial = true;
@@ -179,11 +176,6 @@
     }
   }
 
-  function togglePreview() {
-    showPreview = !showPreview;
-    tutorialContext = showPreview ? 'preview' : 'edit';
-  }
-
   function handleOnboardingComplete() {
     showOnboarding = false;
     localStorage.setItem('siteme-onboarding-completed', 'true');
@@ -192,68 +184,6 @@
   function handleOnboardingSkip() {
     showOnboarding = false;
     localStorage.setItem('siteme-onboarding-completed', 'true');
-  }
-
-  async function handleProfilePhotoUpload(file: File) {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      throw error;
-    }
-  }
-
-  async function handleSaveProfile(eventData: any) {
-    saving = true;
-    errorMessage = '';
-    successMessage = '';
-    toasts.info('Saving profile changes...');
-
-    try {
-      let photoUrl = eventData.resumeData.photo_url || profile?.photo_url;
-      
-      if (eventData.profilePhoto) {
-        photoUrl = await handleProfilePhotoUpload(eventData.profilePhoto);
-      }
-
-      const updatedResumeData = {
-        ...eventData.resumeData,
-        photo_url: photoUrl
-      };
-
-      // Store resume data in the 'data' JSONB column
-      const { error } = await updateProfile(user.id, {
-        data: updatedResumeData,
-        full_name: updatedResumeData.name,
-        username: profile?.username
-      });
-      if (error) throw error;
-
-      // Update local state
-      profile = { ...profile, data: updatedResumeData, full_name: updatedResumeData.full_name };
-      resumeData = { ...resumeData, ...updatedResumeData };
-      
-      toasts.success('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toasts.error('Failed to save profile. Please try again.');
-    } finally {
-      saving = false;
-    }
   }
 
   async function handleDeleteData() {
@@ -378,8 +308,8 @@
   <meta name="description" content="Manage your SiteMe profile" />
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-16">
-  <div class="container mx-auto px-4 py-6">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-20 sm:pt-16">
+  <div class="container mx-auto px-4 py-4 sm:py-6">
     <!-- Welcome Section -->
     <div class="mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -438,34 +368,34 @@
             </div>
           {/if}
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="grid grid-cols-2 gap-3 sm:gap-6 mb-8">
             <!-- Upload PDF Option -->
-            <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-              <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Upload class="w-6 h-6 text-white" />
+            <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl p-4 sm:p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Upload class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+              <h4 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
                 Upload Resume
               </h4>
-              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
                 AI will extract your information automatically
               </p>
               
               {#if uploading || processing}
-                <div class="flex flex-col items-center space-y-3">
+                <div class="flex flex-col items-center space-y-2 sm:space-y-3">
                   {#if uploading}
-                    <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
-                    <span class="text-sm text-gray-600 dark:text-gray-300">Uploading...</span>
+                    <div class="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-blue-600 border-t-transparent"></div>
+                    <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Uploading...</span>
                   {:else if processing}
                     <div class="animate-pulse">
-                      <Sparkles class="w-6 h-6 text-yellow-500" />
+                      <Sparkles class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
                     </div>
-                    <span class="text-sm text-gray-600 dark:text-gray-300">Processing...</span>
+                    <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Processing...</span>
                   {/if}
                 </div>
               {:else}
-                <label class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg" data-tour="upload-button">
-                  <FileText class="w-4 h-4 mr-2" />
+                <label class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg text-sm" data-tour="upload-button">
+                  <FileText class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   Choose PDF
                   <input
                     type="file"
@@ -477,31 +407,15 @@
               {/if}
             </div>
 
-            <!-- LinkedIn Import Option -->
-            <div class="group relative bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800/50 dark:to-slate-800/50 border-2 border-gray-200 dark:border-gray-600 rounded-2xl p-6 text-center opacity-75">
-              <div class="w-12 h-12 bg-gray-400 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Globe class="w-6 h-6 text-white" />
-              </div>
-              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Import LinkedIn
-              </h4>
-              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Export your LinkedIn profile data
-              </p>
-              <button class="inline-flex items-center px-4 py-2.5 bg-gray-400 text-white font-medium rounded-xl cursor-not-allowed" disabled>
-                Coming Soon
-              </button>
-            </div>
-
             <!-- Manual Creation Option -->
-            <div class="group relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-6 text-center hover:border-green-400 dark:hover:border-green-500 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
-              <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Edit3 class="w-6 h-6 text-white" />
+            <div class="group relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-4 sm:p-6 text-center hover:border-green-400 dark:hover:border-green-500 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Edit3 class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+              <h4 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
                 Build Manually
               </h4>
-              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
                 Create your profile step by step
               </p>
               <button 
@@ -518,15 +432,15 @@
                     links: []
                   };
                 }}
-                class="inline-flex items-center px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg"
+                class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg text-sm"
               >
-                <User class="w-4 h-4 mr-2" />
+                <User class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Start Fresh
               </button>
             </div>
           </div>
 
-          <!-- LinkedIn Export Instructions -->
+          <!-- Upload Instructions -->
           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
             <div class="flex items-start space-x-3">
               <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -534,19 +448,19 @@
               </div>
               <div>
                 <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  How to export from LinkedIn:
+                  Tips for best results:
                 </h5>
-                <ol class="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-                  <li>Go to your LinkedIn profile</li>
-                  <li>Click "More" → "Save to PDF"</li>
-                  <li>Upload the downloaded PDF here</li>
-                </ol>
+                <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                  <li>Use a well-formatted PDF resume</li>
+                  <li>Ensure text is clear and readable</li>
+                  <li>Include all relevant sections (experience, education, skills)</li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Profile Editor - Only show when user has data or wants to build their site -->
+        <!-- Profile Summary Card - Only show when user has data -->
         {#if !showTutorial && resumeData && (resumeData.name || resumeData.email || resumeData.experience?.length > 0 || resumeData.education?.length > 0 || resumeData.skills?.length > 0)}
           <div id="profile" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6" data-tour="profile-editor">
             <div class="flex items-center justify-between mb-6">
@@ -556,100 +470,77 @@
                 </div>
                 <div>
                   <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    Profile Editor
+                    Profile Overview
                   </h3>
                   <p class="text-sm text-gray-600 dark:text-gray-300">
-                    Manage your information
+                    Manage your professional information
                   </p>
                 </div>
               </div>
-              <button
-                on:click={togglePreview}
-                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-700/80 backdrop-blur border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
-                data-tour="preview-button"
-              >
-                {#if showPreview}
-                  <Edit3 class="w-4 h-4 mr-2" />
-                  Edit Mode
-                {:else}
-                  <Eye class="w-4 h-4 mr-2" />
-                  Preview
-                {/if}
-              </button>
             </div>
 
-            {#if showPreview}
-              <!-- Preview Mode -->
-              <div class="space-y-6">
+            <!-- Profile Summary -->
+            <div class="space-y-4 mb-6">
+              <div class="flex items-center space-x-3">
+                {#if resumeData.photo_url}
+                  <img src="{resumeData.photo_url}" alt="Profile" class="w-12 h-12 rounded-full object-cover" />
+                {:else}
+                  <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                    <User class="w-6 h-6 text-gray-400" />
+                  </div>
+                {/if}
                 <div>
-                  <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {resumeData.name}
+                  <h4 class="font-semibold text-gray-900 dark:text-white">
+                    {resumeData.name || 'Your Name'}
                   </h4>
                   {#if resumeData.email}
-                    <p class="text-gray-600 dark:text-gray-300">{resumeData.email}</p>
-                  {/if}
-                  {#if resumeData.location}
-                    <p class="text-gray-600 dark:text-gray-300">{resumeData.location}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">{resumeData.email}</p>
                   {/if}
                 </div>
-
-                {#if resumeData.summary}
-                  <div>
-                    <h5 class="font-medium text-gray-900 dark:text-white mb-2">Summary</h5>
-                    <p class="text-gray-600 dark:text-gray-300">{resumeData.summary}</p>
-                  </div>
-                {/if}
-
-                {#if resumeData.experience && resumeData.experience.length > 0}
-                  <div>
-                    <h5 class="font-medium text-gray-900 dark:text-white mb-2">Experience</h5>
-                    <div class="space-y-3">
-                      {#each resumeData.experience as exp}
-                        <div class="border-l-4 border-blue-600 pl-4">
-                          <h6 class="font-medium text-gray-900 dark:text-white">{exp.title}</h6>
-                          <p class="text-gray-600 dark:text-gray-300">{exp.company} • {exp.duration}</p>
-                          <p class="text-gray-600 dark:text-gray-300 text-sm">{exp.description}</p>
-                        </div>
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
-
-                {#if resumeData.education && resumeData.education.length > 0}
-                  <div>
-                    <h5 class="font-medium text-gray-900 dark:text-white mb-2">Education</h5>
-                    <div class="space-y-2">
-                      {#each resumeData.education as edu}
-                        <div>
-                          <h6 class="font-medium text-gray-900 dark:text-white">{edu.degree}</h6>
-                          <p class="text-gray-600 dark:text-gray-300">{edu.institution} • {edu.year}</p>
-                        </div>
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
-
-                {#if resumeData.skills && resumeData.skills.length > 0}
-                  <div>
-                    <h5 class="font-medium text-gray-900 dark:text-white mb-2">Skills</h5>
-                    <div class="flex flex-wrap gap-2">
-                      {#each resumeData.skills as skill}
-                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-                          {skill}
-                        </span>
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
               </div>
-            {:else}
-              <!-- Edit Mode -->
-              <ProfileEditor 
-                  {resumeData}
-                  uploading={saving}
-                  on:save={(event) => handleSaveProfile(event.detail)}
-                />
-            {/if}
+              
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">Experience:</span>
+                  <span class="ml-1 font-medium text-gray-900 dark:text-white">
+                    {resumeData.experience?.length || 0} entries
+                  </span>
+                </div>
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">Education:</span>
+                  <span class="ml-1 font-medium text-gray-900 dark:text-white">
+                    {resumeData.education?.length || 0} entries
+                  </span>
+                </div>
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">Skills:</span>
+                  <span class="ml-1 font-medium text-gray-900 dark:text-white">
+                    {resumeData.skills?.length || 0} skills
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex space-x-3">
+              <button
+                on:click={() => goto('/dashboard/profile')}
+                class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Edit3 class="w-4 h-4 mr-2" />
+                Edit Profile
+              </button>
+              
+              {#if profile?.username}
+                <button
+                  on:click={() => window.open(`/u/${profile.username}`, '_blank')}
+                  class="inline-flex items-center px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200"
+                >
+                  <Eye class="w-4 h-4 mr-2" />
+                  Preview
+                </button>
+              {/if}
+            </div>
           </div>
         {/if}
       </div>
