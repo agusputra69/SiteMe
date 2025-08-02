@@ -14,13 +14,20 @@ create table if not exists profiles (
 alter table profiles enable row level security;
 
 -- Create policies for profiles table
-create policy if not exists "Users can view their own profile" on profiles
+drop policy if exists "Users can view their own profile" on profiles;
+create policy "Users can view their own profile" on profiles
   for select using (auth.uid() = id);
 
-create policy if not exists "Users can insert their own profile" on profiles
+drop policy if exists "Public can view profiles by username" on profiles;
+create policy "Public can view profiles by username" on profiles
+  for select using (username is not null);
+
+drop policy if exists "Users can insert their own profile" on profiles;
+create policy "Users can insert their own profile" on profiles
   for insert with check (auth.uid() = id);
 
-create policy if not exists "Users can update their own profile" on profiles
+drop policy if exists "Users can update their own profile" on profiles;
+create policy "Users can update their own profile" on profiles
   for update using (auth.uid() = id);
 
 -- Create storage bucket for resumes
@@ -29,13 +36,16 @@ values ('resumes', 'resumes', false)
 on conflict (id) do nothing;
 
 -- Storage policies for resumes bucket
-create policy if not exists "Users can upload their own resumes" on storage.objects
+drop policy if exists "Users can upload their own resumes" on storage.objects;
+create policy "Users can upload their own resumes" on storage.objects
   for insert with check (bucket_id = 'resumes' and auth.uid()::text = (storage.foldername(name))[1]);
 
-create policy if not exists "Users can view their own resumes" on storage.objects
+drop policy if exists "Users can view their own resumes" on storage.objects;
+create policy "Users can view their own resumes" on storage.objects
   for select using (bucket_id = 'resumes' and auth.uid()::text = (storage.foldername(name))[1]);
 
-create policy if not exists "Users can delete their own resumes" on storage.objects
+drop policy if exists "Users can delete their own resumes" on storage.objects;
+create policy "Users can delete their own resumes" on storage.objects
   for delete using (bucket_id = 'resumes' and auth.uid()::text = (storage.foldername(name))[1]);
 
 -- Create function to handle new user signup
@@ -52,4 +62,4 @@ $$ language plpgsql security definer;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute procedure public.handle_new_user(); 
+  for each row execute procedure public.handle_new_user();

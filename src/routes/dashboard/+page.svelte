@@ -209,7 +209,7 @@
   }
 
   async function handleProfileSave(event: CustomEvent) {
-    const { resumeData: newResumeData, profilePhoto } = event.detail;
+    const { resumeData: newResumeData, profilePhoto, username: newUsername } = event.detail;
     
     try {
       uploading = true;
@@ -223,7 +223,8 @@
       // Update profile in database
       const { error } = await updateProfile(user.id, {
         data: newResumeData,
-        full_name: newResumeData.name
+        full_name: newResumeData.name,
+        username: newUsername
       });
       
       if (error) {
@@ -233,7 +234,7 @@
       
       // Update local state
       resumeData = newResumeData;
-      profile = { ...profile, data: newResumeData, full_name: newResumeData.name };
+      profile = { ...profile, data: newResumeData, full_name: newResumeData.name, username: newUsername };
       
       // Close the profile editor modal
       showProfileEditor = false;
@@ -685,6 +686,7 @@
       <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
         <ProfileEditor 
           {resumeData}
+          username={profile?.username || ''}
           uploading={uploading}
           on:save={handleProfileSave}
           on:manualCreate={handleManualCreate}

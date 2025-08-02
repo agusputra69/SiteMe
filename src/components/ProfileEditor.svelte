@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight } from 'lucide-svelte';
+	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight, Globe, Palette, Settings } from 'lucide-svelte';
 	import type { ResumeData } from '$lib/ai';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
@@ -10,6 +10,8 @@
 	export let resumeData: ResumeData;
 	export let showPreview = false;
 	export let uploading = false;
+	export let profileStatus: 'draft' | 'published' = 'draft';
+	export let username: string = '';
 
 	let profilePhotoFile: File | null = null;
 	let profilePhotoUrl = '';
@@ -36,6 +38,9 @@
 	};
 	let showAdvancedCustomization = false;
 	let activeTab = 'basic'; // basic, experience, education, skills, links, design
+	let applyingTemplate = false;
+	let applyingTheme = false;
+	let applyingCustomization = false;
 
 	// Tab configuration
 	const tabs = [
@@ -106,13 +111,87 @@
 	function saveProfile() {
 		dispatch('save', { 
 			resumeData, 
-			profilePhoto: profilePhotoFile 
+			profilePhoto: profilePhotoFile,
+			status: profileStatus,
+			username: username
 		});
 	}
 
 	function togglePreview() {
 		showPreview = !showPreview;
 		dispatch('togglePreview', { showPreview });
+	}
+
+	function publishProfile() {
+		profileStatus = 'published';
+		dispatch('publish', { 
+			resumeData, 
+			profilePhoto: profilePhotoFile,
+			status: 'published'
+		});
+	}
+
+	function saveDraft() {
+		profileStatus = 'draft';
+		dispatch('save', { 
+			resumeData, 
+			profilePhoto: profilePhotoFile,
+			status: 'draft'
+		});
+	}
+
+	function togglePublishStatus() {
+		const newStatus = profileStatus === 'published' ? 'draft' : 'published';
+		profileStatus = newStatus;
+		dispatch('statusChange', { 
+			resumeData, 
+			profilePhoto: profilePhotoFile,
+			status: newStatus
+		});
+	}
+
+	function applyTheme() {
+		applyingTheme = true;
+		setTimeout(() => {
+			dispatch('themeApply', { 
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: templateCustomization
+			});
+			applyingTheme = false;
+		}, 500);
+	}
+
+	function applyTemplate() {
+		applyingTemplate = true;
+		setTimeout(() => {
+			dispatch('templateApply', { 
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: templateCustomization
+			});
+			applyingTemplate = false;
+		}, 500);
+	}
+
+	function applyCustomization() {
+		applyingCustomization = true;
+		setTimeout(() => {
+			dispatch('customizationApply', { 
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: templateCustomization
+			});
+			applyingCustomization = false;
+		}, 500);
+	}
+
+	function previewLive() {
+		if (username) {
+			window.open(`/u/${username}`, '_blank');
+		} else {
+			alert('Please set a username first to preview your live profile.');
+		}
 	}
 
 	function handleTemplateChange(event: CustomEvent) {
@@ -283,48 +362,84 @@
 				</div>
 			</div>
 
-			<!-- Action Buttons -->
-			<div class="flex items-center space-x-2">
-				<!-- ATS Export Button -->
-				{#if resumeData.name || resumeData.experience?.length > 0}
-					<button
-						on:click={exportATSResume}
-						class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-						title="Export ATS-friendly resume"
-					>
-						<Download class="w-4 h-4 mr-2" />
-						ATS Export
-					</button>
-				{/if}
+			<!-- Status Indicator -->
+			<div class="flex items-center space-x-4">
+				<div class="flex items-center space-x-2">
+					<div class="w-2 h-2 rounded-full {profileStatus === 'published' ? 'bg-green-400' : 'bg-yellow-400'}"></div>
+					<span class="text-white text-sm font-medium">
+						{profileStatus === 'published' ? 'Published' : 'Draft'}
+					</span>
+				</div>
+			</div>
+		</div>
 
-				<button
-					on:click={togglePreview}
-					class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-				>
-					{#if showPreview}
-						<Edit3 class="w-4 h-4 mr-2" />
-						Edit
-					{:else}
-						<Eye class="w-4 h-4 mr-2" />
-						Preview
+		<!-- Action Buttons -->
+		<div class="bg-white/10 backdrop-blur px-6 py-3 border-t border-white/20">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center space-x-2">
+					<!-- ATS Export Button -->
+					{#if resumeData.name || resumeData.experience?.length > 0}
+						<button
+							on:click={exportATSResume}
+							class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+							title="Export ATS-friendly resume"
+						>
+							<Download class="w-4 h-4 mr-2" />
+							ATS Export
+						</button>
 					{/if}
-				</button>
 
-				{#if !showPreview}
 					<button
-						on:click={saveProfile}
-						disabled={uploading}
-						class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-300 text-blue-600 font-medium rounded-lg transition-colors"
+						on:click={togglePreview}
+						class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
 					>
-						{#if uploading}
-							<div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-2"></div>
-							Saving...
+						{#if showPreview}
+							<Edit3 class="w-4 h-4 mr-2" />
+							Edit Mode
 						{:else}
-							<Save class="w-4 h-4 mr-2" />
-							Save Changes
+							<Eye class="w-4 h-4 mr-2" />
+							Preview Mode
 						{/if}
 					</button>
-				{/if}
+
+					<!-- Live Preview Button -->
+					{#if username}
+						<button
+							on:click={previewLive}
+							class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+							title="Preview live profile"
+						>
+							<Globe class="w-4 h-4 mr-2" />
+							Live Preview
+						</button>
+					{/if}
+				</div>
+
+				<!-- Publishing Controls -->
+				<div class="flex items-center space-x-2">
+					<button
+						on:click={saveDraft}
+						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+						disabled={uploading}
+					>
+						<Save class="w-4 h-4 mr-2" />
+						{uploading ? 'Saving...' : 'Save Draft'}
+					</button>
+
+					<button
+						on:click={togglePublishStatus}
+						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {profileStatus === 'published' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'} rounded-lg transition-colors"
+						disabled={uploading}
+					>
+						{#if profileStatus === 'published'}
+							<Eye class="w-4 h-4 mr-2" />
+							Unpublish
+						{:else}
+							<Upload class="w-4 h-4 mr-2" />
+							Publish
+						{/if}
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -577,6 +692,24 @@
 									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									placeholder="City, State/Country"
 								/>
+							</div>
+
+							<div>
+								<label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Username *
+								</label>
+								<input
+									id="username"
+									type="text"
+									bind:value={username}
+									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									placeholder="your-username"
+									pattern="[a-zA-Z0-9-_]+"
+									title="Username can only contain letters, numbers, hyphens, and underscores"
+								/>
+								<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+									Your public profile will be available at: siteme.com/u/{username || 'your-username'}
+								</p>
 							</div>
 						</div>
 
@@ -1101,16 +1234,66 @@
 							/>
 
 							{#if showAdvancedCustomization}
-								<div class="mt-6 pt-6 border-t border-indigo-200 dark:border-indigo-700">
-									<TemplateCustomizer
-										{selectedTemplate}
-										customization={templateCustomization}
-										on:update={handleCustomizationChange}
-									/>
-								</div>
+						<div class="mt-6 pt-6 border-t border-indigo-200 dark:border-indigo-700">
+							<TemplateCustomizer
+								{selectedTemplate}
+								customization={templateCustomization}
+								on:update={handleCustomizationChange}
+							/>
+						</div>
+					{/if}
+
+					<!-- Apply Buttons -->
+					<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+						<div class="flex flex-wrap gap-3">
+							<button
+								on:click={applyTemplate}
+								disabled={applyingTemplate}
+								class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+							>
+								{#if applyingTemplate}
+									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+									Applying...
+								{:else}
+									<Eye class="w-4 h-4 mr-2" />
+									Apply Template
+								{/if}
+							</button>
+							<button
+								on:click={applyTheme}
+								disabled={applyingTheme}
+								class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+							>
+								{#if applyingTheme}
+									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+									Applying...
+								{:else}
+									<Palette class="w-4 h-4 mr-2" />
+									Apply Theme
+								{/if}
+							</button>
+							{#if showAdvancedCustomization}
+								<button
+									on:click={applyCustomization}
+									disabled={applyingCustomization}
+									class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+								>
+									{#if applyingCustomization}
+										<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+										Applying...
+									{:else}
+										<Settings class="w-4 h-4 mr-2" />
+										Apply Customization
+									{/if}
+								</button>
 							{/if}
 						</div>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+							Click apply buttons to see changes reflected in your profile preview
+						</p>
 					</div>
+				</div>
+			</div>
 				{/if}
 			</div>
 		</div>

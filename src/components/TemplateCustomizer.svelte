@@ -138,6 +138,27 @@
 	};
 
 	function updateCustomization(key: string, value: any) {
+		if (!customization) {
+			customization = {
+				theme: 'blue',
+				fontFamily: 'inter',
+				fontSize: 'medium',
+				layout: 'standard',
+				spacing: 'normal',
+				borderRadius: 'medium',
+				shadow: 'medium',
+				accentColor: '#3B82F6',
+				textColor: '#1F2937',
+				backgroundColor: '#FFFFFF',
+				sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+				lineHeight: 'normal',
+				letterSpacing: 'normal',
+				headingFont: 'same',
+				containerWidth: 'standard',
+				verticalSpacing: 'normal',
+				horizontalPadding: 'normal'
+			};
+		}
 		customization = { ...customization, [key]: value };
 		dispatch('update', customization);
 	}
@@ -321,9 +342,9 @@
 						<button
 							on:click={() => updateCustomization('theme', theme.name)}
 							class="p-3 rounded-lg border-2 transition-all hover:scale-105"
-							class:border-blue-500={customization.theme === theme.name}
-							class:border-gray-200={customization.theme !== theme.name}
-							class:dark:border-gray-600={customization.theme !== theme.name}
+							class:border-blue-500={customization?.theme === theme.name}
+					class:border-gray-200={customization?.theme !== theme.name}
+					class:dark:border-gray-600={customization?.theme !== theme.name}
 							aria-label="Select {theme.label} theme"
 						>
 							<div class="w-8 h-8 rounded-full mx-auto mb-2" style="background-color: {theme.color}"></div>
@@ -355,7 +376,7 @@
 						id="text-color"
 						type="color"
 						bind:value={customization.textColor}
-						on:change={() => updateCustomization('textColor', customization.textColor)}
+					on:change={() => updateCustomization('textColor', customization.textColor)}
 						class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
 					/>
 				</div>
@@ -367,7 +388,7 @@
 						id="background-color"
 						type="color"
 						bind:value={customization.backgroundColor}
-						on:change={() => updateCustomization('backgroundColor', customization.backgroundColor)}
+					on:change={() => updateCustomization('backgroundColor', customization.backgroundColor)}
 						class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
 					/>
 				</div>
@@ -385,9 +406,9 @@
 						<button
 							on:click={() => updateCustomization('fontFamily', font.value)}
 							class="p-3 text-left rounded-lg border-2 transition-all {font.class}"
-							class:border-blue-500={customization.fontFamily === font.value}
-							class:border-gray-200={customization.fontFamily !== font.value}
-							class:dark:border-gray-600={customization.fontFamily !== font.value}
+							class:border-blue-500={customization?.fontFamily === font.value}
+					class:border-gray-200={customization?.fontFamily !== font.value}
+					class:dark:border-gray-600={customization?.fontFamily !== font.value}
 							aria-label="Set font family to {font.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{font.label}</div>
@@ -407,9 +428,9 @@
 						<button
 							on:click={() => updateCustomization('headingFont', font.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.headingFont === font.value}
-							class:border-gray-200={customization.headingFont !== font.value}
-							class:dark:border-gray-600={customization.headingFont !== font.value}
+							class:border-blue-500={customization?.headingFont === font.value}
+					class:border-gray-200={customization?.headingFont !== font.value}
+					class:dark:border-gray-600={customization?.headingFont !== font.value}
 							aria-label="Set heading font to {font.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-sm">{font.label}</div>
@@ -428,9 +449,9 @@
 						<button
 							on:click={() => updateCustomization('fontSize', size.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all {size.class}"
-							class:border-blue-500={customization.fontSize === size.value}
-							class:border-gray-200={customization.fontSize !== size.value}
-							class:dark:border-gray-600={customization.fontSize !== size.value}
+							class:border-blue-500={customization?.fontSize === size.value}
+					class:border-gray-200={customization?.fontSize !== size.value}
+					class:dark:border-gray-600={customization?.fontSize !== size.value}
 							aria-label="Set font size to {size.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{size.label}</div>
@@ -450,9 +471,9 @@
 						<button
 							on:click={() => updateCustomization('lineHeight', option.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.lineHeight === option.value}
-							class:border-gray-200={customization.lineHeight !== option.value}
-							class:dark:border-gray-600={customization.lineHeight !== option.value}
+							class:border-blue-500={customization?.lineHeight === option.value}
+					class:border-gray-200={customization?.lineHeight !== option.value}
+					class:dark:border-gray-600={customization?.lineHeight !== option.value}
 							aria-label="Set line height to {option.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-sm">{option.label}</div>
@@ -471,9 +492,9 @@
 						<button
 							on:click={() => updateCustomization('letterSpacing', option.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all {option.class}"
-							class:border-blue-500={customization.letterSpacing === option.value}
-							class:border-gray-200={customization.letterSpacing !== option.value}
-							class:dark:border-gray-600={customization.letterSpacing !== option.value}
+							class:border-blue-500={customization?.letterSpacing === option.value}
+					class:border-gray-200={customization?.letterSpacing !== option.value}
+					class:dark:border-gray-600={customization?.letterSpacing !== option.value}
 							aria-label="Set letter spacing to {option.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-sm">{option.label}</div>
@@ -495,9 +516,9 @@
 						<button
 							on:click={() => updateCustomization('layout', layout.value)}
 							class="p-4 text-left rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.layout === layout.value}
-							class:border-gray-200={customization.layout !== layout.value}
-							class:dark:border-gray-600={customization.layout !== layout.value}
+							class:border-blue-500={customization?.layout === layout.value}
+					class:border-gray-200={customization?.layout !== layout.value}
+					class:dark:border-gray-600={customization?.layout !== layout.value}
 							aria-label="Set layout to {layout.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white mb-1">{layout.label}</div>
@@ -517,9 +538,9 @@
 						<button
 							on:click={() => updateCustomization('containerWidth', option.value)}
 							class="p-3 text-left rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.containerWidth === option.value}
-							class:border-gray-200={customization.containerWidth !== option.value}
-							class:dark:border-gray-600={customization.containerWidth !== option.value}
+							class:border-blue-500={customization?.containerWidth === option.value}
+					class:border-gray-200={customization?.containerWidth !== option.value}
+					class:dark:border-gray-600={customization?.containerWidth !== option.value}
 							aria-label="Set container width to {option.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{option.label}</div>
@@ -540,9 +561,9 @@
 						<button
 							on:click={() => updateCustomization('verticalSpacing', spacing.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.verticalSpacing === spacing.value}
-							class:border-gray-200={customization.verticalSpacing !== spacing.value}
-							class:dark:border-gray-600={customization.verticalSpacing !== spacing.value}
+							class:border-blue-500={customization?.verticalSpacing === spacing.value}
+					class:border-gray-200={customization?.verticalSpacing !== spacing.value}
+					class:dark:border-gray-600={customization?.verticalSpacing !== spacing.value}
 							aria-label="Set vertical spacing to {spacing.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{spacing.label}</div>
@@ -561,9 +582,9 @@
 						<button
 							on:click={() => updateCustomization('horizontalPadding', padding.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.horizontalPadding === padding.value}
-							class:border-gray-200={customization.horizontalPadding !== padding.value}
-							class:dark:border-gray-600={customization.horizontalPadding !== padding.value}
+							class:border-blue-500={customization?.horizontalPadding === padding.value}
+					class:border-gray-200={customization?.horizontalPadding !== padding.value}
+					class:dark:border-gray-600={customization?.horizontalPadding !== padding.value}
 							aria-label="Set horizontal padding to {padding.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{padding.label}</div>
@@ -582,9 +603,9 @@
 						<button
 							on:click={() => updateCustomization('spacing', spacing.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all"
-							class:border-blue-500={customization.spacing === spacing.value}
-							class:border-gray-200={customization.spacing !== spacing.value}
-							class:dark:border-gray-600={customization.spacing !== spacing.value}
+							class:border-blue-500={customization?.spacing === spacing.value}
+					class:border-gray-200={customization?.spacing !== spacing.value}
+					class:dark:border-gray-600={customization?.spacing !== spacing.value}
 							aria-label="Set spacing to {spacing.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{spacing.label}</div>
@@ -603,9 +624,9 @@
 						<button
 							on:click={() => updateCustomization('borderRadius', radius.value)}
 							class="p-3 text-center border-2 transition-all {radius.class}"
-							class:border-blue-500={customization.borderRadius === radius.value}
-							class:border-gray-200={customization.borderRadius !== radius.value}
-							class:dark:border-gray-600={customization.borderRadius !== radius.value}
+							class:border-blue-500={customization?.borderRadius === radius.value}
+					class:border-gray-200={customization?.borderRadius !== radius.value}
+					class:dark:border-gray-600={customization?.borderRadius !== radius.value}
 							aria-label="Set border radius to {radius.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-xs">{radius.label}</div>
@@ -624,9 +645,9 @@
 						<button
 							on:click={() => updateCustomization('shadow', shadow.value)}
 							class="p-3 text-center rounded-lg border-2 transition-all {shadow.class}"
-							class:border-blue-500={customization.shadow === shadow.value}
-							class:border-gray-200={customization.shadow !== shadow.value}
-							class:dark:border-gray-600={customization.shadow !== shadow.value}
+							class:border-blue-500={customization?.shadow === shadow.value}
+					class:border-gray-200={customization?.shadow !== shadow.value}
+					class:dark:border-gray-600={customization?.shadow !== shadow.value}
 							aria-label="Set shadow to {shadow.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-xs">{shadow.label}</div>
@@ -646,7 +667,7 @@
 					Customize the order of sections in your profile by dragging them up or down.
 				</p>
 				<div class="space-y-2">
-					{#each customization.sectionOrder as section, index}
+					{#each customization?.sectionOrder || [] as section, index}
 						<div
 							draggable="true"
 							on:dragstart={(e) => handleDragStart(e, index)}

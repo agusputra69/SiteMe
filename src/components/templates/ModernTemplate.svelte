@@ -20,11 +20,51 @@
 	};
 
 	export let customizable = false;
+	export let customization = {
+		theme: 'blue',
+		fontFamily: 'inter',
+		fontSize: 'medium',
+		layout: 'standard',
+		spacing: 'normal',
+		borderRadius: 'medium',
+		shadow: 'medium',
+		accentColor: '#3B82F6',
+		textColor: '#1F2937',
+		backgroundColor: '#FFFFFF',
+		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+		lineHeight: 'normal',
+		letterSpacing: 'normal',
+		headingFont: 'same',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
+	};
+	
+	// Apply customization settings
+	$: fontClass = {
+		inter: 'font-sans',
+		mono: 'font-mono',
+		poppins: 'font-sans',
+		playfair: 'font-serif',
+		roboto: 'font-sans'
+	}[customization.fontFamily] || 'font-sans';
+	
+	$: sizeClass = {
+		small: 'text-sm',
+		medium: 'text-base',
+		large: 'text-lg'
+	}[customization.fontSize] || 'text-base';
+	
+	$: spacingClass = {
+		tight: 'space-y-2',
+		normal: 'space-y-4',
+		relaxed: 'space-y-6'
+	}[customization.spacing] || 'space-y-4';
 </script>
 
-<div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
+<div class="rounded-xl shadow-2xl overflow-hidden max-w-4xl mx-auto {fontClass} {sizeClass}" style="background-color: {customization.backgroundColor}; color: {customization.textColor};">
 	<!-- Header Section -->
-	<div class="bg-gradient-to-r from-{theme.primary} to-{theme.secondary} text-white p-4 sm:p-8">
+	<div class="text-white p-4 sm:p-8" style="background: linear-gradient(135deg, {customization.accentColor}, {customization.accentColor}dd);">
 		<div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
 			<div class="w-16 sm:w-24 h-16 sm:h-24 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-3xl font-bold backdrop-blur-sm">
 				{profileData.avatar}

@@ -124,6 +124,25 @@
   function goBack() {
     goto('/dashboard');
   }
+
+  function handleTemplateApply(event: CustomEvent) {
+    console.log('Template applied:', event.detail);
+    toasts.success('Template applied successfully!');
+    // Here you could save the template settings to the database
+    // or update the profile with the new template configuration
+  }
+
+  function handleThemeApply(event: CustomEvent) {
+    console.log('Theme applied:', event.detail);
+    toasts.success('Theme applied successfully!');
+    // Here you could save the theme settings
+  }
+
+  function handleCustomizationApply(event: CustomEvent) {
+    console.log('Customization applied:', event.detail);
+    toasts.success('Customization applied successfully!');
+    // Here you could save the customization settings
+  }
 </script>
 
 <svelte:head>
@@ -167,7 +186,7 @@
             Edit Mode
           {:else}
             <Eye class="w-4 h-4 mr-2" />
-            Preview
+            Preview Mode
           {/if}
         </button>
       </div>
@@ -259,6 +278,9 @@
             {resumeData}
             uploading={saving}
             on:save={(event) => handleSaveProfile(event.detail)}
+            on:templateApply={handleTemplateApply}
+            on:themeApply={handleThemeApply}
+            on:customizationApply={handleCustomizationApply}
           />
         {/if}
       {:else}

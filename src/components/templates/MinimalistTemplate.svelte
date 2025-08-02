@@ -20,6 +20,36 @@
 	};
 
 	export let customizable = false;
+	export let customization = {
+		theme: 'blue',
+		fontFamily: 'inter',
+		fontSize: 'medium',
+		layout: 'standard',
+		spacing: 'normal',
+		borderRadius: 'medium',
+		shadow: 'medium',
+		accentColor: '#3B82F6',
+		textColor: '#1F2937',
+		backgroundColor: '#FFFFFF',
+		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+		lineHeight: 'normal',
+		letterSpacing: 'normal',
+		headingFont: 'same',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
+	};
+	
+	// Apply customization settings
+	$: fontClass = {
+		inter: 'font-sans',
+		mono: 'font-mono',
+		poppins: 'font-sans',
+		playfair: 'font-serif',
+		roboto: 'font-sans'
+	}[customization.fontFamily] || 'font-sans';
+	
+	$: appliedStyles = `background-color: ${customization.backgroundColor}; color: ${customization.textColor};`;
 </script>
 
 <div class="bg-white dark:bg-gray-900 max-w-4xl mx-auto p-8 font-serif">

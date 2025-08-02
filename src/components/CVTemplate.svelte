@@ -22,6 +22,25 @@
   };
   
   export let customizable = false;
+  export let customization = {
+    theme: 'blue',
+    fontFamily: 'inter',
+    fontSize: 'medium',
+    layout: 'standard',
+    spacing: 'normal',
+    borderRadius: 'medium',
+    shadow: 'medium',
+    accentColor: '#3B82F6',
+    textColor: '#1F2937',
+    backgroundColor: '#FFFFFF',
+    sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+    lineHeight: 'normal',
+    letterSpacing: 'normal',
+    headingFont: 'same',
+    containerWidth: 'standard',
+    verticalSpacing: 'normal',
+    horizontalPadding: 'normal'
+  };
   
   // Theme options
    let selectedTheme: 'blue' | 'green' | 'purple' | 'red' | 'indigo' = 'blue';
@@ -68,6 +87,33 @@
    }
   
   $: currentTheme = themes[selectedTheme];
+  
+  // Apply customization settings
+  $: appliedTheme = {
+    primary: customization.accentColor || themes[customization.theme as keyof typeof themes]?.primary || themes.blue.primary,
+    secondary: customization.accentColor || themes[customization.theme as keyof typeof themes]?.secondary || themes.blue.secondary,
+    accent: customization.backgroundColor || '#FFFFFF'
+  };
+  
+  $: fontClass = {
+    inter: 'font-sans',
+    mono: 'font-mono',
+    poppins: 'font-sans',
+    playfair: 'font-serif',
+    roboto: 'font-sans'
+  }[customization.fontFamily] || 'font-sans';
+  
+  $: sizeClass = {
+    small: 'text-sm',
+    medium: 'text-base',
+    large: 'text-lg'
+  }[customization.fontSize] || 'text-base';
+  
+  $: spacingClass = {
+    tight: 'space-y-2',
+    normal: 'space-y-4',
+    relaxed: 'space-y-6'
+  }[customization.spacing] || 'space-y-4';
 </script>
 
 <!-- Customization Controls -->
@@ -117,7 +163,7 @@
   </div>
 {/if}
 
-<div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden max-w-2xl mx-auto {showBorders ? 'border border-gray-200 dark:border-gray-700' : ''}">
+<div class="rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden max-w-2xl mx-auto {fontClass} {sizeClass} {showBorders ? 'border border-gray-200 dark:border-gray-700' : ''}" style="background-color: {customization.backgroundColor}; color: {customization.textColor};">
   <!-- Browser Header -->
   <div class="bg-gray-100 dark:bg-gray-800 px-4 py-2 flex items-center space-x-2">
     <div class="flex space-x-1">
@@ -137,10 +183,10 @@
   </div>
   
   <!-- CV Content -->
-  <div class="p-6">
+  <div class="p-6 {spacingClass}">
     <!-- Profile Header -->
     <div class="flex items-start space-x-4 mb-6">
-      <div class="w-16 h-16 bg-gradient-to-br from-{currentTheme.primary} to-{currentTheme.secondary} rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+      <div class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style="background: linear-gradient(135deg, {customization.accentColor}, {customization.accentColor}dd);">
         {profileData.avatar}
       </div>
       <div class="flex-1">

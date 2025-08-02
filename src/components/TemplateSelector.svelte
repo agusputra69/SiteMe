@@ -258,13 +258,13 @@
 	<!-- Template Render -->
 	<div>
 		{#if selectedTemplate === 'classic'}
-			<CVTemplate {profileData} {customizable} />
+			<CVTemplate {profileData} {customizable} {customization} />
 		{:else if selectedTemplate === 'modern'}
-			<ModernTemplate {profileData} theme={currentTheme} {customizable} />
+			<ModernTemplate {profileData} theme={currentTheme} {customizable} {customization} />
 		{:else if selectedTemplate === 'minimalist'}
-			<MinimalistTemplate {profileData} theme={currentTheme} {customizable} />
+			<MinimalistTemplate {profileData} theme={currentTheme} {customizable} {customization} />
 		{:else if selectedTemplate === 'creative'}
-			<CreativeTemplate {profileData} theme={currentTheme} {customizable} />
+			<CreativeTemplate {profileData} theme={currentTheme} {customizable} {customization} />
 		{/if}
 	</div>
 </div>
