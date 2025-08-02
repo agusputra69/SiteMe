@@ -24,13 +24,13 @@
 
 <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
 	<!-- Header Section -->
-	<div class="bg-gradient-to-r from-{theme.primary} to-{theme.secondary} text-white p-8">
-		<div class="flex items-center space-x-6">
-			<div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-3xl font-bold backdrop-blur-sm">
+	<div class="bg-gradient-to-r from-{theme.primary} to-{theme.secondary} text-white p-4 sm:p-8">
+		<div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+			<div class="w-16 sm:w-24 h-16 sm:h-24 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-3xl font-bold backdrop-blur-sm">
 				{profileData.avatar}
 			</div>
-			<div class="flex-1">
-				<h1 class="text-4xl font-bold mb-2">
+			<div class="flex-1 text-center sm:text-left">
+				<h1 class="text-2xl sm:text-4xl font-bold mb-2">
 					{#if customizable}
 						<input 
 							bind:value={profileData.name}
@@ -42,7 +42,7 @@
 					{/if}
 				</h1>
 				{#if profileData.contact}
-					<div class="flex flex-wrap gap-4 text-sm opacity-90">
+					<div class="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4 text-xs sm:text-sm opacity-90">
 						{#if profileData.contact.email}
 							<span>📧 {profileData.contact.email}</span>
 						{/if}
@@ -59,13 +59,13 @@
 	</div>
 
 	<!-- Content Section -->
-	<div class="p-8">
-		<div class="grid md:grid-cols-3 gap-8">
+	<div class="p-4 sm:p-8">
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
 			<!-- Left Column -->
-			<div class="md:col-span-2 space-y-8">
+			<div class="md:col-span-2 space-y-4 sm:space-y-8">
 				<!-- About Section -->
 				<section>
-					<h2 class="text-2xl font-bold text-{theme.text} dark:text-white mb-4 border-b-2 border-{theme.primary} pb-2">
+					<h2 class="text-xl sm:text-2xl font-bold text-{theme.text} dark:text-white mb-3 sm:mb-4 border-b-2 border-{theme.primary} pb-2">
 						About
 					</h2>
 					{#if customizable}

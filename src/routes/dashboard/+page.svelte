@@ -6,6 +6,8 @@
   import { extractResumeData, type ResumeData } from '$lib/ai';
   import { goto } from '$app/navigation';
   import ProfileEditor from '../../components/ProfileEditor.svelte';
+  import OnboardingTour from '../../components/OnboardingTour.svelte';
+  import InteractiveTutorial from '../../components/InteractiveTutorial.svelte';
   import { toasts } from '$lib/stores/toast';
   import { 
     Upload, 
@@ -32,6 +34,9 @@
   let resumeData: ResumeData | null = null;
   let showPreview = false;
   let copied = false;
+  let showOnboarding = false;
+  let showTutorial = true;
+  let tutorialContext: 'dashboard' | 'upload' | 'edit' | 'preview' = 'dashboard';
 
   onMount(async () => {
     // Check authentication
@@ -43,6 +48,12 @@
 
     user = session.user;
     await loadProfile();
+    
+    // Show onboarding for new users
+    const hasSeenOnboarding = localStorage.getItem('siteme-onboarding-completed');
+    if (!hasSeenOnboarding && (!profile?.data || Object.keys(profile.data).length === 0)) {
+      showOnboarding = true;
+    }
   });
 
   async function loadProfile() {
@@ -88,6 +99,7 @@
     errorMessage = '';
     successMessage = '';
     toasts.info('Starting PDF upload and processing...');
+      tutorialContext = 'upload';
 
     try {
       console.log('Starting PDF processing...');
@@ -129,6 +141,7 @@
         console.log('After assignment - resumeData:', resumeData);
         console.log('Updated profile:', profile);
         toasts.success('Resume processed successfully! Your profile has been updated.');
+        tutorialContext = 'edit';
         // Don't reload profile to avoid overwriting the extracted data
       }
     } catch (error) {
@@ -165,6 +178,17 @@
 
   function togglePreview() {
     showPreview = !showPreview;
+    tutorialContext = showPreview ? 'preview' : 'edit';
+  }
+
+  function handleOnboardingComplete() {
+    showOnboarding = false;
+    localStorage.setItem('siteme-onboarding-completed', 'true');
+  }
+
+  function handleOnboardingSkip() {
+    showOnboarding = false;
+    localStorage.setItem('siteme-onboarding-completed', 'true');
   }
 
   async function handleProfilePhotoUpload(file: File) {
@@ -244,68 +268,71 @@
           <!-- Logo removed to avoid redundancy with main layout -->
         </div>
 
-        <div class="flex items-center space-x-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
           {#if profile?.username}
             <button
               on:click={copyProfileUrl}
-              class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              class="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               {#if copied}
-                <Check class="w-4 h-4 mr-2" />
-                Copied!
+                <Check class="w-4 h-4 mr-1 sm:mr-2" />
+                <span class="hidden sm:inline">Copied!</span>
+                <span class="sm:hidden">Copied</span>
               {:else}
-                <Copy class="w-4 h-4 mr-2" />
-                Copy URL
+                <Copy class="w-4 h-4 mr-1 sm:mr-2" />
+                <span class="hidden sm:inline">Copy URL</span>
+                <span class="sm:hidden">Copy</span>
               {/if}
             </button>
           {/if}
 
           <button
             on:click={handleLogout}
-            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            class="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
-            <LogOut class="w-4 h-4 mr-2" />
-            Sign Out
+            <LogOut class="w-4 h-4 mr-1 sm:mr-2" />
+            <span class="hidden sm:inline">Sign Out</span>
+            <span class="sm:hidden">Out</span>
           </button>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="container mx-auto px-4 py-8">
-    <div class="grid lg:grid-cols-3 gap-8">
+  <div class="container mx-auto px-4 py-4 sm:py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
       <!-- Sidebar -->
       <div class="lg:col-span-1">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div class="flex items-center space-x-3 mb-6">
-            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-              <User class="w-6 h-6 text-white" />
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+          <div class="flex items-center space-x-3 mb-4 sm:mb-6">
+            <div class="w-10 sm:w-12 h-10 sm:h-12 bg-blue-600 rounded-full flex items-center justify-center">
+              <User class="w-5 sm:w-6 h-5 sm:h-6 text-white" />
             </div>
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <div class="min-w-0 flex-1">
+              <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                 {user?.email || 'User'}
               </h2>
-              <p class="text-sm text-gray-600 dark:text-gray-300">
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 truncate">
                 {profile?.username ? `@${profile.username}` : 'No username set'}
               </p>
             </div>
           </div>
 
-          <nav class="space-y-2">
-            <a href="#upload" class="flex items-center space-x-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Upload class="w-5 h-5" />
+          <nav class="space-y-1 sm:space-y-2">
+            <a href="#upload" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Upload class="w-4 sm:w-5 h-4 sm:h-5" />
               <span>Upload Resume</span>
             </a>
-            <a href="#profile" class="flex items-center space-x-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Edit3 class="w-5 h-5" />
+            <a href="#profile" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Edit3 class="w-4 sm:w-5 h-4 sm:h-5" />
               <span>Edit Profile</span>
             </a>
-            <a href="#preview" class="flex items-center space-x-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Eye class="w-5 h-5" />
+            <a href="#preview" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Eye class="w-4 sm:w-5 h-4 sm:h-5" />
               <span>Preview</span>
             </a>
-            <a href="#settings" class="flex items-center space-x-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Settings class="w-5 h-5" />
+            <a href="#settings" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Settings class="w-4 sm:w-5 h-4 sm:h-5" />
               <span>Settings</span>
             </a>
           </nav>
@@ -313,10 +340,10 @@
       </div>
 
       <!-- Main Content -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="lg:col-span-2 space-y-4 sm:space-y-6">
         <!-- Upload Section -->
-        <div id="upload" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div id="upload" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
             Upload Resume
           </h3>
 
@@ -332,12 +359,12 @@
             </div>
           {/if}
 
-          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-            <Upload class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 sm:p-8 text-center">
+            <Upload class="w-8 sm:w-12 h-8 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <h4 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2">
               Upload your resume
             </h4>
-            <p class="text-gray-600 dark:text-gray-300 mb-4">
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
               Upload a PDF resume and our AI will extract your information
             </p>
             
@@ -355,7 +382,7 @@
                 {/if}
               </div>
             {:else}
-              <label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25">
+              <label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25" data-tour="upload-button">
                 <FileText class="w-4 h-4 mr-2" />
                 Choose PDF
                 <input
@@ -371,7 +398,7 @@
 
         <!-- Profile Data -->
         {#if resumeData}
-          <div id="profile" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div id="profile" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6" data-tour="profile-editor">
             <div class="flex items-center justify-between mb-6">
               <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                 Profile Data
@@ -379,6 +406,7 @@
               <button
                 on:click={togglePreview}
                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                data-tour="preview-button"
               >
                 {#if showPreview}
                   <Edit3 class="w-4 h-4 mr-2" />
@@ -468,3 +496,19 @@
     </div>
   </div>
 </div>
+
+<!-- Onboarding Tour -->
+{#if showOnboarding}
+  <OnboardingTour
+    on:complete={handleOnboardingComplete}
+    on:skip={handleOnboardingSkip}
+  />
+{/if}
+
+<!-- Interactive Tutorial -->
+{#if showTutorial}
+  <InteractiveTutorial
+    isVisible={true}
+    currentContext={tutorialContext}
+  />
+{/if}
