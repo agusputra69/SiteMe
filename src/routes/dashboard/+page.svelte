@@ -8,6 +8,7 @@
 
   import OnboardingTour from '../../components/OnboardingTour.svelte';
   import InteractiveTutorial from '../../components/InteractiveTutorial.svelte';
+  import ProfileEditor from '../../components/ProfileEditor.svelte';
   import { toasts } from '$lib/stores/toast';
   import { 
     Upload, 
@@ -36,6 +37,7 @@
   let showTutorial = true;
   let tutorialContext: 'dashboard' | 'upload' | 'edit' | 'preview' = 'dashboard';
   let showDeleteConfirm = false;
+  let showProfileEditor = false;
 
   onMount(async () => {
     // Check authentication
@@ -184,6 +186,72 @@
   function handleOnboardingSkip() {
     showOnboarding = false;
     localStorage.setItem('siteme-onboarding-completed', 'true');
+  }
+
+  async function uploadProfilePhoto(file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    const filePath = `profile-photos/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('profile-photos')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw new Error('Failed to upload profile photo');
+    }
+
+    const { data } = supabase.storage
+      .from('profile-photos')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  }
+
+  async function handleProfileSave(event: CustomEvent) {
+    const { resumeData: newResumeData, profilePhoto } = event.detail;
+    
+    try {
+      uploading = true;
+      
+      // Handle profile photo upload if provided
+      if (profilePhoto) {
+        const photoUrl = await uploadProfilePhoto(profilePhoto);
+        newResumeData.photo_url = photoUrl;
+      }
+      
+      // Update profile in database
+      const { error } = await updateProfile(user.id, {
+        data: newResumeData,
+        full_name: newResumeData.name
+      });
+      
+      if (error) {
+        toasts.error('Failed to save profile: ' + error.message);
+        return;
+      }
+      
+      // Update local state
+      resumeData = newResumeData;
+      profile = { ...profile, data: newResumeData, full_name: newResumeData.name };
+      
+      // Close the profile editor modal
+      showProfileEditor = false;
+      
+      toasts.success('Profile saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toasts.error('Failed to save profile');
+    } finally {
+      uploading = false;
+    }
+  }
+
+  // Handle manual resume creation
+  function handleManualCreate(event: CustomEvent) {
+    const { resumeData: newResumeData } = event.detail;
+    resumeData = newResumeData;
+    toasts.success('Manual resume template created! Start filling in your information.');
   }
 
   async function handleDeleteData() {
@@ -431,6 +499,8 @@
                     skills: [],
                     links: []
                   };
+                  showProfileEditor = true;
+                  toasts.success('Manual resume template created! Start filling in your information.');
                 }}
                 class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg text-sm"
               >
@@ -524,7 +594,7 @@
             <!-- Action Buttons -->
             <div class="flex space-x-3">
               <button
-                on:click={() => goto('/dashboard/profile')}
+                on:click={() => showProfileEditor = true}
                 class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Edit3 class="w-4 h-4 mr-2" />
@@ -596,6 +666,33 @@
     </div>
   </div>
 </div>
+
+<!-- Profile Editor Modal -->
+{#if showProfileEditor && resumeData}
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h2>
+        <button
+          on:click={() => showProfileEditor = false}
+          class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <ProfileEditor 
+          {resumeData}
+          uploading={uploading}
+          on:save={handleProfileSave}
+          on:manualCreate={handleManualCreate}
+        />
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Onboarding Tour -->
 {#if showOnboarding}

@@ -24,7 +24,14 @@
 		shadow: 'medium',
 		accentColor: '#3B82F6',
 		textColor: '#1F2937',
-		backgroundColor: '#FFFFFF'
+		backgroundColor: '#FFFFFF',
+		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+		lineHeight: 'normal',
+		letterSpacing: 'normal',
+		headingFont: 'inter',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
 	};
 
 	// Template definitions

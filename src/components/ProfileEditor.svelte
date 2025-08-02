@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Plus, Trash2, Upload, Save, Eye, Edit3 } from 'lucide-svelte';
+	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight } from 'lucide-svelte';
 	import type { ResumeData } from '$lib/ai';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
@@ -25,9 +25,26 @@
 		shadow: 'medium',
 		accentColor: '#3B82F6',
 		textColor: '#1F2937',
-		backgroundColor: '#FFFFFF'
+		backgroundColor: '#FFFFFF',
+		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+		lineHeight: 'normal',
+		letterSpacing: 'normal',
+		headingFont: 'inter',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
 	};
 	let showAdvancedCustomization = false;
+	let activeTab = 'basic'; // basic, experience, education, skills, links, design
+
+	// Tab configuration
+	const tabs = [
+		{ id: 'basic', label: 'Basic Info', icon: User },
+		{ id: 'experience', label: 'Experience', icon: FileText },
+		{ id: 'education', label: 'Education', icon: FileText },
+		{ id: 'skills', label: 'Skills & Links', icon: Plus },
+		{ id: 'design', label: 'Design', icon: Edit3 }
+	];
 
 	function addExperience() {
 		if (!resumeData.experience) resumeData.experience = [];
@@ -116,91 +133,271 @@
 	function handleCustomizationChange(event: CustomEvent) {
 		templateCustomization = event.detail.customization;
 	}
+
+	// Manual resume creation function
+	function createManualResume() {
+		resumeData = {
+			name: '',
+			email: '',
+			phone: '',
+			location: '',
+			summary: '',
+			experience: [
+				{ title: '', company: '', duration: '', description: '' }
+			],
+			education: [
+				{ degree: '', institution: '', year: '' }
+			],
+			skills: [''],
+			links: [
+				{ type: 'LinkedIn', url: '' }
+			]
+		};
+		dispatch('manualCreate', { resumeData });
+	}
+
+	// ATS-friendly resume export function
+	function exportATSResume() {
+		const atsContent = generateATSContent(resumeData);
+		downloadTextFile(atsContent, `${resumeData.name || 'resume'}_ATS.txt`);
+	}
+
+	// Generate ATS-friendly content
+	function generateATSContent(data: ResumeData): string {
+		let content = '';
+
+		// Header
+		if (data.name) content += `${data.name.toUpperCase()}\n`;
+		content += '='.repeat(50) + '\n\n';
+
+		// Contact Information
+		content += 'CONTACT INFORMATION\n';
+		content += '-'.repeat(20) + '\n';
+		if (data.email) content += `Email: ${data.email}\n`;
+		if (data.phone) content += `Phone: ${data.phone}\n`;
+		if (data.location) content += `Location: ${data.location}\n`;
+		
+		// Links
+		if (data.links && data.links.length > 0) {
+			data.links.forEach(link => {
+				if (link.url) content += `${link.type}: ${link.url}\n`;
+			});
+		}
+		content += '\n';
+
+		// Professional Summary
+		if (data.summary) {
+			content += 'PROFESSIONAL SUMMARY\n';
+			content += '-'.repeat(20) + '\n';
+			content += `${data.summary}\n\n`;
+		}
+
+		// Work Experience
+		if (data.experience && data.experience.length > 0) {
+			content += 'WORK EXPERIENCE\n';
+			content += '-'.repeat(15) + '\n';
+			data.experience.forEach((exp, index) => {
+				if (exp.title || exp.company) {
+					content += `${exp.title || 'Position'} | ${exp.company || 'Company'}\n`;
+					if (exp.duration) content += `Duration: ${exp.duration}\n`;
+					if (exp.description) {
+						content += `${exp.description}\n`;
+					}
+					if (index < data.experience.length - 1) content += '\n';
+				}
+			});
+			content += '\n';
+		}
+
+		// Education
+		if (data.education && data.education.length > 0) {
+			content += 'EDUCATION\n';
+			content += '-'.repeat(9) + '\n';
+			data.education.forEach((edu, index) => {
+				if (edu.degree || edu.institution) {
+					content += `${edu.degree || 'Degree'} | ${edu.institution || 'Institution'}\n`;
+					if (edu.year) content += `Year: ${edu.year}\n`;
+					if (index < data.education.length - 1) content += '\n';
+				}
+			});
+			content += '\n';
+		}
+
+		// Skills
+		if (data.skills && data.skills.length > 0) {
+			content += 'SKILLS\n';
+			content += '-'.repeat(6) + '\n';
+			const skillsList = data.skills.filter(skill => skill.trim()).join(', ');
+			content += `${skillsList}\n\n`;
+		}
+
+		return content;
+	}
+
+	// Download text file helper
+	function downloadTextFile(content: string, filename: string) {
+		const blob = new Blob([content], { type: 'text/plain' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
+	// Get completion percentage for progress indicator
+	function getCompletionPercentage(): number {
+		let completed = 0;
+		let total = 8; // Total fields to check
+
+		if (resumeData.name?.trim()) completed++;
+		if (resumeData.email?.trim()) completed++;
+		if (resumeData.phone?.trim()) completed++;
+		if (resumeData.location?.trim()) completed++;
+		if (resumeData.summary?.trim()) completed++;
+		if (resumeData.experience?.length > 0) completed++;
+		if (resumeData.education?.length > 0) completed++;
+		if (resumeData.skills?.length > 0) completed++;
+
+		return Math.round((completed / total) * 100);
+	}
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
-	<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-3 sm:space-y-0">
-		<h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-			Profile Editor
-		</h3>
-		<div class="flex items-center space-x-2 sm:space-x-3">
-			<button
-				on:click={togglePreview}
-				class="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-			>
-				{#if showPreview}
-					<Edit3 class="w-4 h-4 mr-1 sm:mr-2" />
-					<span class="hidden sm:inline">Edit</span>
-				{:else}
-					<Eye class="w-4 h-4 mr-1 sm:mr-2" />
-					<span class="hidden sm:inline">Preview</span>
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+	<!-- Header with Progress and Actions -->
+	<div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center space-x-4">
+				<div class="text-white">
+					<h3 class="text-lg font-semibold">Profile Editor</h3>
+					<p class="text-blue-100 text-sm">{getCompletionPercentage()}% Complete</p>
+				</div>
+				<!-- Progress Bar -->
+				<div class="w-32 bg-blue-500/30 rounded-full h-2">
+					<div 
+						class="bg-white rounded-full h-2 transition-all duration-300" 
+						style="width: {getCompletionPercentage()}%"
+					></div>
+				</div>
+			</div>
+
+			<!-- Action Buttons -->
+			<div class="flex items-center space-x-2">
+				<!-- ATS Export Button -->
+				{#if resumeData.name || resumeData.experience?.length > 0}
+					<button
+						on:click={exportATSResume}
+						class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+						title="Export ATS-friendly resume"
+					>
+						<Download class="w-4 h-4 mr-2" />
+						ATS Export
+					</button>
 				{/if}
-			</button>
-			{#if !showPreview}
+
 				<button
-					on:click={saveProfile}
-					disabled={uploading}
-					class="inline-flex items-center px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors"
+					on:click={togglePreview}
+					class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
 				>
-					{#if uploading}
-						<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
-						<span class="hidden sm:inline">Saving...</span>
+					{#if showPreview}
+						<Edit3 class="w-4 h-4 mr-2" />
+						Edit
 					{:else}
-						<Save class="w-4 h-4 mr-1 sm:mr-2" />
-						<span class="hidden sm:inline">Save Changes</span>
+						<Eye class="w-4 h-4 mr-2" />
+						Preview
 					{/if}
 				</button>
-			{/if}
+
+				{#if !showPreview}
+					<button
+						on:click={saveProfile}
+						disabled={uploading}
+						class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-100 disabled:bg-gray-300 text-blue-600 font-medium rounded-lg transition-colors"
+					>
+						{#if uploading}
+							<div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-2"></div>
+							Saving...
+						{:else}
+							<Save class="w-4 h-4 mr-2" />
+							Save Changes
+						{/if}
+					</button>
+				{/if}
+			</div>
 		</div>
 	</div>
 
 	{#if showPreview}
 		<!-- Preview Mode -->
-		<div class="space-y-6">
+		<div class="p-6 space-y-6">
 			<!-- Profile Header -->
-			<div class="flex items-start space-x-4">
+			<div class="flex items-start space-x-4 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
 				{#if profilePhotoUrl || resumeData.photo_url}
-					<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover" />
+					<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
 				{:else}
-					<div class="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-						<span class="text-2xl font-bold text-gray-600 dark:text-gray-300">
+					<div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+						<span class="text-2xl font-bold text-white">
 							{resumeData.name?.charAt(0) || 'U'}
 						</span>
 					</div>
 				{/if}
 				<div>
-					<h4 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+					<h4 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
 						{resumeData.name || 'Your Name'}
 					</h4>
-					{#if resumeData.email}
-						<p class="text-gray-600 dark:text-gray-300">{resumeData.email}</p>
-					{/if}
-					{#if resumeData.phone}
-						<p class="text-gray-600 dark:text-gray-300">{resumeData.phone}</p>
-					{/if}
-					{#if resumeData.location}
-						<p class="text-gray-600 dark:text-gray-300">{resumeData.location}</p>
-					{/if}
+					<div class="space-y-1 text-gray-600 dark:text-gray-300">
+						{#if resumeData.email}
+							<p class="flex items-center">
+								<span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+								{resumeData.email}
+							</p>
+						{/if}
+						{#if resumeData.phone}
+							<p class="flex items-center">
+								<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+								{resumeData.phone}
+							</p>
+						{/if}
+						{#if resumeData.location}
+							<p class="flex items-center">
+								<span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+								{resumeData.location}
+							</p>
+						{/if}
+					</div>
 				</div>
 			</div>
 
 			{#if resumeData.summary}
-				<div>
-					<h5 class="font-semibold text-gray-900 dark:text-white mb-2">Summary</h5>
+				<div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+					<h5 class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+						<span class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
+							<User class="w-3 h-3 text-white" />
+						</span>
+						Professional Summary
+					</h5>
 					<p class="text-gray-600 dark:text-gray-300 leading-relaxed">{resumeData.summary}</p>
 				</div>
 			{/if}
 
 			{#if resumeData.experience && resumeData.experience.length > 0}
 				<div>
-					<h5 class="font-semibold text-gray-900 dark:text-white mb-3">Experience</h5>
+					<h5 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+						<span class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-2">
+							<FileText class="w-3 h-3 text-white" />
+						</span>
+						Work Experience
+					</h5>
 					<div class="space-y-4">
 						{#each resumeData.experience as exp}
-							<div class="border-l-4 border-blue-600 pl-4">
+							<div class="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-green-500 shadow-sm">
 								<h6 class="font-medium text-gray-900 dark:text-white">{exp.title}</h6>
-								<p class="text-gray-600 dark:text-gray-300">{exp.company} • {exp.duration}</p>
+								<p class="text-green-600 dark:text-green-400 font-medium">{exp.company}</p>
+								<p class="text-gray-500 dark:text-gray-400 text-sm">{exp.duration}</p>
 								{#if exp.description}
-									<p class="text-gray-600 dark:text-gray-300 text-sm mt-1">{exp.description}</p>
+									<p class="text-gray-600 dark:text-gray-300 text-sm mt-2">{exp.description}</p>
 								{/if}
 							</div>
 						{/each}
@@ -210,12 +407,18 @@
 
 			{#if resumeData.education && resumeData.education.length > 0}
 				<div>
-					<h5 class="font-semibold text-gray-900 dark:text-white mb-3">Education</h5>
-					<div class="space-y-2">
+					<h5 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+						<span class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-2">
+							<FileText class="w-3 h-3 text-white" />
+						</span>
+						Education
+					</h5>
+					<div class="space-y-3">
 						{#each resumeData.education as edu}
-							<div>
+							<div class="bg-white dark:bg-gray-700 p-4 rounded-lg border-l-4 border-purple-500 shadow-sm">
 								<h6 class="font-medium text-gray-900 dark:text-white">{edu.degree}</h6>
-								<p class="text-gray-600 dark:text-gray-300">{edu.institution} • {edu.year}</p>
+								<p class="text-purple-600 dark:text-purple-400 font-medium">{edu.institution}</p>
+								<p class="text-gray-500 dark:text-gray-400 text-sm">{edu.year}</p>
 							</div>
 						{/each}
 					</div>
@@ -224,11 +427,16 @@
 
 			{#if resumeData.skills && resumeData.skills.length > 0}
 				<div>
-					<h5 class="font-semibold text-gray-900 dark:text-white mb-3">Skills</h5>
+					<h5 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+						<span class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mr-2">
+							<Plus class="w-3 h-3 text-white" />
+						</span>
+						Skills
+					</h5>
 					<div class="flex flex-wrap gap-2">
 						{#each resumeData.skills as skill}
 							{#if skill.trim()}
-								<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+								<span class="px-3 py-1 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900 dark:to-red-900 text-orange-800 dark:text-orange-200 rounded-full text-sm font-medium border border-orange-200 dark:border-orange-700">
 									{skill}
 								</span>
 							{/if}
@@ -239,11 +447,17 @@
 
 			{#if resumeData.links && resumeData.links.length > 0}
 				<div>
-					<h5 class="font-semibold text-gray-900 dark:text-white mb-3">Links</h5>
+					<h5 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+						<span class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
+							<ChevronRight class="w-3 h-3 text-white" />
+						</span>
+						Professional Links
+					</h5>
 					<div class="space-y-2">
 						{#each resumeData.links as link}
 							{#if link.url.trim()}
-								<a href={link.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline">
+								<a href={link.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
+									<ChevronRight class="w-4 h-4 mr-2" />
 									{link.type || 'Link'}: {link.url}
 								</a>
 							{/if}
@@ -253,404 +467,649 @@
 			{/if}
 		</div>
 	{:else}
-		<!-- Edit Mode -->
-		<div class="space-y-6">
-			<!-- Profile Photo Upload -->
-			<div>
-				<label for="profilePhoto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Profile Photo
-				</label>
-				<div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-					{#if profilePhotoUrl || resumeData.photo_url}
-						<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover" />
-					{:else}
-						<div class="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-							<span class="text-2xl font-bold text-gray-600 dark:text-gray-300">
-								{resumeData.name?.charAt(0) || 'U'}
-							</span>
-						</div>
-					{/if}
-					<label class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors">
-						<Upload class="w-4 h-4 mr-2" />
-						Upload Photo
-						<input
-							type="file"
-							accept="image/*"
-							on:change={handleProfilePhotoUpload}
-							class="hidden"
-						/>
-					</label>
-				</div>
-			</div>
-
-			<!-- Basic Information -->
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				<div>
-					<label for="fullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Full Name *
-					</label>
-					<input
-						id="fullName"
-						type="text"
-						bind:value={resumeData.name}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="Your full name"
-					/>
-				</div>
-
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Email
-					</label>
-					<input
-						id="email"
-						type="email"
-						bind:value={resumeData.email}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="your.email@example.com"
-					/>
-				</div>
-
-				<div>
-					<label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Phone
-					</label>
-					<input
-						id="phone"
-						type="tel"
-						bind:value={resumeData.phone}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="+1 (555) 123-4567"
-					/>
-				</div>
-
-				<div>
-					<label for="location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-						Location
-					</label>
-					<input
-						id="location"
-						type="text"
-						bind:value={resumeData.location}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="City, State/Country"
-					/>
-				</div>
-			</div>
-
-			<!-- Summary -->
-			<div>
-				<label for="summary" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-					Professional Summary
-				</label>
-				<textarea
-					id="summary"
-					bind:value={resumeData.summary}
-					rows="4"
-					class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-					placeholder="Write a brief summary of your professional background and goals..."
-				></textarea>
-			</div>
-
-			<!-- Experience Section -->
-			<div>
-				<div class="flex items-center justify-between mb-3">
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-						Work Experience
-					</label>
-					<button
-						on:click={addExperience}
-						class="inline-flex items-center px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-						aria-label="Add new work experience entry"
-					>
-						<Plus class="w-4 h-4 mr-1" />
-						Add Experience
-					</button>
-				</div>
-				{#if resumeData.experience && resumeData.experience.length > 0}
-					<div class="space-y-4">
-						{#each resumeData.experience as exp, index}
-							<div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-								<div class="flex items-center justify-between mb-3">
-									<h6 class="font-medium text-gray-900 dark:text-white">Experience {index + 1}</h6>
-									<button
-										on:click={() => removeExperience(index)}
-										class="text-red-600 hover:text-red-700 transition-colors"
-										aria-label="Remove experience entry {index + 1}"
-									>
-										<Trash2 class="w-4 h-4" />
-									</button>
-								</div>
-								<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-									<div>
-										<label for="exp-title-{index}" class="sr-only">Job Title for Experience {index + 1}</label>
-										<input
-											id="exp-title-{index}"
-											type="text"
-											bind:value={exp.title}
-											class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-											placeholder="Job Title"
-											aria-describedby="exp-title-help-{index}"
-										/>
-										<span id="exp-title-help-{index}" class="sr-only">Enter your job title for this position</span>
-									</div>
-									<div>
-										<label for="exp-company-{index}" class="sr-only">Company Name for Experience {index + 1}</label>
-										<input
-											id="exp-company-{index}"
-											type="text"
-											bind:value={exp.company}
-											class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-											placeholder="Company Name"
-											aria-describedby="exp-company-help-{index}"
-										/>
-										<span id="exp-company-help-{index}" class="sr-only">Enter the company name for this position</span>
-									</div>
-								</div>
-								<div class="mb-3">
-									<label for="exp-duration-{index}" class="sr-only">Duration for Experience {index + 1}</label>
-									<input
-										id="exp-duration-{index}"
-										type="text"
-										bind:value={exp.duration}
-										class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder="Duration (e.g., Jan 2020 - Present)"
-										aria-describedby="exp-duration-help-{index}"
-									/>
-									<span id="exp-duration-help-{index}" class="sr-only">Enter the duration of employment for this position</span>
-								</div>
-								<div>
-									<label for="exp-description-{index}" class="sr-only">Job Description for Experience {index + 1}</label>
-									<textarea
-										id="exp-description-{index}"
-										bind:value={exp.description}
-										rows="3"
-										class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder="Describe your responsibilities and achievements..."
-										aria-describedby="exp-description-help-{index}"
-									></textarea>
-									<span id="exp-description-help-{index}" class="sr-only">Describe your responsibilities and achievements for this position</span>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-
-			<!-- Education Section -->
-			<div>
-				<div class="flex items-center justify-between mb-3">
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-						Education
-					</label>
-					<button
-						on:click={addEducation}
-						class="inline-flex items-center px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-						aria-label="Add new education entry"
-					>
-						<Plus class="w-4 h-4 mr-1" />
-						Add Education
-					</button>
-				</div>
-				{#if resumeData.education && resumeData.education.length > 0}
-					<div class="space-y-4">
-						{#each resumeData.education as edu, index}
-							<div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-								<div class="flex items-center justify-between mb-3">
-									<h6 class="font-medium text-gray-900 dark:text-white">Education {index + 1}</h6>
-									<button
-										on:click={() => removeEducation(index)}
-										class="text-red-600 hover:text-red-700 transition-colors"
-										aria-label="Remove education entry {index + 1}"
-									>
-										<Trash2 class="w-4 h-4" />
-									</button>
-								</div>
-								<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-									<div>
-										<label for="edu-degree-{index}" class="sr-only">Degree for Education {index + 1}</label>
-										<input
-											id="edu-degree-{index}"
-											type="text"
-											bind:value={edu.degree}
-											class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-											placeholder="Degree (e.g., Bachelor of Science)"
-											aria-describedby="edu-degree-help-{index}"
-										/>
-										<span id="edu-degree-help-{index}" class="sr-only">Enter your degree or qualification</span>
-									</div>
-									<div>
-										<label for="edu-institution-{index}" class="sr-only">Institution for Education {index + 1}</label>
-										<input
-											id="edu-institution-{index}"
-											type="text"
-											bind:value={edu.institution}
-											class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-											placeholder="Institution Name"
-											aria-describedby="edu-institution-help-{index}"
-										/>
-										<span id="edu-institution-help-{index}" class="sr-only">Enter the name of the educational institution</span>
-									</div>
-								</div>
-								<div class="mt-3">
-									<label for="edu-year-{index}" class="sr-only">Year for Education {index + 1}</label>
-									<input
-										id="edu-year-{index}"
-										type="text"
-										bind:value={edu.year}
-										class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder="Year (e.g., 2020 or 2018-2022)"
-										aria-describedby="edu-year-help-{index}"
-									/>
-									<span id="edu-year-help-{index}" class="sr-only">Enter the graduation year or period of study</span>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-
-			<!-- Skills Section -->
-			<div>
-				<div class="flex items-center justify-between mb-3">
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-						Skills
-					</label>
-					<button
-						on:click={addSkill}
-						class="inline-flex items-center px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-						aria-label="Add new skill"
-					>
-						<Plus class="w-4 h-4 mr-1" />
-						Add Skill
-					</button>
-				</div>
-				{#if resumeData.skills && resumeData.skills.length > 0}
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						{#each resumeData.skills as skill, index}
-							<div class="flex items-center space-x-2">
-								<label for="skill-{index}" class="sr-only">Skill {index + 1}</label>
-								<input
-									id="skill-{index}"
-									type="text"
-									bind:value={resumeData.skills[index]}
-									class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Skill name"
-									aria-describedby="skill-help-{index}"
-								/>
-								<span id="skill-help-{index}" class="sr-only">Enter a skill or competency</span>
-								<button
-									on:click={() => removeSkill(index)}
-									class="text-red-600 hover:text-red-700 transition-colors"
-									aria-label="Remove skill {index + 1}"
-								>
-									<Trash2 class="w-4 h-4" />
-								</button>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-
-			<!-- Links Section -->
-			<div>
-				<div class="flex items-center justify-between mb-3">
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-						Professional Links
-					</label>
-					<button
-						on:click={addLink}
-						class="inline-flex items-center px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-					>
-						<Plus class="w-4 h-4 mr-1" />
-						Add Link
-					</button>
-				</div>
-				{#if resumeData.links && resumeData.links.length > 0}
-				<div class="space-y-3">
-					{#each resumeData.links as link, index}
-						<div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-							<input
-								type="text"
-								bind:value={link.type}
-								class="w-full sm:w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="Type (e.g., LinkedIn)"
-							/>
-							<div class="flex items-center space-x-2 flex-1">
-								<input
-									type="url"
-									bind:value={link.url}
-									class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="https://..."
-								/>
-								<button
-									on:click={() => removeLink(index)}
-									class="text-red-600 hover:text-red-700 transition-colors flex-shrink-0"
-								>
-									<Trash2 class="w-4 h-4" />
-								</button>
-							</div>
-						</div>
+		<!-- Edit Mode with Tabs -->
+		<div class="flex">
+			<!-- Sidebar Navigation -->
+			<div class="w-64 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">
+				<nav class="p-4 space-y-2">
+					{#each tabs as tab}
+						<button
+							on:click={() => activeTab = tab.id}
+							class="w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors {activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+						>
+							<svelte:component this={tab.icon} class="w-4 h-4 mr-3" />
+							{tab.label}
+							{#if activeTab === tab.id}
+								<ChevronRight class="w-4 h-4 ml-auto" />
+							{/if}
+						</button>
 					{/each}
-				</div>
-			{/if}
+				</nav>
 			</div>
 
-			<!-- Template Customization Section -->
-			<div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-				<div class="flex items-center justify-between mb-4">
-					<h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-						Template & Design
-					</h3>
-					<button
-						on:click={() => showAdvancedCustomization = !showAdvancedCustomization}
-						class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-					>
-						{showAdvancedCustomization ? 'Hide' : 'Show'} Advanced Options
-					</button>
-				</div>
+			<!-- Main Content Area -->
+			<div class="flex-1 p-6">
+				{#if activeTab === 'basic'}
+					<!-- Basic Information Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center mb-6">
+							<User class="w-6 h-6 text-blue-600 mr-3" />
+							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h4>
+						</div>
 
-				<TemplateSelector
-				profileData={{
-					name: resumeData?.name || '',
-					avatar: profilePhotoUrl || resumeData?.photo_url || '',
-					about: resumeData?.summary || '',
-					workExperience: resumeData?.experience?.map(exp => ({
-						title: exp.title || '',
-						company: exp.company || '',
-						type: 'full-time',
-						period: exp.duration || '',
-						current: false,
-						description: exp.description || ''
-					})) || [],
-					education: resumeData?.education?.map(edu => ({
-						degree: edu.degree || '',
-						institution: edu.institution || '',
-						period: edu.year || ''
-					})) || [],
-					skills: resumeData?.skills || [],
-					contact: {
-						email: resumeData?.email || '',
-						phone: resumeData?.phone || '',
-						location: resumeData?.location || ''
-					}
-				}}
-				customizable={true}
-				{selectedTemplate}
-				{selectedTheme}
-				customization={templateCustomization}
-				on:templateChange={handleTemplateChange}
-				on:themeChange={handleThemeChange}
-				on:customizationChange={handleCustomizationChange}
-			/>
+						<!-- Profile Photo Upload -->
+						<div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+								Profile Photo
+							</label>
+							<div class="flex items-center space-x-4">
+								{#if profilePhotoUrl || resumeData.photo_url}
+									<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
+								{:else}
+									<div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+										<span class="text-2xl font-bold text-white">
+											{resumeData.name?.charAt(0) || 'U'}
+										</span>
+									</div>
+								{/if}
+								<label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
+									<Upload class="w-4 h-4 mr-2" />
+									Upload Photo
+									<input
+										type="file"
+										accept="image/*"
+										on:change={handleProfilePhotoUpload}
+										class="hidden"
+									/>
+								</label>
+							</div>
+						</div>
 
-				{#if showAdvancedCustomization}
-					<div class="mt-4">
-								<TemplateCustomizer
-						{selectedTemplate}
-						customization={templateCustomization}
-						on:update={handleCustomizationChange}
-					/>
+						<!-- Contact Information -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div>
+								<label for="fullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Full Name *
+								</label>
+								<input
+									id="fullName"
+									type="text"
+									bind:value={resumeData.name}
+									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									placeholder="Your full name"
+								/>
+							</div>
+
+							<div>
+								<label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Email Address
+								</label>
+								<input
+									id="email"
+									type="email"
+									bind:value={resumeData.email}
+									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									placeholder="your.email@example.com"
+								/>
+							</div>
+
+							<div>
+								<label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Phone Number
+								</label>
+								<input
+									id="phone"
+									type="tel"
+									bind:value={resumeData.phone}
+									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									placeholder="+1 (555) 123-4567"
+								/>
+							</div>
+
+							<div>
+								<label for="location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Location
+								</label>
+								<input
+									id="location"
+									type="text"
+									bind:value={resumeData.location}
+									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									placeholder="City, State/Country"
+								/>
+							</div>
+						</div>
+
+						<!-- Professional Summary -->
+						<div>
+							<label for="summary" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								Professional Summary
+							</label>
+							<textarea
+								id="summary"
+								bind:value={resumeData.summary}
+								rows="4"
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								placeholder="Write a brief summary of your professional background and goals..."
+							></textarea>
+						</div>
+					</div>
+
+				{:else if activeTab === 'experience'}
+					<!-- Experience Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<FileText class="w-6 h-6 text-green-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Work Experience</h4>
+							</div>
+							<button
+								on:click={addExperience}
+								class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Experience
+							</button>
+						</div>
+
+						{#if resumeData.experience && resumeData.experience.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.experience as exp, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													{index + 1}
+												</span>
+												Experience {index + 1}
+											</h6>
+											<button
+												on:click={() => removeExperience(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Job Title
+												</label>
+												<input
+													type="text"
+													bind:value={exp.title}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+													placeholder="Software Engineer"
+												/>
+											</div>
+											<div>
+												<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Company
+												</label>
+												<input
+													type="text"
+													bind:value={exp.company}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+													placeholder="Tech Company Inc."
+												/>
+											</div>
+										</div>
+										<div class="mb-4">
+											<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Duration
+											</label>
+											<input
+												type="text"
+												bind:value={exp.duration}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+												placeholder="Jan 2020 - Present"
+											/>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Description
+											</label>
+											<textarea
+												bind:value={exp.description}
+												rows="3"
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+												placeholder="Describe your responsibilities and achievements..."
+											></textarea>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<FileText class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No work experience added yet</p>
+								<button
+									on:click={addExperience}
+									class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Experience
+								</button>
+							</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'education'}
+					<!-- Education Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<FileText class="w-6 h-6 text-purple-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Education</h4>
+							</div>
+							<button
+								on:click={addEducation}
+								class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Education
+							</button>
+						</div>
+
+						{#if resumeData.education && resumeData.education.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.education as edu, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													{index + 1}
+												</span>
+												Education {index + 1}
+											</h6>
+											<button
+												on:click={() => removeEducation(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Degree
+												</label>
+												<input
+													type="text"
+													bind:value={edu.degree}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+													placeholder="Bachelor of Science"
+												/>
+											</div>
+											<div>
+												<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Institution
+												</label>
+												<input
+													type="text"
+													bind:value={edu.institution}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+													placeholder="University Name"
+												/>
+											</div>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Year
+											</label>
+											<input
+												type="text"
+												bind:value={edu.year}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+												placeholder="2020 or 2018-2022"
+											/>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<FileText class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No education added yet</p>
+								<button
+									on:click={addEducation}
+									class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Education
+								</button>
+							</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'skills'}
+					<!-- Skills & Links Tab -->
+					<div class="space-y-6">
+						<!-- Skills Section -->
+						<div>
+							<div class="flex items-center justify-between mb-6">
+								<div class="flex items-center">
+									<Plus class="w-6 h-6 text-blue-600 mr-3" />
+									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
+								</div>
+								<button
+									on:click={addSkill}
+									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Skill
+								</button>
+							</div>
+
+							{#if resumeData.skills && resumeData.skills.length > 0}
+								<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+									{#each resumeData.skills as skill, index}
+										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+											<div class="flex items-center justify-between">
+												<input
+													type="text"
+													bind:value={resumeData.skills[index]}
+													class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+													placeholder="Enter skill"
+												/>
+												<button
+													on:click={() => removeSkill(index)}
+													class="ml-2 text-red-600 hover:text-red-700 p-1 rounded transition-colors"
+												>
+													<Trash2 class="w-4 h-4" />
+												</button>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+									<Plus class="w-8 h-8 text-gray-400 mx-auto mb-2" />
+									<p class="text-gray-500 dark:text-gray-400 mb-4">No skills added yet</p>
+									<button
+										on:click={addSkill}
+										class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+									>
+										<Plus class="w-4 h-4 mr-2" />
+										Add Your First Skill
+									</button>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Links Section -->
+						<div>
+							<div class="flex items-center justify-between mb-6">
+								<div class="flex items-center">
+									<ChevronRight class="w-6 h-6 text-indigo-600 mr-3" />
+									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Links</h4>
+								</div>
+								<button
+									on:click={addLink}
+									class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Link
+								</button>
+							</div>
+
+							{#if resumeData.links && resumeData.links.length > 0}
+								<div class="space-y-4">
+									{#each resumeData.links as link, index}
+										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+											<div class="flex items-center justify-between mb-4">
+												<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+													<span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+														{index + 1}
+													</span>
+													Link {index + 1}
+												</h6>
+												<button
+													on:click={() => removeLink(index)}
+													class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+												>
+													<Trash2 class="w-4 h-4" />
+												</button>
+											</div>
+											<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+												<div>
+													<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+														Label
+													</label>
+													<input
+																						type="text"
+																						bind:value={link.type}
+																						class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+																						placeholder="LinkedIn, GitHub, Portfolio"
+																					/>
+												</div>
+												<div>
+													<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+														URL
+													</label>
+													<input
+														type="url"
+														bind:value={link.url}
+														class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+														placeholder="https://..."
+													/>
+												</div>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+									<ChevronRight class="w-8 h-8 text-gray-400 mx-auto mb-2" />
+									<p class="text-gray-500 dark:text-gray-400 mb-4">No links added yet</p>
+									<button
+										on:click={addLink}
+										class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+									>
+										<Plus class="w-4 h-4 mr-2" />
+										Add Your First Link
+									</button>
+								</div>
+							{/if}
+						</div>
+					</div>
+
+				{:else if activeTab === 'skills'}
+					<!-- Skills & Links Tab -->
+					<div class="space-y-8">
+						<!-- Skills Section -->
+						<div>
+							<div class="flex items-center justify-between mb-6">
+								<div class="flex items-center">
+									<Plus class="w-6 h-6 text-orange-600 mr-3" />
+									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
+								</div>
+								<button
+									on:click={addSkill}
+									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Skill
+								</button>
+							</div>
+
+							{#if resumeData.skills && resumeData.skills.length > 0}
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									{#each resumeData.skills as skill, index}
+										<div class="flex items-center space-x-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+											<span class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+												{index + 1}
+											</span>
+											<input
+												type="text"
+												bind:value={resumeData.skills[index]}
+												class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+												placeholder="Enter skill name"
+											/>
+											<button
+												on:click={() => removeSkill(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+									<Plus class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+									<p class="text-gray-500 dark:text-gray-400 mb-4">No skills added yet</p>
+									<button
+										on:click={addSkill}
+										class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+									>
+										<Plus class="w-4 h-4 mr-2" />
+										Add Your First Skill
+									</button>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Links Section -->
+						<div>
+							<div class="flex items-center justify-between mb-6">
+								<div class="flex items-center">
+									<ChevronRight class="w-6 h-6 text-blue-600 mr-3" />
+									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Professional Links</h4>
+								</div>
+								<button
+									on:click={addLink}
+									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Link
+								</button>
+							</div>
+
+							{#if resumeData.links && resumeData.links.length > 0}
+								<div class="space-y-4">
+									{#each resumeData.links as link, index}
+										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+											<div class="flex items-center justify-between mb-4">
+												<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+													<span class="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+														{index + 1}
+													</span>
+													Link {index + 1}
+												</h6>
+												<button
+													on:click={() => removeLink(index)}
+													class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+												>
+													<Trash2 class="w-4 h-4" />
+												</button>
+											</div>
+											<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+												<div>
+													<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+														Type
+													</label>
+													<input
+														type="text"
+														bind:value={link.type}
+														class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+														placeholder="LinkedIn"
+													/>
+												</div>
+												<div class="md:col-span-2">
+													<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+														URL
+													</label>
+													<input
+														type="url"
+														bind:value={link.url}
+														class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+														placeholder="https://linkedin.com/in/yourprofile"
+													/>
+												</div>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+									<ChevronRight class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+									<p class="text-gray-500 dark:text-gray-400 mb-4">No professional links added yet</p>
+									<button
+										on:click={addLink}
+										class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+									>
+										<Plus class="w-4 h-4 mr-2" />
+										Add Your First Link
+									</button>
+								</div>
+							{/if}
+						</div>
+					</div>
+
+				{:else if activeTab === 'design'}
+					<!-- Design Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center mb-6">
+							<Edit3 class="w-6 h-6 text-indigo-600 mr-3" />
+							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Template & Design</h4>
+						</div>
+
+						<div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-lg border border-indigo-200 dark:border-indigo-700">
+							<div class="flex items-center justify-between mb-4">
+								<h5 class="text-lg font-semibold text-gray-900 dark:text-white">Template Customization</h5>
+								<button
+									on:click={() => showAdvancedCustomization = !showAdvancedCustomization}
+									class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium px-3 py-1 bg-white dark:bg-gray-700 rounded-lg border border-indigo-200 dark:border-indigo-600 transition-colors"
+								>
+									{showAdvancedCustomization ? 'Hide' : 'Show'} Advanced Options
+								</button>
+							</div>
+
+							<TemplateSelector
+								profileData={{
+									name: resumeData?.name || '',
+									avatar: profilePhotoUrl || resumeData?.photo_url || '',
+									about: resumeData?.summary || '',
+									workExperience: resumeData?.experience?.map(exp => ({
+										title: exp.title || '',
+										company: exp.company || '',
+										type: 'full-time',
+										period: exp.duration || '',
+										current: false,
+										description: exp.description || ''
+									})) || [],
+									education: resumeData?.education?.map(edu => ({
+										degree: edu.degree || '',
+										institution: edu.institution || '',
+										period: edu.year || ''
+									})) || [],
+									skills: resumeData?.skills || [],
+									contact: {
+										email: resumeData?.email || '',
+										phone: resumeData?.phone || '',
+										location: resumeData?.location || ''
+									}
+								}}
+								customizable={true}
+								{selectedTemplate}
+								{selectedTheme}
+								customization={templateCustomization}
+								on:templateChange={handleTemplateChange}
+								on:themeChange={handleThemeChange}
+								on:customizationChange={handleCustomizationChange}
+							/>
+
+							{#if showAdvancedCustomization}
+								<div class="mt-6 pt-6 border-t border-indigo-200 dark:border-indigo-700">
+									<TemplateCustomizer
+										{selectedTemplate}
+										customization={templateCustomization}
+										on:update={handleCustomizationChange}
+									/>
+								</div>
+							{/if}
+						</div>
 					</div>
 				{/if}
 			</div>

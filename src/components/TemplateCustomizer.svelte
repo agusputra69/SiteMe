@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Palette, Type, Layout, Download, Eye, RotateCcw } from 'lucide-svelte';
+	import { Palette, Type, Layout, Download, Eye, RotateCcw, GripVertical, Move, Sliders } from 'lucide-svelte';
 
 	const dispatch = createEventDispatcher();
 
@@ -15,7 +15,14 @@
 		shadow: 'medium',
 		accentColor: '#3B82F6',
 		textColor: '#1F2937',
-		backgroundColor: '#FFFFFF'
+		backgroundColor: '#FFFFFF',
+		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+		lineHeight: 'normal',
+		letterSpacing: 'normal',
+		headingFont: 'same',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
 	};
 
 	const themes = [
@@ -30,10 +37,54 @@
 	];
 
 	const fontFamilies = [
-		{ value: 'inter', label: 'Inter (Modern)', class: 'font-sans' },
-		{ value: 'serif', label: 'Times (Classic)', class: 'font-serif' },
-		{ value: 'mono', label: 'Mono (Technical)', class: 'font-mono' },
-		{ value: 'poppins', label: 'Poppins (Friendly)', class: 'font-sans' }
+		{ value: 'inter', label: 'Inter (Modern)', class: 'font-sans', preview: 'Modern & Clean' },
+		{ value: 'serif', label: 'Times (Classic)', class: 'font-serif', preview: 'Traditional & Elegant' },
+		{ value: 'mono', label: 'Mono (Technical)', class: 'font-mono', preview: 'Code & Technical' },
+		{ value: 'poppins', label: 'Poppins (Friendly)', class: 'font-sans', preview: 'Rounded & Approachable' },
+		{ value: 'playfair', label: 'Playfair (Luxury)', class: 'font-serif', preview: 'Sophisticated & Bold' },
+		{ value: 'roboto', label: 'Roboto (Google)', class: 'font-sans', preview: 'Neutral & Readable' }
+	];
+
+	const headingFonts = [
+		{ value: 'same', label: 'Same as Body' },
+		{ value: 'serif', label: 'Serif Headings' },
+		{ value: 'sans', label: 'Sans-serif Headings' },
+		{ value: 'display', label: 'Display Font' }
+	];
+
+	const lineHeightOptions = [
+		{ value: 'tight', label: 'Tight', class: 'leading-tight' },
+		{ value: 'normal', label: 'Normal', class: 'leading-normal' },
+		{ value: 'relaxed', label: 'Relaxed', class: 'leading-relaxed' },
+		{ value: 'loose', label: 'Loose', class: 'leading-loose' }
+	];
+
+	const letterSpacingOptions = [
+		{ value: 'tight', label: 'Tight', class: 'tracking-tight' },
+		{ value: 'normal', label: 'Normal', class: 'tracking-normal' },
+		{ value: 'wide', label: 'Wide', class: 'tracking-wide' },
+		{ value: 'wider', label: 'Wider', class: 'tracking-wider' }
+	];
+
+	const containerWidthOptions = [
+		{ value: 'narrow', label: 'Narrow (600px)', class: 'max-w-2xl' },
+		{ value: 'standard', label: 'Standard (800px)', class: 'max-w-4xl' },
+		{ value: 'wide', label: 'Wide (1000px)', class: 'max-w-5xl' },
+		{ value: 'full', label: 'Full Width', class: 'max-w-full' }
+	];
+
+	const verticalSpacingOptions = [
+		{ value: 'compact', label: 'Compact', class: 'space-y-4' },
+		{ value: 'normal', label: 'Normal', class: 'space-y-6' },
+		{ value: 'relaxed', label: 'Relaxed', class: 'space-y-8' },
+		{ value: 'spacious', label: 'Spacious', class: 'space-y-12' }
+	];
+
+	const horizontalPaddingOptions = [
+		{ value: 'minimal', label: 'Minimal', class: 'px-4' },
+		{ value: 'normal', label: 'Normal', class: 'px-6' },
+		{ value: 'generous', label: 'Generous', class: 'px-8' },
+		{ value: 'maximum', label: 'Maximum', class: 'px-12' }
 	];
 
 	const fontSizes = [
@@ -73,6 +124,18 @@
 	];
 
 	let activeTab = 'colors';
+	let draggedIndex = -1;
+	let dragOverIndex = -1;
+
+	// Section labels for display
+	const sectionLabels: { [key: string]: string } = {
+		header: 'Header & Contact',
+		about: 'About/Summary',
+		experience: 'Work Experience',
+		education: 'Education',
+		skills: 'Skills',
+		contact: 'Contact Information'
+	};
 
 	function updateCustomization(key: string, value: any) {
 		customization = { ...customization, [key]: value };
@@ -90,9 +153,50 @@
 			shadow: 'medium',
 			accentColor: '#3B82F6',
 			textColor: '#1F2937',
-			backgroundColor: '#FFFFFF'
+			backgroundColor: '#FFFFFF',
+			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+			lineHeight: 'normal',
+			letterSpacing: 'normal',
+			headingFont: 'same',
+			containerWidth: 'standard',
+			verticalSpacing: 'normal',
+			horizontalPadding: 'normal'
 		};
 		dispatch('update', customization);
+	}
+
+	// Drag and drop functions for section reordering
+	function handleDragStart(event: DragEvent, index: number) {
+		draggedIndex = index;
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+		}
+	}
+
+	function handleDragOver(event: DragEvent, index: number) {
+		event.preventDefault();
+		dragOverIndex = index;
+	}
+
+	function handleDragLeave() {
+		dragOverIndex = -1;
+	}
+
+	function handleDrop(event: DragEvent, dropIndex: number) {
+		event.preventDefault();
+		if (draggedIndex !== -1 && draggedIndex !== dropIndex) {
+			const newOrder = [...customization.sectionOrder];
+			const draggedItem = newOrder.splice(draggedIndex, 1)[0];
+			newOrder.splice(dropIndex, 0, draggedItem);
+			updateCustomization('sectionOrder', newOrder);
+		}
+		draggedIndex = -1;
+		dragOverIndex = -1;
+	}
+
+	function handleDragEnd() {
+		draggedIndex = -1;
+		dragOverIndex = -1;
 	}
 
 	function exportCustomization() {
@@ -186,9 +290,21 @@
 			class:border-transparent={activeTab !== 'spacing'}
 			class:text-gray-500={activeTab !== 'spacing'}
 		>
-			<Layout class="w-4 h-4 mr-1 sm:mr-2" />
+			<Sliders class="w-4 h-4 mr-1 sm:mr-2" />
 			<span class="hidden sm:inline">Spacing & Effects</span>
 			<span class="sm:hidden">Effects</span>
+		</button>
+		<button
+			on:click={() => activeTab = 'sections'}
+			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
+			class:border-blue-500={activeTab === 'sections'}
+			class:text-blue-600={activeTab === 'sections'}
+			class:border-transparent={activeTab !== 'sections'}
+			class:text-gray-500={activeTab !== 'sections'}
+		>
+			<Move class="w-4 h-4 mr-1 sm:mr-2" />
+			<span class="hidden sm:inline">Section Order</span>
+			<span class="sm:hidden">Sections</span>
 		</button>
 	</div>
 
@@ -262,7 +378,7 @@
 			<!-- Font Family -->
 			<fieldset>
 				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Font Family
+					Body Font Family
 				</legend>
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 					{#each fontFamilies as font}
@@ -275,7 +391,28 @@
 							aria-label="Set font family to {font.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{font.label}</div>
-							<div class="text-sm text-gray-500 dark:text-gray-400">The quick brown fox</div>
+							<div class="text-sm text-gray-500 dark:text-gray-400">{font.preview}</div>
+						</button>
+					{/each}
+				</div>
+			</fieldset>
+
+			<!-- Heading Font -->
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					Heading Font
+				</legend>
+				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					{#each headingFonts as font}
+						<button
+							on:click={() => updateCustomization('headingFont', font.value)}
+							class="p-3 text-center rounded-lg border-2 transition-all"
+							class:border-blue-500={customization.headingFont === font.value}
+							class:border-gray-200={customization.headingFont !== font.value}
+							class:dark:border-gray-600={customization.headingFont !== font.value}
+							aria-label="Set heading font to {font.label}"
+						>
+							<div class="font-medium text-gray-900 dark:text-white text-sm">{font.label}</div>
 						</button>
 					{/each}
 				</div>
@@ -298,6 +435,49 @@
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{size.label}</div>
 							<div class="text-gray-500 dark:text-gray-400">Sample text</div>
+						</button>
+					{/each}
+				</div>
+			</fieldset>
+
+			<!-- Line Height -->
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					Line Height
+				</legend>
+				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					{#each lineHeightOptions as option}
+						<button
+							on:click={() => updateCustomization('lineHeight', option.value)}
+							class="p-3 text-center rounded-lg border-2 transition-all"
+							class:border-blue-500={customization.lineHeight === option.value}
+							class:border-gray-200={customization.lineHeight !== option.value}
+							class:dark:border-gray-600={customization.lineHeight !== option.value}
+							aria-label="Set line height to {option.label}"
+						>
+							<div class="font-medium text-gray-900 dark:text-white text-sm">{option.label}</div>
+						</button>
+					{/each}
+				</div>
+			</fieldset>
+
+			<!-- Letter Spacing -->
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					Letter Spacing
+				</legend>
+				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					{#each letterSpacingOptions as option}
+						<button
+							on:click={() => updateCustomization('letterSpacing', option.value)}
+							class="p-3 text-center rounded-lg border-2 transition-all {option.class}"
+							class:border-blue-500={customization.letterSpacing === option.value}
+							class:border-gray-200={customization.letterSpacing !== option.value}
+							class:dark:border-gray-600={customization.letterSpacing !== option.value}
+							aria-label="Set letter spacing to {option.label}"
+						>
+							<div class="font-medium text-gray-900 dark:text-white text-sm">{option.label}</div>
+							<div class="text-xs text-gray-500 dark:text-gray-400">Sample</div>
 						</button>
 					{/each}
 				</div>
@@ -326,13 +506,76 @@
 					{/each}
 				</div>
 			</fieldset>
+
+			<!-- Container Width -->
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					Container Width
+				</legend>
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					{#each containerWidthOptions as option}
+						<button
+							on:click={() => updateCustomization('containerWidth', option.value)}
+							class="p-3 text-left rounded-lg border-2 transition-all"
+							class:border-blue-500={customization.containerWidth === option.value}
+							class:border-gray-200={customization.containerWidth !== option.value}
+							class:dark:border-gray-600={customization.containerWidth !== option.value}
+							aria-label="Set container width to {option.label}"
+						>
+							<div class="font-medium text-gray-900 dark:text-white">{option.label}</div>
+						</button>
+					{/each}
+				</div>
+			</fieldset>
 		</div>
 	{:else if activeTab === 'spacing'}
 		<div class="space-y-6">
-			<!-- Spacing -->
+			<!-- Vertical Spacing -->
 			<fieldset>
 				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-					Spacing
+					Vertical Spacing
+				</legend>
+				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					{#each verticalSpacingOptions as spacing}
+						<button
+							on:click={() => updateCustomization('verticalSpacing', spacing.value)}
+							class="p-3 text-center rounded-lg border-2 transition-all"
+							class:border-blue-500={customization.verticalSpacing === spacing.value}
+							class:border-gray-200={customization.verticalSpacing !== spacing.value}
+							class:dark:border-gray-600={customization.verticalSpacing !== spacing.value}
+							aria-label="Set vertical spacing to {spacing.label}"
+						>
+							<div class="font-medium text-gray-900 dark:text-white">{spacing.label}</div>
+						</button>
+					{/each}
+				</div>
+			</fieldset>
+
+			<!-- Horizontal Padding -->
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					Horizontal Padding
+				</legend>
+				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					{#each horizontalPaddingOptions as padding}
+						<button
+							on:click={() => updateCustomization('horizontalPadding', padding.value)}
+							class="p-3 text-center rounded-lg border-2 transition-all"
+							class:border-blue-500={customization.horizontalPadding === padding.value}
+							class:border-gray-200={customization.horizontalPadding !== padding.value}
+							class:dark:border-gray-600={customization.horizontalPadding !== padding.value}
+							aria-label="Set horizontal padding to {padding.label}"
+						>
+							<div class="font-medium text-gray-900 dark:text-white">{padding.label}</div>
+						</button>
+					{/each}
+				</div>
+			</fieldset>
+
+			<!-- Legacy Spacing -->
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					General Spacing
 				</legend>
 				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					{#each spacingOptions as spacing}
@@ -391,6 +634,63 @@
 					{/each}
 				</div>
 			</fieldset>
+		</div>
+	{:else if activeTab === 'sections'}
+		<div class="space-y-6">
+			<!-- Section Reordering -->
+			<div>
+				<h4 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+					Drag to Reorder Sections
+				</h4>
+				<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+					Customize the order of sections in your profile by dragging them up or down.
+				</p>
+				<div class="space-y-2">
+					{#each customization.sectionOrder as section, index}
+						<div
+							draggable="true"
+							on:dragstart={(e) => handleDragStart(e, index)}
+							on:dragover={(e) => handleDragOver(e, index)}
+							on:dragleave={handleDragLeave}
+							on:drop={(e) => handleDrop(e, index)}
+							on:dragend={handleDragEnd}
+							class="flex items-center p-4 bg-white dark:bg-gray-700 rounded-lg border-2 transition-all cursor-move hover:shadow-md"
+							class:border-blue-500={dragOverIndex === index}
+							class:border-gray-200={dragOverIndex !== index}
+							class:dark:border-gray-600={dragOverIndex !== index}
+							class:opacity-50={draggedIndex === index}
+							class:scale-105={dragOverIndex === index && draggedIndex !== index}
+						>
+							<GripVertical class="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
+							<div class="flex-1">
+								<div class="font-medium text-gray-900 dark:text-white">
+									{sectionLabels[section] || section}
+								</div>
+								<div class="text-sm text-gray-500 dark:text-gray-400">
+									Position {index + 1}
+								</div>
+							</div>
+							<div class="text-sm text-gray-400 dark:text-gray-500">
+								{#if draggedIndex === index}
+									Dragging...
+								{:else}
+									Drag to move
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+				<div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+					<div class="flex items-start space-x-2">
+						<div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+							<span class="text-white text-xs font-bold">i</span>
+						</div>
+						<div class="text-sm text-blue-700 dark:text-blue-300">
+							<strong>Tip:</strong> The order you set here will be reflected in your published profile. The header section typically works best at the top, followed by your summary and experience.
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	{/if}
 </div>
