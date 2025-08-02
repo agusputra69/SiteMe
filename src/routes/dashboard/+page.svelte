@@ -6,6 +6,7 @@
   import { extractResumeData, type ResumeData } from '$lib/ai';
   import { goto } from '$app/navigation';
   import ProfileEditor from '../../components/ProfileEditor.svelte';
+  import { toasts } from '$lib/stores/toast';
   import { 
     Upload, 
     FileText, 
@@ -79,13 +80,14 @@
     if (!file) return;
 
     if (!validatePDFFile(file)) {
-      errorMessage = 'Please upload a valid PDF file (max 10MB)';
+      toasts.error('Please upload a valid PDF file (max 10MB)');
       return;
     }
 
     uploading = true;
     errorMessage = '';
     successMessage = '';
+    toasts.info('Starting PDF upload and processing...');
 
     try {
       console.log('Starting PDF processing...');
@@ -118,7 +120,7 @@
 
       if (error) {
         console.error('Database error:', error);
-        errorMessage = 'Failed to save profile data: ' + error.message;
+        toasts.error('Failed to save profile data: ' + error.message);
       } else {
         console.log('Database save successful, updating local state');
         console.log('Before assignment - resumeData:', resumeData);
@@ -126,15 +128,15 @@
         profile = { ...profile, data: extractedData, full_name: extractedData.name };
         console.log('After assignment - resumeData:', resumeData);
         console.log('Updated profile:', profile);
-        successMessage = 'Resume processed successfully!';
+        toasts.success('Resume processed successfully! Your profile has been updated.');
         // Don't reload profile to avoid overwriting the extracted data
       }
     } catch (error) {
       console.error('Error processing resume:', error);
       if (error instanceof Error) {
-        errorMessage = error.message;
+        toasts.error(error.message);
       } else {
-        errorMessage = 'Failed to process resume. Please try again.';
+        toasts.error('Failed to process resume. Please try again.');
       }
     } finally {
       uploading = false;
@@ -152,9 +154,12 @@
       const url = `${window.location.origin}/u/${profile.username}`;
       navigator.clipboard.writeText(url);
       copied = true;
+      toasts.success('Profile URL copied to clipboard!');
       setTimeout(() => {
         copied = false;
       }, 2000);
+    } else {
+      toasts.warning('Please set a username first to get your profile URL');
     }
   }
 
@@ -189,6 +194,7 @@
     saving = true;
     errorMessage = '';
     successMessage = '';
+    toasts.info('Saving profile changes...');
 
     try {
       let photoUrl = eventData.resumeData.photo_url || profile?.photo_url;
@@ -214,11 +220,10 @@
       profile = { ...profile, data: updatedResumeData, full_name: updatedResumeData.full_name };
       resumeData = { ...resumeData, ...updatedResumeData };
       
-      successMessage = 'Profile updated successfully!';
-      setTimeout(() => successMessage = '', 3000);
+      toasts.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error saving profile:', error);
-      errorMessage = 'Failed to save profile. Please try again.';
+      toasts.error('Failed to save profile. Please try again.');
     } finally {
       saving = false;
     }

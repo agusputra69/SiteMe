@@ -3,6 +3,7 @@
   import { supabase } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { ArrowLeft, Mail, Lock, Eye, EyeOff, Github } from 'lucide-svelte';
+  import { toasts } from '$lib/stores/toast';
 
   let email = '';
   let password = '';
@@ -22,7 +23,7 @@
 
   async function handleEmailLogin() {
     if (!email || !password) {
-      errorMessage = 'Please fill in all fields';
+      toasts.error('Please fill in all fields');
       return;
     }
 
@@ -36,15 +37,15 @@
       });
 
       if (error) {
-        errorMessage = error.message;
+        toasts.error(error.message);
       } else {
-        successMessage = 'Login successful! Redirecting...';
+        toasts.success('Login successful! Redirecting...');
         setTimeout(() => {
           goto('/dashboard');
         }, 1000);
       }
     } catch (error) {
-      errorMessage = 'An unexpected error occurred';
+      toasts.error('An unexpected error occurred');
     } finally {
       loading = false;
     }
@@ -63,11 +64,13 @@
       });
 
       if (error) {
-        errorMessage = error.message;
+        toasts.error(error.message);
         loading = false;
+      } else {
+        toasts.info('Redirecting to GitHub for authentication...');
       }
     } catch (error) {
-      errorMessage = 'An unexpected error occurred';
+      toasts.error('An unexpected error occurred');
       loading = false;
     }
   }

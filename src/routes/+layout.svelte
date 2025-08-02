@@ -4,6 +4,8 @@
   import { supabase } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import ToastContainer from '$lib/components/ToastContainer.svelte';
+  import { toasts } from '$lib/stores/toast';
   import '../app.css';
 
   let theme: 'light' | 'dark' = 'light';
@@ -72,8 +74,13 @@
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    goto('/');
+    try {
+      await supabase.auth.signOut();
+      toasts.success('Successfully logged out');
+      goto('/');
+    } catch (error) {
+      toasts.error('Failed to log out');
+    }
   }
 </script>
 
@@ -276,4 +283,7 @@
     </div>
   </footer>
   -->
+  
+  <!-- Toast Container -->
+  <ToastContainer />
 </div>

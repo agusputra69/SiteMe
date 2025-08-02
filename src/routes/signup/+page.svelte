@@ -3,6 +3,7 @@
   import { supabase } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { ArrowLeft, Mail, Lock, Eye, EyeOff, Github, User } from 'lucide-svelte';
+  import { toasts } from '$lib/stores/toast';
 
   let email = '';
   let password = '';
@@ -25,17 +26,17 @@
 
   async function handleSignup() {
     if (!email || !password || !confirmPassword || !fullName) {
-      errorMessage = 'Please fill in all fields';
+      toasts.error('Please fill in all fields');
       return;
     }
 
     if (password !== confirmPassword) {
-      errorMessage = 'Passwords do not match';
+      toasts.error('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      errorMessage = 'Password must be at least 6 characters';
+      toasts.error('Password must be at least 6 characters');
       return;
     }
 
@@ -54,15 +55,15 @@
       });
 
       if (error) {
-        errorMessage = error.message;
+        toasts.error(error.message);
       } else {
-        successMessage = 'Account created successfully! Please check your email to verify your account.';
+        toasts.success('Account created successfully! Please check your email to verify your account.', { duration: 6000 });
         setTimeout(() => {
           goto('/login');
         }, 3000);
       }
     } catch (error) {
-      errorMessage = 'An unexpected error occurred';
+      toasts.error('An unexpected error occurred');
     } finally {
       loading = false;
     }
@@ -81,11 +82,13 @@
       });
 
       if (error) {
-        errorMessage = error.message;
+        toasts.error(error.message);
         loading = false;
+      } else {
+        toasts.info('Redirecting to GitHub for authentication...');
       }
     } catch (error) {
-      errorMessage = 'An unexpected error occurred';
+      toasts.error('An unexpected error occurred');
       loading = false;
     }
   }
