@@ -1213,6 +1213,446 @@
 						{/if}
 					</div>
 
+				{:else if activeTab === 'certifications'}
+					<!-- Certifications Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Award class="w-6 h-6 text-yellow-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Certifications</h4>
+							</div>
+							<button
+								on:click={addCertification}
+								class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Certification
+							</button>
+						</div>
+
+						{#if resumeData.certifications && resumeData.certifications.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.certifications as cert, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													{index + 1}
+												</span>
+												Certification {index + 1}
+											</h6>
+											<button
+												on:click={() => removeCertification(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label for="cert-name-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Certification Name
+												</label>
+												<input
+													id="cert-name-{index}"
+													type="text"
+													bind:value={cert.name}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="AWS Certified Solutions Architect"
+												/>
+											</div>
+											<div>
+												<label for="cert-issuer-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Issuing Organization
+												</label>
+												<input
+													id="cert-issuer-{index}"
+													type="text"
+													bind:value={cert.issuer}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="Amazon Web Services"
+												/>
+											</div>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label for="cert-date-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Date Obtained
+												</label>
+												<input
+													id="cert-date-{index}"
+													type="text"
+													bind:value={cert.date}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="January 2024"
+												/>
+											</div>
+											<div>
+												<label for="cert-credential-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Credential ID
+												</label>
+												<input
+													id="cert-credential-{index}"
+													type="text"
+													bind:value={cert.credentialId}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="ABC123XYZ"
+												/>
+											</div>
+										</div>
+										<div>
+											<label for="cert-description-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Description (Optional)
+											</label>
+											<textarea
+												id="cert-description-{index}"
+												bind:value={cert.description}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+												placeholder="Brief description of the certification..."
+												rows="3"
+											></textarea>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Award class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No certifications added yet</p>
+								<button
+									on:click={addCertification}
+									class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Certification
+								</button>
+							</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'languages'}
+					<!-- Languages Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Globe class="w-6 h-6 text-blue-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Languages</h4>
+							</div>
+							<button
+								on:click={addLanguage}
+								class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Language
+							</button>
+						</div>
+
+						{#if resumeData.languages && resumeData.languages.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.languages as lang, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													{index + 1}
+												</span>
+												Language {index + 1}
+											</h6>
+											<button
+												on:click={() => removeLanguage(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<label for="language-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Language
+												</label>
+												<input
+													id="language-{index}"
+													type="text"
+													bind:value={lang.language}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+													placeholder="English"
+												/>
+											</div>
+											<div>
+												<label for="proficiency-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Proficiency Level
+												</label>
+												<select
+													id="proficiency-{index}"
+													bind:value={lang.proficiency}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+												>
+													<option value="">Select proficiency</option>
+													<option value="Native">Native</option>
+													<option value="Fluent">Fluent</option>
+													<option value="Advanced">Advanced</option>
+													<option value="Intermediate">Intermediate</option>
+													<option value="Basic">Basic</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Globe class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No languages added yet</p>
+								<button
+									on:click={addLanguage}
+									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Language
+								</button>
+							</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'projects'}
+					<!-- Projects Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Code class="w-6 h-6 text-indigo-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Projects</h4>
+							</div>
+							<button
+								on:click={addProject}
+								class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Project
+							</button>
+						</div>
+
+						{#if resumeData.projects && resumeData.projects.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.projects as project, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													{index + 1}
+												</span>
+												Project {index + 1}
+											</h6>
+											<button
+												on:click={() => removeProject(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label for="project-name-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Project Name
+												</label>
+												<input
+													id="project-name-{index}"
+													type="text"
+													bind:value={project.name}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+													placeholder="E-commerce Website"
+												/>
+											</div>
+											<div>
+												<label for="project-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Project URL (Optional)
+												</label>
+												<input
+													id="project-url-{index}"
+													type="url"
+													bind:value={project.url}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+													placeholder="https://github.com/username/project"
+												/>
+											</div>
+										</div>
+										<div class="mb-4">
+											<label for="project-duration-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Duration
+											</label>
+											<input
+												id="project-duration-{index}"
+												type="text"
+												bind:value={project.duration}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+												placeholder="3 months"
+											/>
+										</div>
+										<div class="mb-4">
+											<label for="project-description-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Description
+											</label>
+											<textarea
+												id="project-description-{index}"
+												bind:value={project.description}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+												placeholder="Describe your project, its features, and your role..."
+												rows="4"
+											></textarea>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Technologies Used
+											</label>
+											<div class="space-y-2">
+												{#each project.technologies as tech, techIndex}
+													<div class="flex items-center gap-2">
+														<input
+															type="text"
+															bind:value={tech}
+															class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+															placeholder="React, Node.js, MongoDB..."
+														/>
+														<button
+															on:click={() => {
+																project.technologies = project.technologies.filter((_, i) => i !== techIndex);
+															}}
+															class="text-red-600 hover:text-red-700 p-1"
+														>
+															<Trash2 class="w-4 h-4" />
+														</button>
+													</div>
+												{/each}
+												<button
+													on:click={() => {
+														project.technologies = [...project.technologies, ''];
+													}}
+													class="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+												>
+													+ Add Technology
+												</button>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Code class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No projects added yet</p>
+								<button
+									on:click={addProject}
+									class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Project
+								</button>
+							</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'awards'}
+					<!-- Awards Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Trophy class="w-6 h-6 text-orange-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Awards & Recognitions</h4>
+							</div>
+							<button
+								on:click={addAward}
+								class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Award
+							</button>
+						</div>
+
+						{#if resumeData.awards && resumeData.awards.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.awards as award, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													{index + 1}
+												</span>
+												Award {index + 1}
+											</h6>
+											<button
+												on:click={() => removeAward(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label for="award-title-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Award Title
+												</label>
+												<input
+													id="award-title-{index}"
+													type="text"
+													bind:value={award.title}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+													placeholder="Employee of the Year"
+												/>
+											</div>
+											<div>
+												<label for="award-organization-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Organization
+												</label>
+												<input
+													id="award-organization-{index}"
+													type="text"
+													bind:value={award.organization}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+													placeholder="Company Name"
+												/>
+											</div>
+										</div>
+										<div class="mb-4">
+											<label for="award-date-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Date Received
+											</label>
+											<input
+												id="award-date-{index}"
+												type="text"
+												bind:value={award.date}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+												placeholder="December 2023"
+											/>
+										</div>
+										<div>
+											<label for="award-description-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Description (Optional)
+											</label>
+											<textarea
+												id="award-description-{index}"
+												bind:value={award.description}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+												placeholder="Brief description of the award and achievement..."
+												rows="3"
+											></textarea>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Trophy class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No awards added yet</p>
+								<button
+									on:click={addAward}
+									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Award
+								</button>
+							</div>
+						{/if}
+					</div>
+
 				{:else if activeTab === 'skills'}
 					<!-- Skills & Links Tab -->
 					<div class="space-y-6">

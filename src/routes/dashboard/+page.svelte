@@ -132,6 +132,13 @@
     const file = target.files?.[0];
     
     if (!file) return;
+    
+    // Check if user is authenticated before processing
+    if (!user || !user.id) {
+      toasts.error('Please log in to upload a resume.');
+      goto('/login');
+      return;
+    }
 
     // Enhanced validation with detailed error messages
     const validation = validatePDFFile(file);
@@ -321,6 +328,12 @@
       processingProgress = 80;
       
       console.log('Starting database save...');
+      
+      // Check if user is available
+      if (!user || !user.id) {
+        throw new Error('User session not found. Please log in again.');
+      }
+      
       console.log('User ID:', user.id);
       console.log('Data to save:', extractedData);
       

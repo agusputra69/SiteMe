@@ -199,12 +199,12 @@
         <!-- Logo / Dashboard Title -->
         {#if isOnDashboard}
           <div class="flex items-center space-x-4">
-            <a href="/" class="flex items-center space-x-2" aria-label="Return to dashboard">
+            <a href="/dashboard" class="flex items-center space-x-2" aria-label="Go to dashboard home">
               <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center" role="img" aria-label="SiteMe logo">
                 <span class="text-white font-bold text-lg">S</span>
               </div>
+              <span class="text-xl font-bold text-gray-900 dark:text-white">SiteMe</span>
             </a>
-
           </div>
         {:else}
           <a href="/" class="flex items-center space-x-2 group transition-all duration-300 hover:scale-105" aria-label="Go to SiteMe homepage">
@@ -218,29 +218,26 @@
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center space-x-8" role="navigation" aria-label="Main navigation">
           {#if isOnDashboard}
-            <!-- Dashboard Navigation -->
+            <!-- Dashboard Navigation - Simplified and more relevant -->
             <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/dashboard' ? 'page' : undefined}>
-              Dashboard
+              My Resume
             </a>
             <a href="/dashboard/profile" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/dashboard/profile' ? 'page' : undefined}>
-              Profile Editor
+              Edit Profile
+            </a>
+            <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/templates' ? 'page' : undefined}>
+              Choose Template
+            </a>
+          {:else}
+            <!-- Marketing Navigation - Streamlined -->
+            <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/features' ? 'page' : undefined}>
+              Features
             </a>
             <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/templates' ? 'page' : undefined}>
               Templates
             </a>
-          {:else}
-            <!-- Marketing Navigation -->
-            <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/features' ? 'page' : undefined}>
-              Features
-            </a>
-            <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/template' ? 'page' : undefined}>
-              Template
-            </a>
             <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/pricing' ? 'page' : undefined}>
               Pricing
-            </a>
-            <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" aria-current={$page.url.pathname === '/docs' ? 'page' : undefined}>
-              Docs
             </a>
           {/if}
         </nav>
@@ -265,15 +262,15 @@
           <div class="hidden md:flex items-center space-x-2 lg:space-x-3">
             {#if user}
               {#if isOnDashboard}
-                <!-- Dashboard-specific actions -->
+                <!-- Dashboard-specific actions - Improved UX -->
                 {#if profile?.username}
                   <div class="flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span class="text-xs font-medium text-green-700 dark:text-green-300">Live</span>
+                    <span class="text-xs font-medium text-green-700 dark:text-green-300">Published</span>
                   </div>
                   <button
                     on:click={copyProfileUrl}
-                    class="inline-flex items-center px-2 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                    class="inline-flex items-center px-2 lg:px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200"
                     aria-label="{copied ? 'Profile URL copied to clipboard' : 'Copy profile URL to clipboard'}"
                     aria-pressed={copied}
                   >
@@ -282,9 +279,14 @@
                       <span class="hidden lg:inline">Copied!</span>
                     {:else}
                       <Copy class="w-4 h-4 lg:mr-2" aria-hidden="true" />
-                      <span class="hidden lg:inline">Share</span>
+                      <span class="hidden lg:inline">Share URL</span>
                     {/if}
                   </button>
+                {:else}
+                  <div class="flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-full">
+                    <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span class="text-xs font-medium text-orange-700 dark:text-orange-300">Draft</span>
+                  </div>
                 {/if}
                 <button
                   on:click={handleLogout}
@@ -333,29 +335,26 @@
         <div class="py-4 border-t border-gray-200 dark:border-gray-700">
           <nav class="flex flex-col space-y-4 transform transition-transform duration-300 {mobileMenuOpen ? 'translate-y-0' : '-translate-y-4'}">
             {#if isOnDashboard}
-              <!-- Dashboard Mobile Navigation -->
+              <!-- Dashboard Mobile Navigation - Simplified -->
               <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-                Dashboard
+                My Resume
               </a>
               <a href="/dashboard/profile" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-                Profile Editor
+                Edit Profile
+              </a>
+              <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Choose Template
+              </a>
+            {:else}
+              <!-- Marketing Mobile Navigation - Streamlined -->
+              <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                Features
               </a>
               <a href="/templates" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
                 Templates
               </a>
-            {:else}
-              <!-- Marketing Mobile Navigation -->
-              <a href="/features" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-                Features
-              </a>
-              <a href="/template" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-                Template
-              </a>
               <a href="/pricing" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
                 Pricing
-              </a>
-              <a href="/docs" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
-                Docs
               </a>
             {/if}
             <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
