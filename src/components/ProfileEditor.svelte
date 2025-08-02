@@ -613,25 +613,27 @@
 				<TemplateSelector
 				profileData={{
 					name: resumeData?.name || '',
-					avatar: '',
+					avatar: profilePhotoUrl || resumeData?.photo_url || '',
 					about: resumeData?.summary || '',
 					workExperience: resumeData?.experience?.map(exp => ({
 						title: exp.title || '',
 						company: exp.company || '',
-						duration: exp.duration || '',
-						description: exp.description || '',
-						type: exp.type || 'full-time',
-						period: exp.period || exp.duration || '',
-						current: exp.current || false
+						type: 'full-time',
+						period: exp.duration || '',
+						current: false,
+						description: exp.description || ''
 					})) || [],
 					education: resumeData?.education?.map(edu => ({
 						degree: edu.degree || '',
 						institution: edu.institution || '',
-						year: edu.year || '',
-						period: edu.period || edu.year || ''
+						period: edu.year || ''
 					})) || [],
 					skills: resumeData?.skills || [],
-					links: resumeData?.links || []
+					contact: {
+						email: resumeData?.email || '',
+						phone: resumeData?.phone || '',
+						location: resumeData?.location || ''
+					}
 				}}
 				customizable={true}
 				{selectedTemplate}
