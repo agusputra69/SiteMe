@@ -252,6 +252,130 @@
       saving = false;
     }
   }
+
+  async function handleDeleteData() {
+    console.log('Delete button clicked');
+    console.log('Current user:', user);
+    console.log('Current profile:', profile);
+    console.log('Current resumeData:', resumeData);
+    
+    // Check if user is authenticated
+    if (!user || !user.id) {
+      toasts.error('❌ User not authenticated. Please log in again.');
+      return;
+    }
+    
+    // Check Supabase connection
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session);
+      if (!session) {
+        toasts.error('❌ Session expired. Please log in again.');
+        goto('/login');
+        return;
+      }
+    } catch (sessionError) {
+      console.error('Session check failed:', sessionError);
+      toasts.error('❌ Connection error. Please check your internet connection.');
+      return;
+    }
+    
+    // Double confirmation for safety
+    const firstConfirm = confirm('⚠️ WARNING: This will permanently delete ALL your profile data!\n\nThis includes:\n• Personal information\n• Work experience\n• Education\n• Skills\n• All uploaded content\n\nAre you sure you want to continue?');
+    
+    if (!firstConfirm) {
+      console.log('User cancelled first confirmation');
+      return;
+    }
+
+    const secondConfirm = confirm('This action CANNOT be undone!\n\nType confirmation: Are you absolutely sure you want to delete everything?');
+    
+    if (!secondConfirm) {
+      console.log('User cancelled second confirmation');
+      return;
+    }
+
+    loading = true;
+    console.log('Starting deletion process...');
+    toasts.info('Deleting all profile data...');
+
+    try {
+      console.log('Starting data deletion for user:', user.id);
+      console.log('Profile before deletion:', profile);
+      
+      // Test Supabase connection first
+      console.log('Testing Supabase connection...');
+      const { data: testData, error: testError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      
+      if (testError && testError.code !== 'PGRST116') { // PGRST116 is "not found" which is ok
+        console.error('Supabase connection test failed:', testError);
+        throw new Error(`Database connection failed: ${testError.message}`);
+      }
+      
+      console.log('Supabase connection test passed');
+      
+      // Clear profile data in database using direct Supabase call
+      console.log('Updating profile with null data...');
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .upsert({ 
+          id: user.id, 
+          data: null, 
+          full_name: null 
+        })
+        .select()
+        .single();
+      
+      console.log('Direct Supabase update result:', { data: updateData, error: updateError });
+      
+      if (updateError) {
+        console.error('Database deletion error:', updateError);
+        throw new Error(`Failed to update database: ${updateError.message}`);
+      }
+
+      console.log('Database cleared successfully, updated profile:', updateData);
+
+      // Reset local state
+      const emptyResumeData = {
+        name: '',
+        email: '',
+        phone: '',
+        location: '',
+        summary: '',
+        experience: [],
+        education: [],
+        skills: [],
+        links: []
+      };
+      
+      resumeData = emptyResumeData;
+      profile = { ...profile, data: null, full_name: null };
+      
+      console.log('Local state reset successfully');
+      console.log('New resumeData:', resumeData);
+      console.log('New profile:', profile);
+      
+      toasts.success('✅ All profile data deleted successfully! You can now start fresh.');
+      
+      // Force a page refresh to ensure clean state
+      setTimeout(() => {
+        console.log('Refreshing page...');
+        window.location.reload();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error deleting profile data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toasts.error(`❌ Failed to delete profile data: ${errorMessage}`);
+    } finally {
+      loading = false;
+      console.log('Delete process completed, loading set to false');
+    }
+  }
 </script>
 
 <svelte:head>
@@ -259,158 +383,256 @@
   <meta name="description" content="Manage your SiteMe profile" />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-  <!-- Header -->
-  <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-    <div class="container mx-auto px-4">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-4">
-          <!-- Logo removed to avoid redundancy with main layout -->
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-16">
+  <div class="container mx-auto px-4 py-6">
+    <!-- Welcome Section -->
+    <div class="mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Welcome back, {resumeData?.name || user?.email?.split('@')[0] || 'there'}! 👋
+          </h2>
+          <p class="text-gray-600 dark:text-gray-300">
+            {profile?.username ? `Your site is live at siteme.app/u/${profile.username}` : 'Let\'s get your professional website set up'}
+          </p>
+        </div>
+        {#if profile?.username}
+          <div class="mt-4 sm:mt-0">
+            <a 
+              href="/u/{profile.username}" 
+              target="_blank"
+              class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <Eye class="w-4 h-4 mr-2" />
+              View Live Site
+            </a>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Profile Status</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                {resumeData?.name ? 'Complete' : 'Pending'}
+              </p>
+            </div>
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <User class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-          {#if profile?.username}
-            <button
-              on:click={copyProfileUrl}
-              class="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              {#if copied}
-                <Check class="w-4 h-4 mr-1 sm:mr-2" />
-                <span class="hidden sm:inline">Copied!</span>
-                <span class="sm:hidden">Copied</span>
-              {:else}
-                <Copy class="w-4 h-4 mr-1 sm:mr-2" />
-                <span class="hidden sm:inline">Copy URL</span>
-                <span class="sm:hidden">Copy</span>
-              {/if}
-            </button>
-          {/if}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Experience</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                {resumeData?.experience?.length || 0}
+              </p>
+            </div>
+            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <FileText class="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
 
-          <button
-            on:click={handleLogout}
-            class="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-          >
-            <LogOut class="w-4 h-4 mr-1 sm:mr-2" />
-            <span class="hidden sm:inline">Sign Out</span>
-            <span class="sm:hidden">Out</span>
-          </button>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Skills</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                {resumeData?.skills?.length || 0}
+              </p>
+            </div>
+            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+              <Sparkles class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Site Status</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                {profile?.username ? 'Live' : 'Draft'}
+              </p>
+            </div>
+            <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <Globe class="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </header>
 
-  <div class="container mx-auto px-4 py-4 sm:py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-      <!-- Sidebar -->
-      <div class="lg:col-span-1">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
-          <div class="flex items-center space-x-3 mb-4 sm:mb-6">
-            <div class="w-10 sm:w-12 h-10 sm:h-12 bg-blue-600 rounded-full flex items-center justify-center">
-              <User class="w-5 sm:w-6 h-5 sm:h-6 text-white" />
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+      <!-- Quick Actions -->
+      <div class="xl:col-span-2 space-y-6">
+        <!-- Getting Started Section -->
+        <div id="upload" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Sparkles class="w-8 h-8 text-white" />
             </div>
-            <div class="min-w-0 flex-1">
-              <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
-                {user?.email || 'User'}
-              </h2>
-              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 truncate">
-                {profile?.username ? `@${profile.username}` : 'No username set'}
-              </p>
-            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Get Started
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
+              Choose how you'd like to create your professional website
+            </p>
           </div>
 
-          <nav class="space-y-1 sm:space-y-2">
-            <a href="#upload" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Upload class="w-4 sm:w-5 h-4 sm:h-5" />
-              <span>Upload Resume</span>
-            </a>
-            <a href="#profile" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Edit3 class="w-4 sm:w-5 h-4 sm:h-5" />
-              <span>Edit Profile</span>
-            </a>
-            <a href="#preview" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Eye class="w-4 sm:w-5 h-4 sm:h-5" />
-              <span>Preview</span>
-            </a>
-            <a href="#settings" class="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Settings class="w-4 sm:w-5 h-4 sm:h-5" />
-              <span>Settings</span>
-            </a>
-          </nav>
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div class="lg:col-span-2 space-y-4 sm:space-y-6">
-        <!-- Upload Section -->
-        <div id="upload" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
-          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
-            Upload Resume
-          </h3>
-
           {#if errorMessage}
-            <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
               <p class="text-red-600 dark:text-red-400 text-sm">{errorMessage}</p>
             </div>
           {/if}
 
           {#if successMessage}
-            <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
               <p class="text-green-600 dark:text-green-400 text-sm">{successMessage}</p>
             </div>
           {/if}
 
-          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 sm:p-8 text-center">
-            <Upload class="w-8 sm:w-12 h-8 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
-            <h4 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Upload your resume
-            </h4>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
-              Upload a PDF resume and our AI will extract your information
-            </p>
-            
-            {#if uploading || processing}
-              <div class="flex items-center justify-center space-x-2">
-                {#if uploading}
-                  <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  <Upload class="w-5 h-5 text-blue-600 opacity-50" />
-                  <span class="text-gray-600 dark:text-gray-300">Uploading...</span>
-                {:else if processing}
-                  <div class="animate-pulse">
-                    <Sparkles class="w-5 h-5 text-yellow-500" />
-                  </div>
-                  <span class="text-gray-600 dark:text-gray-300">Processing with AI...</span>
-                {/if}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Upload PDF Option -->
+            <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+              <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Upload class="w-6 h-6 text-white" />
               </div>
-            {:else}
-              <label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25" data-tour="upload-button">
-                <FileText class="w-4 h-4 mr-2" />
-                Choose PDF
-                <input
-                  type="file"
-                  accept=".pdf"
-                  on:change={handleFileUpload}
-                  class="hidden"
-                />
-              </label>
-            {/if}
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Upload Resume
+              </h4>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                AI will extract your information automatically
+              </p>
+              
+              {#if uploading || processing}
+                <div class="flex flex-col items-center space-y-3">
+                  {#if uploading}
+                    <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Uploading...</span>
+                  {:else if processing}
+                    <div class="animate-pulse">
+                      <Sparkles class="w-6 h-6 text-yellow-500" />
+                    </div>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Processing...</span>
+                  {/if}
+                </div>
+              {:else}
+                <label class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg" data-tour="upload-button">
+                  <FileText class="w-4 h-4 mr-2" />
+                  Choose PDF
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    on:change={handleFileUpload}
+                    class="hidden"
+                  />
+                </label>
+              {/if}
+            </div>
+
+            <!-- LinkedIn Import Option -->
+            <div class="group relative bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800/50 dark:to-slate-800/50 border-2 border-gray-200 dark:border-gray-600 rounded-2xl p-6 text-center opacity-75">
+              <div class="w-12 h-12 bg-gray-400 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Globe class="w-6 h-6 text-white" />
+              </div>
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Import LinkedIn
+              </h4>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Export your LinkedIn profile data
+              </p>
+              <button class="inline-flex items-center px-4 py-2.5 bg-gray-400 text-white font-medium rounded-xl cursor-not-allowed" disabled>
+                Coming Soon
+              </button>
+            </div>
+
+            <!-- Manual Creation Option -->
+            <div class="group relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-6 text-center hover:border-green-400 dark:hover:border-green-500 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+              <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Edit3 class="w-6 h-6 text-white" />
+              </div>
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Build Manually
+              </h4>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Create your profile step by step
+              </p>
+              <button 
+                on:click={() => {
+                  resumeData = {
+                    name: '',
+                    email: '',
+                    phone: '',
+                    location: '',
+                    summary: '',
+                    experience: [],
+                    education: [],
+                    skills: [],
+                    links: []
+                  };
+                }}
+                class="inline-flex items-center px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg"
+              >
+                <User class="w-4 h-4 mr-2" />
+                Start Fresh
+              </button>
+            </div>
+          </div>
+
+          <!-- LinkedIn Export Instructions -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
+            <div class="flex items-start space-x-3">
+              <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-blue-600 dark:text-blue-400 text-sm font-bold">💡</span>
+              </div>
+              <div>
+                <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  How to export from LinkedIn:
+                </h5>
+                <ol class="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+                  <li>Go to your LinkedIn profile</li>
+                  <li>Click "More" → "Save to PDF"</li>
+                  <li>Upload the downloaded PDF here</li>
+                </ol>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Profile Data -->
         {#if resumeData}
-          <div id="profile" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6" data-tour="profile-editor">
+          <div id="profile" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6" data-tour="profile-editor">
             <div class="flex items-center justify-between mb-6">
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                Profile Data
-              </h3>
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+                  <User class="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    Profile Editor
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300">
+                    Manage your information
+                  </p>
+                </div>
+              </div>
               <button
                 on:click={togglePreview}
-                class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-700/80 backdrop-blur border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
                 data-tour="preview-button"
               >
                 {#if showPreview}
                   <Edit3 class="w-4 h-4 mr-2" />
-                  Edit
+                  Edit Mode
                 {:else}
                   <Eye class="w-4 h-4 mr-2" />
                   Preview
@@ -492,6 +714,85 @@
             {/if}
           </div>
         {/if}
+      </div>
+
+      <!-- Modern Sidebar -->
+      <div class="xl:col-span-1 space-y-6">
+        <!-- Quick Actions Card -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Quick Actions
+          </h3>
+          
+          <div class="space-y-3">
+            {#if profile?.username}
+              <button
+                on:click={copyProfileUrl}
+                class="w-full flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                {#if copied}
+                  <Check class="w-4 h-4 mr-2" />
+                  Copied!
+                {:else}
+                  <Copy class="w-4 h-4 mr-2" />
+                  Copy Profile URL
+                {/if}
+              </button>
+            {/if}
+            
+            <button
+              on:click={handleLogout}
+              class="w-full flex items-center justify-center px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-all duration-200"
+            >
+              <LogOut class="w-4 h-4 mr-2" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Management Card -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-red-200/50 dark:border-red-700/50 p-6">
+          <div class="flex items-center mb-4">
+            <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3">
+              <Settings class="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+              Data Management
+            </h3>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-6 h-6 bg-red-100 dark:bg-red-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span class="text-red-600 dark:text-red-400 text-sm font-bold">⚠️</span>
+                </div>
+                <div>
+                  <h4 class="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
+                    Danger Zone
+                  </h4>
+                  <p class="text-xs text-red-800 dark:text-red-200 mb-3">
+                    This will permanently delete ALL your profile data including personal info, experience, education, skills, and uploaded content. This action cannot be undone.
+                  </p>
+                  
+                  <button
+                    on:click={handleDeleteData}
+                    disabled={loading}
+                    class="w-full flex items-center justify-center px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    {#if loading}
+                      <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                      Deleting All Data...
+                    {:else}
+                      <Settings class="w-5 h-5 mr-2" />
+                      🗑️ Delete All Data
+                    {/if}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

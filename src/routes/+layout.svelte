@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Moon, Sun, Menu, X, User } from 'lucide-svelte';
+  import { Moon, Sun, Menu, X, User, Copy, Check, LogOut } from 'lucide-svelte';
   import { supabase } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
@@ -11,7 +11,9 @@
   let theme: 'light' | 'dark' = 'light';
   let mobileMenuOpen = false;
   let user: any = null;
+  let profile: any = null;
   let scrollProgress = 0;
+  let copied = false;
   
   $: isOnDashboard = $page.url.pathname.startsWith('/dashboard');
 
@@ -41,10 +43,19 @@
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       user = session?.user || null;
+      
+      if (user) {
+        await loadProfile();
+      }
 
       // Listen for auth changes
-      supabase.auth.onAuthStateChange((event, session) => {
+      supabase.auth.onAuthStateChange(async (event, session) => {
         user = session?.user || null;
+        if (user) {
+          await loadProfile();
+        } else {
+          profile = null;
+        }
       });
     })();
     
@@ -73,6 +84,42 @@
     mobileMenuOpen = !mobileMenuOpen;
   }
 
+  async function loadProfile() {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading profile:', error);
+        return;
+      }
+      
+      profile = data;
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  }
+
+  async function copyProfileUrl() {
+    if (!profile?.username) return;
+    
+    const url = `${window.location.origin}/u/${profile.username}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+      toasts.success('Profile URL copied to clipboard!');
+      setTimeout(() => {
+        copied = false;
+      }, 2000);
+    } catch (error) {
+      toasts.error('Failed to copy URL');
+    }
+  }
+
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
@@ -98,13 +145,32 @@
   <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
-        <!-- Logo -->
-        <a href="/" class="flex items-center space-x-2 group transition-all duration-300 hover:scale-105">
-          <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3">
-            <span class="text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300">S</span>
+        <!-- Logo / Dashboard Title -->
+        {#if isOnDashboard}
+          <div class="flex items-center space-x-4">
+            <a href="/" class="flex items-center space-x-2">
+              <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                <span class="text-white font-bold text-lg">S</span>
+              </div>
+            </a>
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <User class="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 class="text-lg font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Welcome back!</p>
+              </div>
+            </div>
           </div>
-          <span class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">SiteMe</span>
-        </a>
+        {:else}
+          <a href="/" class="flex items-center space-x-2 group transition-all duration-300 hover:scale-105">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3">
+              <span class="text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300">S</span>
+            </div>
+            <span class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">SiteMe</span>
+          </a>
+        {/if}
 
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center space-x-8">
@@ -123,7 +189,7 @@
         </nav>
 
         <!-- Right side actions -->
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2 lg:space-x-4">
           <!-- Theme toggle -->
           <button
             on:click={toggleTheme}
@@ -138,19 +204,46 @@
           </button>
 
           <!-- Auth buttons -->
-          <div class="hidden md:flex items-center space-x-3">
+          <div class="hidden md:flex items-center space-x-2 lg:space-x-3">
             {#if user}
-              {#if !isOnDashboard}
+              {#if isOnDashboard}
+                <!-- Dashboard-specific actions -->
+                {#if profile?.username}
+                  <div class="flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-xs font-medium text-green-700 dark:text-green-300">Live</span>
+                  </div>
+                  <button
+                    on:click={copyProfileUrl}
+                    class="inline-flex items-center px-2 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    {#if copied}
+                      <Check class="w-4 h-4 lg:mr-2" />
+                      <span class="hidden lg:inline">Copied!</span>
+                    {:else}
+                      <Copy class="w-4 h-4 lg:mr-2" />
+                      <span class="hidden lg:inline">Share</span>
+                    {/if}
+                  </button>
+                {/if}
+                <button
+                  on:click={handleLogout}
+                  class="inline-flex items-center px-2 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                >
+                  <LogOut class="w-4 h-4 lg:mr-2" />
+                  <span class="hidden lg:inline">Sign Out</span>
+                </button>
+              {:else}
                 <a href="/dashboard" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
                   Dashboard
                 </a>
+                <button
+                  on:click={handleLogout}
+                  class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Sign Out
+                </button>
               {/if}
-              <button
-                on:click={handleLogout}
-                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                Sign Out
-              </button>
             {:else}
                <a href="/login" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                  Sign In

@@ -196,10 +196,10 @@
 	{#if activeTab === 'colors'}
 		<div class="space-y-6">
 			<!-- Theme Selection -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Predefined Themes
-				</label>
+				</legend>
 				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					{#each themes as theme}
 						<button
@@ -208,21 +208,23 @@
 							class:border-blue-500={customization.theme === theme.name}
 							class:border-gray-200={customization.theme !== theme.name}
 							class:dark:border-gray-600={customization.theme !== theme.name}
+							aria-label="Select {theme.label} theme"
 						>
 							<div class="w-8 h-8 rounded-full mx-auto mb-2" style="background-color: {theme.color}"></div>
 							<div class="text-xs font-medium text-gray-700 dark:text-gray-300">{theme.label}</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Custom Colors -->
 			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="accent-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Accent Color
 					</label>
 					<input
+						id="accent-color"
 						type="color"
 						bind:value={customization.accentColor}
 						on:change={() => updateCustomization('accentColor', customization.accentColor)}
@@ -230,10 +232,11 @@
 					/>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="text-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Text Color
 					</label>
 					<input
+						id="text-color"
 						type="color"
 						bind:value={customization.textColor}
 						on:change={() => updateCustomization('textColor', customization.textColor)}
@@ -241,10 +244,11 @@
 					/>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="background-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Background Color
 					</label>
 					<input
+						id="background-color"
 						type="color"
 						bind:value={customization.backgroundColor}
 						on:change={() => updateCustomization('backgroundColor', customization.backgroundColor)}
@@ -256,10 +260,10 @@
 	{:else if activeTab === 'typography'}
 		<div class="space-y-6">
 			<!-- Font Family -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Font Family
-				</label>
+				</legend>
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 					{#each fontFamilies as font}
 						<button
@@ -268,19 +272,20 @@
 							class:border-blue-500={customization.fontFamily === font.value}
 							class:border-gray-200={customization.fontFamily !== font.value}
 							class:dark:border-gray-600={customization.fontFamily !== font.value}
+							aria-label="Set font family to {font.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{font.label}</div>
 							<div class="text-sm text-gray-500 dark:text-gray-400">The quick brown fox</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Font Size -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Font Size
-				</label>
+				</legend>
 				<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
 					{#each fontSizes as size}
 						<button
@@ -289,21 +294,22 @@
 							class:border-blue-500={customization.fontSize === size.value}
 							class:border-gray-200={customization.fontSize !== size.value}
 							class:dark:border-gray-600={customization.fontSize !== size.value}
+							aria-label="Set font size to {size.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{size.label}</div>
 							<div class="text-gray-500 dark:text-gray-400">Sample text</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 		</div>
 	{:else if activeTab === 'layout'}
 		<div class="space-y-6">
 			<!-- Layout Options -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Layout Style
-				</label>
+				</legend>
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 					{#each layouts as layout}
 						<button
@@ -312,21 +318,22 @@
 							class:border-blue-500={customization.layout === layout.value}
 							class:border-gray-200={customization.layout !== layout.value}
 							class:dark:border-gray-600={customization.layout !== layout.value}
+							aria-label="Set layout to {layout.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white mb-1">{layout.label}</div>
 							<div class="text-sm text-gray-500 dark:text-gray-400">{layout.description}</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 		</div>
 	{:else if activeTab === 'spacing'}
 		<div class="space-y-6">
 			<!-- Spacing -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Spacing
-				</label>
+				</legend>
 				<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					{#each spacingOptions as spacing}
 						<button
@@ -335,18 +342,19 @@
 							class:border-blue-500={customization.spacing === spacing.value}
 							class:border-gray-200={customization.spacing !== spacing.value}
 							class:dark:border-gray-600={customization.spacing !== spacing.value}
+							aria-label="Set spacing to {spacing.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white">{spacing.label}</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Border Radius -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Border Radius
-				</label>
+				</legend>
 				<div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
 					{#each borderRadiusOptions as radius}
 						<button
@@ -355,18 +363,19 @@
 							class:border-blue-500={customization.borderRadius === radius.value}
 							class:border-gray-200={customization.borderRadius !== radius.value}
 							class:dark:border-gray-600={customization.borderRadius !== radius.value}
+							aria-label="Set border radius to {radius.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-xs">{radius.label}</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Shadow -->
-			<div>
-				<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
 					Shadow
-				</label>
+				</legend>
 				<div class="grid grid-cols-5 gap-3">
 					{#each shadowOptions as shadow}
 						<button
@@ -375,12 +384,13 @@
 							class:border-blue-500={customization.shadow === shadow.value}
 							class:border-gray-200={customization.shadow !== shadow.value}
 							class:dark:border-gray-600={customization.shadow !== shadow.value}
+							aria-label="Set shadow to {shadow.label}"
 						>
 							<div class="font-medium text-gray-900 dark:text-white text-xs">{shadow.label}</div>
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 		</div>
 	{/if}
 </div>
