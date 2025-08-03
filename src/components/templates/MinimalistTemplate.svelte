@@ -8,7 +8,8 @@
 		workExperience: [],
 		education: [],
 		skills: [],
-		contact: { email: '', phone: '', location: '' }
+		contact: { email: '', phone: '', location: '' },
+		links: []
 	};
 
 	export let theme = {
@@ -40,7 +41,7 @@
 		horizontalPadding: 'normal'
 	};
 	
-	// Apply customization settings
+	// Apply customization settings with dark mode support
 	$: fontClass = {
 		inter: 'font-sans',
 		mono: 'font-mono',
@@ -49,14 +50,40 @@
 		roboto: 'font-sans'
 	}[customization.fontFamily] || 'font-sans';
 	
-	$: appliedStyles = `background-color: ${customization.backgroundColor}; color: ${customization.textColor};`;
+	// Dynamic theme colors with dark mode support
+	$: isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+	$: dynamicBackgroundColor = isDarkMode ? '#111827' : customization.backgroundColor;
+	$: dynamicTextColor = isDarkMode ? '#F9FAFB' : customization.textColor;
+	$: dynamicAccentColor = customization.accentColor;
+	$: dynamicBorderColor = isDarkMode ? '#374151' : '#E5E7EB';
+	
+	$: appliedStyles = `background-color: ${dynamicBackgroundColor}; color: ${dynamicTextColor};`;
+	
+	// Responsive spacing and layout classes
+	$: spacingClass = {
+		tight: 'space-y-8 sm:space-y-10',
+		normal: 'space-y-10 sm:space-y-12',
+		relaxed: 'space-y-12 sm:space-y-16'
+	}[customization.spacing] || 'space-y-10 sm:space-y-12';
+	
+	$: containerClass = {
+		compact: 'max-w-3xl',
+		standard: 'max-w-4xl',
+		wide: 'max-w-5xl'
+	}[customization.containerWidth] || 'max-w-4xl';
+	
+	$: paddingClass = {
+		tight: 'p-6 sm:p-8',
+		normal: 'p-8 sm:p-12',
+		relaxed: 'p-10 sm:p-16'
+	}[customization.horizontalPadding] || 'p-8 sm:p-12';
 
 	// Check if avatar is an image URL or text
 	$: isImageUrl = profileData.avatar && (profileData.avatar.startsWith('http') || profileData.avatar.startsWith('data:') || profileData.avatar.includes('.'));
 	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
-<div class="bg-white dark:bg-gray-900 max-w-4xl mx-auto p-8 font-serif">
+<div class="{containerClass} mx-auto {paddingClass} {fontClass} transition-all duration-300" style="{appliedStyles}">
 	<!-- Header -->
 	<header class="text-center mb-12 border-b border-gray-200 dark:border-gray-700 pb-8">
 		<!-- Profile Image/Initial -->
@@ -108,8 +135,10 @@
 		{/if}
 	</header>
 
-	<!-- About Section -->
-	<section class="mb-12">
+	<!-- Main Content -->
+	<div class="{spacingClass}">
+		<!-- About Section -->
+		<section>
 		<h2 class="text-xs uppercase tracking-widest text-gray-700 dark:text-gray-300 mb-4 font-sans">
 			About
 		</h2>
@@ -128,8 +157,8 @@
 		{/if}
 	</section>
 
-	<!-- Experience Section -->
-	<section class="mb-12">
+		<!-- Experience Section -->
+		<section>
 		<h2 class="text-xs uppercase tracking-widest text-gray-700 dark:text-gray-300 mb-6 font-sans">
 			Experience
 		</h2>
@@ -186,8 +215,8 @@
 		</div>
 	</section>
 
-	<!-- Education Section -->
-	<section class="mb-12">
+		<!-- Education Section -->
+		<section>
 		<h2 class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-6 font-sans">
 			Education
 		</h2>
@@ -285,6 +314,7 @@
 			</div>
 		</section>
 	{/if}
+	</div>
 </div>
 
 <style>

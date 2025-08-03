@@ -8,7 +8,8 @@
 		workExperience: [],
 		education: [],
 		skills: [],
-		contact: { email: '', phone: '', location: '' }
+		contact: { email: '', phone: '', location: '' },
+		links: []
 	};
 
 	export let theme = {
@@ -40,7 +41,7 @@
 		horizontalPadding: 'normal'
 	};
 	
-	// Apply customization settings
+	// Apply customization settings with dark mode support
 	$: fontClass = {
 		inter: 'font-sans',
 		mono: 'font-mono',
@@ -49,6 +50,12 @@
 		roboto: 'font-sans'
 	}[customization.fontFamily] || 'font-sans';
 	
+	// Dynamic theme colors with dark mode support
+	$: isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+	$: dynamicBackgroundColor = isDarkMode ? '#1F2937' : customization.backgroundColor;
+	$: dynamicTextColor = isDarkMode ? '#F9FAFB' : customization.textColor;
+	$: dynamicAccentColor = customization.accentColor;
+	
 	$: sizeClass = {
 		small: 'text-sm',
 		medium: 'text-base',
@@ -56,19 +63,31 @@
 	}[customization.fontSize] || 'text-base';
 	
 	$: spacingClass = {
-		tight: 'space-y-2',
-		normal: 'space-y-4',
-		relaxed: 'space-y-6'
-	}[customization.spacing] || 'space-y-4';
+		tight: 'space-y-2 sm:space-y-3',
+		normal: 'space-y-4 sm:space-y-6',
+		relaxed: 'space-y-6 sm:space-y-8'
+	}[customization.spacing] || 'space-y-4 sm:space-y-6';
+	
+	$: containerClass = {
+		compact: 'max-w-3xl',
+		standard: 'max-w-4xl',
+		wide: 'max-w-5xl'
+	}[customization.containerWidth] || 'max-w-4xl';
+	
+	$: paddingClass = {
+		tight: 'p-3 sm:p-6',
+		normal: 'p-4 sm:p-8',
+		relaxed: 'p-6 sm:p-10'
+	}[customization.horizontalPadding] || 'p-4 sm:p-8';
 
 	// Check if avatar is an image URL or text
 	$: isImageUrl = profileData.avatar && (profileData.avatar.startsWith('http') || profileData.avatar.startsWith('data:') || profileData.avatar.includes('.'));
 	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
-<div class="rounded-xl shadow-2xl overflow-hidden max-w-4xl mx-auto {fontClass} {sizeClass}" style="background-color: {customization.backgroundColor}; color: {customization.textColor};">
+<div class="rounded-xl shadow-2xl overflow-hidden {containerClass} mx-auto {fontClass} {sizeClass} transition-all duration-300" style="background-color: {dynamicBackgroundColor}; color: {dynamicTextColor};">
 	<!-- Header Section -->
-	<div class="text-white p-4 sm:p-8" style="background: linear-gradient(135deg, {customization.accentColor}, {customization.accentColor}dd);">
+	<div class="text-white p-4 sm:p-8 transition-all duration-300" style="background: linear-gradient(135deg, {dynamicAccentColor}, {dynamicAccentColor}dd);">
 		<div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
 			<div class="w-16 sm:w-24 h-16 sm:h-24 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-3xl font-bold backdrop-blur-sm overflow-hidden">
 				{#if isImageUrl}
@@ -116,10 +135,10 @@
 	</div>
 
 	<!-- Content Section -->
-	<div class="p-4 sm:p-8">
+	<div class="{paddingClass}">
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
 			<!-- Left Column -->
-			<div class="md:col-span-2 space-y-4 sm:space-y-8">
+			<div class="md:col-span-2 {spacingClass}">
 				<!-- About Section -->
 				<section>
 					<h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 border-b-2 border-blue-600 pb-2">
@@ -201,7 +220,7 @@
 			</div>
 
 			<!-- Right Column -->
-			<div class="space-y-8">
+			<div class="{spacingClass}">
 				<!-- Skills Section -->
 				{#if profileData.skills && profileData.skills.length > 0}
 					<section>

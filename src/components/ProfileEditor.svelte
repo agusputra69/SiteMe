@@ -115,7 +115,7 @@
 		{ id: 'projects', label: 'Projects', icon: Code },
 		{ id: 'awards', label: 'Awards', icon: Trophy },
 		{ id: 'skills', label: 'Skills', icon: Plus },
-		{ id: 'links', label: 'Social Links', icon: ExternalLink },
+		{ id: 'links', label: 'Portfolio Showcase', icon: ExternalLink },
 		{ id: 'design', label: 'Design', icon: Edit3 }
 	];
 

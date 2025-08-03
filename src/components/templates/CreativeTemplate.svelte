@@ -8,7 +8,8 @@
 		workExperience: [],
 		education: [],
 		skills: [],
-		contact: { email: '', phone: '', location: '' }
+		contact: { email: '', phone: '', location: '' },
+		links: []
 	};
 
 	export let theme = {
@@ -40,7 +41,7 @@
 		horizontalPadding: 'normal'
 	};
 	
-	// Apply customization settings
+	// Apply customization settings with dark mode support
 	$: fontClass = {
 		inter: 'font-sans',
 		mono: 'font-mono',
@@ -49,15 +50,41 @@
 		roboto: 'font-sans'
 	}[customization.fontFamily] || 'font-sans';
 	
-	$: appliedStyles = `background-color: ${customization.backgroundColor}; color: ${customization.textColor}; accent-color: ${customization.accentColor};`;
+	// Dynamic theme colors with dark mode support
+	$: isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+	$: dynamicBackgroundColor = isDarkMode ? '#0F172A' : customization.backgroundColor;
+	$: dynamicTextColor = isDarkMode ? '#F1F5F9' : customization.textColor;
+	$: dynamicAccentColor = customization.accentColor;
+	$: dynamicSecondaryColor = isDarkMode ? '#1E293B' : '#F8FAFC';
+	
+	$: appliedStyles = `background-color: ${dynamicBackgroundColor}; color: ${dynamicTextColor}; accent-color: ${dynamicAccentColor};`;
+	
+	// Responsive spacing and layout classes
+	$: spacingClass = {
+		tight: 'space-y-6 sm:space-y-8',
+		normal: 'space-y-8 sm:space-y-12',
+		relaxed: 'space-y-12 sm:space-y-16'
+	}[customization.spacing] || 'space-y-8 sm:space-y-12';
+	
+	$: containerClass = {
+		compact: 'max-w-5xl',
+		standard: 'max-w-6xl',
+		wide: 'max-w-7xl'
+	}[customization.containerWidth] || 'max-w-6xl';
+	
+	$: paddingClass = {
+		tight: 'p-6 sm:p-8',
+		normal: 'p-8 sm:p-12',
+		relaxed: 'p-10 sm:p-16'
+	}[customization.horizontalPadding] || 'p-8 sm:p-12';
 
 	// Check if avatar is an image URL or text
 	$: isImageUrl = profileData.avatar && (profileData.avatar.startsWith('http') || profileData.avatar.startsWith('data:') || profileData.avatar.includes('.'));
 	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
-<div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900 min-h-screen p-8">
-	<div class="max-w-6xl mx-auto">
+<div class="min-h-screen {paddingClass} {fontClass} transition-all duration-300" style="background: linear-gradient(135deg, {dynamicBackgroundColor}, {dynamicSecondaryColor}); color: {dynamicTextColor};">
+	<div class="{containerClass} mx-auto">
 		<!-- Artistic Header -->
 		<div class="relative mb-16">
 			<!-- Background Shapes -->
@@ -125,7 +152,7 @@
 		<!-- Content Grid -->
 		<div class="grid lg:grid-cols-3 gap-8">
 			<!-- Left Column -->
-			<div class="lg:col-span-2 space-y-8">
+			<div class="lg:col-span-2 {spacingClass}">
 				<!-- About Section -->
 				<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
 					<div class="flex items-center mb-6">
@@ -216,7 +243,7 @@
 			</div>
 
 			<!-- Right Column -->
-			<div class="space-y-8">
+			<div class="{spacingClass}">
 				<!-- Skills Section -->
 				{#if profileData.skills && profileData.skills.length > 0}
 					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
