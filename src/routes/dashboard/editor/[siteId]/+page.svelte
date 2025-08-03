@@ -74,8 +74,8 @@
 
     if (error) {
       console.error('Error loading site:', error);
-      toasts.error('Site tidak ditemukan');
-      goto('/dashboard/sites');
+      toasts.error('Site not found');
+      goto('/dashboard');
       return;
     }
 
@@ -97,7 +97,7 @@
         .from('sites')
         .insert({
           user_id: user.id,
-          name: 'Website Baru',
+          name: 'New Website',
           data: getDefaultResumeData(),
           template: 'modern',
           status: 'draft'
@@ -107,8 +107,8 @@
 
       if (error) {
         console.error('Error creating site:', error);
-        toasts.error('Gagal membuat website baru');
-        goto('/dashboard/sites');
+        toasts.error('Failed to create new website');
+        goto('/dashboard');
         return;
       }
 
@@ -117,7 +117,7 @@
       
       // Update URL to reflect the new site ID
       window.history.replaceState({}, '', `/dashboard/editor/${site.id}`);
-      toasts.success('Website baru berhasil dibuat!');
+      toasts.success('New website created successfully!');
     } else {
       // Redirect to create page for other modes
       goto('/dashboard/create');
@@ -158,16 +158,16 @@
 
       if (error) {
         console.error('Error saving site:', error);
-        toasts.error('Gagal menyimpan website');
+        toasts.error('Failed to save website');
         return;
       }
 
       resumeData = data;
       site.data = data;
-      toasts.success('Website berhasil disimpan!');
+      toasts.success('Website saved successfully!');
     } catch (error) {
       console.error('Error saving site:', error);
-      toasts.error('Gagal menyimpan website');
+      toasts.error('Failed to save website');
     } finally {
       saving = false;
     }
@@ -198,16 +198,16 @@
 
       if (error) {
         console.error('Error publishing site:', error);
-        toasts.error('Gagal mempublikasikan website');
+        toasts.error('Failed to publish website');
         return;
       }
 
       site.status = 'published';
       site.is_primary = true;
-      toasts.success('Website berhasil dipublikasikan!');
+      toasts.success('Website published successfully!');
     } catch (error) {
       console.error('Error publishing site:', error);
-      toasts.error('Gagal mempublikasikan website');
+      toasts.error('Failed to publish website');
     } finally {
       saving = false;
     }
@@ -230,16 +230,16 @@
 
       if (error) {
         console.error('Error unpublishing site:', error);
-        toasts.error('Gagal membatalkan publikasi website');
+        toasts.error('Failed to unpublish website');
         return;
       }
 
       site.status = 'draft';
       site.is_primary = false;
-      toasts.success('Website berhasil dibatalkan publikasinya!');
+      toasts.success('Website unpublished successfully!');
     } catch (error) {
       console.error('Error unpublishing site:', error);
-      toasts.error('Gagal membatalkan publikasi website');
+      toasts.error('Failed to unpublish website');
     } finally {
       saving = false;
     }
@@ -258,15 +258,15 @@
 
       if (error) {
         console.error('Error deleting site:', error);
-        toasts.error('Gagal menghapus website');
+        toasts.error('Failed to delete website');
         return;
       }
 
-      toasts.success('Website berhasil dihapus!');
-      goto('/dashboard/sites');
+      toasts.success('Website deleted successfully!');
+      goto('/dashboard');
     } catch (error) {
       console.error('Error deleting site:', error);
-      toasts.error('Gagal menghapus website');
+      toasts.error('Failed to delete website');
     } finally {
       deleting = false;
       showDeleteConfirm = false;
@@ -295,12 +295,12 @@
 
     if (error) {
       console.error('Error updating site name:', error);
-      toasts.error('Gagal mengubah nama website');
+      toasts.error('Failed to change website name');
       return;
     }
 
     site.name = newName.trim();
-    toasts.success('Nama website berhasil diubah!');
+    toasts.success('Website name changed successfully!');
   }
 
   function handleSiteNameBlur(e: Event) {
@@ -320,22 +320,22 @@
   }
 
   const tabs: Array<{id: 'content' | 'design' | 'settings', label: string, icon: any}> = [
-    { id: 'content', label: 'Konten', icon: Layout },
-    { id: 'design', label: 'Desain', icon: Palette },
-    { id: 'settings', label: 'Pengaturan', icon: Settings }
+    { id: 'content', label: 'Content', icon: Layout },
+    { id: 'design', label: 'Design', icon: Palette },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 </script>
 
 <svelte:head>
   <title>{site?.name || 'Editor'} - SiteMe</title>
-  <meta name="description" content="Edit website Anda dengan SiteMe" />
+  <meta name="description" content="Edit your website with SiteMe" />
 </svelte:head>
 
 {#if loading}
   <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
     <div class="text-center">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <p class="text-gray-600 dark:text-gray-300">Memuat editor...</p>
+      <p class="text-gray-600 dark:text-gray-300">Loading editor...</p>
     </div>
   </div>
 {:else if site && resumeData}
@@ -345,7 +345,7 @@
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center space-x-4">
           <button
-            on:click={() => goto('/dashboard/sites')}
+            on:click={() => goto('/dashboard')}
             class="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <ArrowLeft class="w-5 h-5" />
@@ -371,7 +371,7 @@
               {/if}
             </div>
             <p class="text-gray-600 dark:text-gray-300">
-              Kustomisasi website profesional Anda
+              Customize your professional website
             </p>
           </div>
         </div>
@@ -391,7 +391,7 @@
             class="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Save class="w-4 h-4 mr-2" />
-            {saving ? 'Menyimpan...' : 'Simpan'}
+            {saving ? 'Saving...' : 'Save'}
           </button>
           
           {#if site.status === 'published'}
@@ -419,7 +419,7 @@
             class="inline-flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
           >
             <Trash2 class="w-4 h-4 mr-2" />
-            Hapus
+            Delete
           </button>
         </div>
       </div>
@@ -490,12 +490,12 @@
         {:else if activeTab === 'settings'}
           <div class="p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Pengaturan Website
+              Website Settings
             </h3>
             <div class="space-y-6">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nama Website
+                  Website Name
                 </label>
                 <input
                   type="text"
@@ -507,46 +507,16 @@
               
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status
+                  Status Website
                 </label>
                 <div class="flex items-center space-x-4">
                   <span class="text-sm text-gray-600 dark:text-gray-300">
-                    {site.status === 'published' ? 'Dipublikasikan' : 'Draft'}
+                    {site.status === 'published' ? 'Published' : 'Draft'}
                   </span>
-                  {#if site.status === 'published'}
-                    <button
-                      on:click={handleUnpublish}
-                      disabled={saving}
-                      class="text-sm text-yellow-600 hover:text-yellow-700 disabled:opacity-50"
-                    >
-                      Batalkan Publikasi
-                    </button>
-                  {:else}
-                    <button
-                      on:click={handlePublish}
-                      disabled={saving}
-                      class="text-sm text-green-600 hover:text-green-700 disabled:opacity-50"
-                    >
-                      Publikasikan
-                    </button>
-                  {/if}
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    Use the buttons in the header to change status or delete website
+                  </span>
                 </div>
-              </div>
-              
-              <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h4 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
-                  Zona Bahaya
-                </h4>
-                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  Menghapus website akan menghilangkan semua data secara permanen.
-                </p>
-                <button
-                  on:click={() => showDeleteConfirm = true}
-                  class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Trash2 class="w-4 h-4 mr-2" />
-                  Hapus Website
-                </button>
               </div>
             </div>
           </div>
@@ -557,13 +527,13 @@
 {:else}
   <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
     <div class="text-center">
-      <p class="text-gray-600 dark:text-gray-300 mb-4">Website tidak ditemukan</p>
+      <p class="text-gray-600 dark:text-gray-300 mb-4">Website not found</p>
       <button
-        on:click={() => goto('/dashboard/sites')}
+        on:click={() => goto('/dashboard')}
         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
       >
         <ArrowLeft class="w-4 h-4 mr-2" />
-        Kembali ke Sites
+        Back to Sites
       </button>
     </div>
   </div>
@@ -572,10 +542,10 @@
 <!-- Delete Confirmation Dialog -->
 <ConfirmDialog
   isOpen={showDeleteConfirm}
-  title="Hapus Website"
-  message="Apakah Anda yakin ingin menghapus website '{site?.name}'? Semua data akan hilang secara permanen dan tidak dapat dikembalikan."
-  confirmText="Hapus"
-  cancelText="Batal"
+  title="Delete Website"
+  message="Are you sure you want to delete website '{site?.name}'? All data will be permanently lost and cannot be recovered."
+  confirmText="Delete"
+  cancelText="Cancel"
   type="danger"
   on:confirm={handleDelete}
   on:cancel={() => showDeleteConfirm = false}

@@ -30,30 +30,34 @@
 	// Autosave functionality
 	let autosaveTimeout: NodeJS.Timeout | null = null;
 	let lastSavedData: string = '';
+	let isAutoSaving = false;
+	let autoSaveEnabled = true;
+	let hasUnsavedChanges = false;
 
 	// Listen for save success from parent
 	$: if (!uploading && saveSuccess) {
+		hasUnsavedChanges = false;
 		setTimeout(() => {
 			saveSuccess = false;
 		}, 3000);
 	}
 
-	// Autosave when resumeData changes
+	// Improved autosave with better conflict handling
 	$: {
-		if (resumeData) {
+		if (resumeData && autoSaveEnabled) {
 			const currentData = JSON.stringify(resumeData);
 			if (currentData !== lastSavedData && lastSavedData !== '') {
+				hasUnsavedChanges = true;
 				// Clear existing timeout
 				if (autosaveTimeout) {
 					clearTimeout(autosaveTimeout);
 				}
-				// Set new timeout for autosave
+				// Set new timeout for autosave with longer delay
 				autosaveTimeout = setTimeout(() => {
-					if (!uploading) {
-						saveDraft();
-						lastSavedData = currentData;
+					if (!uploading && !isAutoSaving && hasUnsavedChanges) {
+						performAutoSave();
 					}
-				}, 2000); // Autosave after 2 seconds of inactivity
+				}, 5000); // Increased to 5 seconds to reduce conflicts
 			} else if (lastSavedData === '') {
 				// Initialize lastSavedData on first load
 				lastSavedData = currentData;
@@ -414,12 +418,14 @@
 		});
 	}
 
+	// Manual save function
 	function saveDraft() {
-		console.log('saveDraft called, current uploading state:', uploading);
-		if (uploading) {
-			console.log('Upload in progress, ignoring save request');
+		if (uploading || isAutoSaving) {
 			return;
 		}
+		
+		// Disable autosave temporarily during manual save
+		autoSaveEnabled = false;
 		
 		// Create a fresh copy of resumeData to ensure reactivity
 		const dataToSave = {
@@ -429,25 +435,71 @@
 			customization: templateCustomization
 		};
 		
-		console.log('Current resumeData before save:', resumeData);
-		console.log('Data to be saved:', dataToSave);
-		
 		// Reset success state
 		saveSuccess = false;
+		hasUnsavedChanges = false;
+		
+		// Update lastSavedData to prevent auto save conflicts
+		lastSavedData = JSON.stringify(resumeData);
 		
 		// Add a small delay to prevent rapid successive clicks
 		setTimeout(() => {
 			profileStatus = 'draft';
-			console.log('Dispatching save event with data:', { 
-				resumeData: dataToSave, 
-				profilePhoto: profilePhotoFile,
-				status: 'draft'
-			});
 			dispatch('save', { 
 				resumeData: dataToSave, 
 				profilePhoto: profilePhotoFile
 			});
+			
+			// Re-enable autosave after manual save completes
+			setTimeout(() => {
+				autoSaveEnabled = true;
+			}, 1000);
 		}, 100);
+	}
+
+	// Auto save function
+	async function performAutoSave() {
+		if (uploading || !hasUnsavedChanges) {
+			return;
+		}
+		
+		isAutoSaving = true;
+		
+		try {
+			const dataToSave = {
+				...resumeData,
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: templateCustomization
+			};
+			
+			// Update lastSavedData before dispatching
+			lastSavedData = JSON.stringify(resumeData);
+			hasUnsavedChanges = false;
+			
+			dispatch('save', { 
+				resumeData: dataToSave, 
+				profilePhoto: profilePhotoFile,
+				isAutoSave: true
+			});
+		} catch (error) {
+			console.error('Auto save failed:', error);
+			hasUnsavedChanges = true;
+		} finally {
+			isAutoSaving = false;
+		}
+	}
+
+	// Function to disable autosave when user is actively typing
+	function handleInputFocus() {
+		autoSaveEnabled = false;
+	}
+
+	// Function to re-enable autosave when user stops typing
+	function handleInputBlur() {
+		setTimeout(() => {
+			autoSaveEnabled = true;
+		}, 500);
 	}
 
 	function togglePublishStatus() {
@@ -766,6 +818,24 @@
 						{profileStatus === 'published' ? 'Published' : 'Draft'}
 					</span>
 				</div>
+				
+				<!-- Auto Save Indicator -->
+				{#if isAutoSaving}
+					<div class="flex items-center space-x-2 text-white/80">
+						<div class="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
+						<span class="text-xs">Auto saving...</span>
+					</div>
+				{:else if hasUnsavedChanges}
+					<div class="flex items-center space-x-2 text-yellow-300">
+						<div class="w-2 h-2 rounded-full bg-yellow-300"></div>
+						<span class="text-xs">Unsaved changes</span>
+					</div>
+				{:else if !hasUnsavedChanges && lastSavedData}
+					<div class="flex items-center space-x-2 text-green-300">
+						<div class="w-2 h-2 rounded-full bg-green-300"></div>
+						<span class="text-xs">All changes saved</span>
+					</div>
+				{/if}
 			</div>
 		</div>
 
@@ -815,42 +885,14 @@
 					{/if}
 				</div>
 
-				<!-- Publishing Controls -->
+				<!-- Info Message -->
 				<div class="flex items-center space-x-2">
-					<button
-						on:click={saveDraft}
-						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {saveSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'} rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-						disabled={uploading}
-						aria-label="Save profile as draft"
-						aria-busy={uploading}
-					>
-						{#if uploading}
-							<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-							Saving...
-						{:else if saveSuccess}
+					<div class="text-white/80 text-sm">
+						<span class="flex items-center">
 							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
-							Saved!
-						{:else}
-							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
-							Save Draft
-						{/if}
-					</button>
-
-					<button
-						on:click={togglePublishStatus}
-						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {profileStatus === 'published' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'} rounded-lg transition-colors"
-						disabled={uploading}
-						aria-label="{profileStatus === 'published' ? 'Unpublish profile' : 'Publish profile'}"
-						aria-busy={uploading}
-					>
-						{#if profileStatus === 'published'}
-							<Eye class="w-4 h-4 mr-2" aria-hidden="true" />
-							Unpublish
-						{:else}
-							<Upload class="w-4 h-4 mr-2" aria-hidden="true" />
-							Publish
-						{/if}
-					</button>
+							Use the Save and Publish buttons in the header to save changes
+						</span>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -976,16 +1018,20 @@
 									Full Name *
 								</label>
 								<input
-									id="fullName"
-									type="text"
-									bind:value={resumeData.name}
-									on:blur={() => formErrors.name = validateField('name', resumeData.name || '')}
-									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
-									placeholder="Your full name"
-									aria-describedby="fullName-error"
-									aria-invalid={!!formErrors.name}
-									required
-								/>
+								id="fullName"
+								type="text"
+								bind:value={resumeData.name}
+								on:focus={handleInputFocus}
+								on:blur={() => {
+									formErrors.name = validateField('name', resumeData.name || '');
+									handleInputBlur();
+								}}
+								class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
+								placeholder="Your full name"
+								aria-describedby="fullName-error"
+								aria-invalid={!!formErrors.name}
+								required
+							/>
 								{#if formErrors.name}
 									<p id="fullName-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.name}</p>
 								{/if}
@@ -996,15 +1042,19 @@
 									Email Address
 								</label>
 								<input
-									id="email"
-									type="email"
-									bind:value={resumeData.email}
-									on:blur={() => formErrors.email = validateField('email', resumeData.email || '')}
-									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
-									placeholder="your.email@example.com"
-									aria-describedby="email-error"
-									aria-invalid={!!formErrors.email}
-								/>
+								id="email"
+								type="email"
+								bind:value={resumeData.email}
+								on:focus={handleInputFocus}
+								on:blur={() => {
+									formErrors.email = validateField('email', resumeData.email || '');
+									handleInputBlur();
+								}}
+								class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
+								placeholder="your.email@example.com"
+								aria-describedby="email-error"
+								aria-invalid={!!formErrors.email}
+							/>
 								{#if formErrors.email}
 									<p id="email-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.email}</p>
 								{/if}
@@ -1032,12 +1082,14 @@
 									Location
 								</label>
 								<input
-									id="location"
-									type="text"
-									bind:value={resumeData.location}
-									class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									placeholder="City, State/Country"
-								/>
+								id="location"
+								type="text"
+								bind:value={resumeData.location}
+								on:focus={handleInputFocus}
+								on:blur={handleInputBlur}
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								placeholder="City, State/Country"
+							/>
 							</div>
 
 							<div>
@@ -1045,18 +1097,22 @@
 									Username *
 								</label>
 								<input
-									id="username"
-									type="text"
-									bind:value={username}
-									on:blur={() => formErrors.username = validateField('username', username)}
-									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
-									placeholder="your-username"
-									pattern="[a-zA-Z0-9-_]+"
-									title="Username can only contain letters, numbers, hyphens, and underscores"
-									aria-describedby="username-error username-help"
-									aria-invalid={!!formErrors.username}
-									required
-								/>
+								id="username"
+								type="text"
+								bind:value={username}
+								on:focus={handleInputFocus}
+								on:blur={() => {
+									formErrors.username = validateField('username', username);
+									handleInputBlur();
+								}}
+								class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
+								placeholder="your-username"
+								pattern="[a-zA-Z0-9-_]+"
+								title="Username can only contain letters, numbers, hyphens, and underscores"
+								aria-describedby="username-error username-help"
+								aria-invalid={!!formErrors.username}
+								required
+							/>
 								{#if formErrors.username}
 									<p id="username-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.username}</p>
 								{/if}
@@ -1120,26 +1176,30 @@
 													Job Title
 												</label>
 												<input
-													id="job-title-{index}"
-													type="text"
-													bind:value={exp.title}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-													placeholder="Software Engineer"
-													aria-describedby="experience-{index}-title"
-												/>
+											id="job-title-{index}"
+											type="text"
+											bind:value={exp.title}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+											placeholder="Software Engineer"
+											aria-describedby="experience-{index}-title"
+										/>
 											</div>
 											<div>
 												<label for="company-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 													Company
 												</label>
 												<input
-													id="company-{index}"
-													type="text"
-													bind:value={exp.company}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-													placeholder="Tech Company Inc."
-													aria-describedby="experience-{index}-title"
-												/>
+											id="company-{index}"
+											type="text"
+											bind:value={exp.company}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+											placeholder="Tech Company Inc."
+											aria-describedby="experience-{index}-title"
+										/>
 											</div>
 										</div>
 										
@@ -1235,24 +1295,28 @@
 													Degree
 												</label>
 												<input
-													id="degree-{index}"
-													type="text"
-													bind:value={edu.degree}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-													placeholder="Bachelor of Science"
-												/>
+											id="degree-{index}"
+											type="text"
+											bind:value={edu.degree}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+											placeholder="Bachelor of Science"
+										/>
 											</div>
 											<div>
 												<label for="institution-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 													Institution
 												</label>
 												<input
-													id="institution-{index}"
-													type="text"
-													bind:value={edu.institution}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-													placeholder="University Name"
-												/>
+											id="institution-{index}"
+											type="text"
+											bind:value={edu.institution}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+											placeholder="University Name"
+										/>
 											</div>
 										</div>
 										<div>
@@ -1329,24 +1393,28 @@
 													Certification Name
 												</label>
 												<input
-													id="cert-name-{index}"
-													type="text"
-													bind:value={cert.name}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-													placeholder="AWS Certified Solutions Architect"
-												/>
+											id="cert-name-{index}"
+											type="text"
+											bind:value={cert.name}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+											placeholder="AWS Certified Solutions Architect"
+										/>
 											</div>
 											<div>
 												<label for="cert-issuer-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 													Issuing Organization
 												</label>
 												<input
-													id="cert-issuer-{index}"
-													type="text"
-													bind:value={cert.issuer}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-													placeholder="Amazon Web Services"
-												/>
+											id="cert-issuer-{index}"
+											type="text"
+											bind:value={cert.issuer}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+											placeholder="Amazon Web Services"
+										/>
 											</div>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1355,24 +1423,28 @@
 													Date Obtained
 												</label>
 												<input
-													id="cert-date-{index}"
-													type="text"
-													bind:value={cert.date}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-													placeholder="January 2024"
-												/>
+											id="cert-date-{index}"
+											type="text"
+											bind:value={cert.date}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+											placeholder="January 2024"
+										/>
 											</div>
 											<div>
 												<label for="cert-credential-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 													Credential ID
 												</label>
 												<input
-													id="cert-credential-{index}"
-													type="text"
-													bind:value={cert.credentialId}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-													placeholder="ABC123XYZ"
-												/>
+											id="cert-credential-{index}"
+											type="text"
+											bind:value={cert.credentialId}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+											placeholder="ABC123XYZ"
+										/>
 											</div>
 										</div>
 										<div>
@@ -1380,12 +1452,14 @@
 												Description (Optional)
 											</label>
 											<textarea
-												id="cert-description-{index}"
-												bind:value={cert.description}
-												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-												placeholder="Brief description of the certification..."
-												rows="3"
-											></textarea>
+								id="cert-description-{index}"
+								bind:value={cert.description}
+								on:focus={handleInputFocus}
+								on:blur={handleInputBlur}
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+								placeholder="Brief description of the certification..."
+								rows="3"
+							></textarea>
 										</div>
 									</div>
 								{/each}
@@ -1446,22 +1520,26 @@
 													Language
 												</label>
 												<input
-													id="language-{index}"
-													type="text"
-													bind:value={lang.language}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-													placeholder="English"
-												/>
+											id="language-{index}"
+											type="text"
+											bind:value={lang.language}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											placeholder="English"
+										/>
 											</div>
 											<div>
 												<label for="proficiency-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 													Proficiency Level
 												</label>
 												<select
-													id="proficiency-{index}"
-													bind:value={lang.proficiency}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-												>
+											id="proficiency-{index}"
+											bind:value={lang.proficiency}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										>
 													<option value="">Select proficiency</option>
 													<option value="Native">Native</option>
 													<option value="Fluent">Fluent</option>
@@ -1530,24 +1608,28 @@
 													Project Name
 												</label>
 												<input
-													id="project-name-{index}"
-													type="text"
-													bind:value={project.name}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-													placeholder="E-commerce Website"
-												/>
+											id="project-name-{index}"
+											type="text"
+											bind:value={project.name}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+											placeholder="E-commerce Website"
+										/>
 											</div>
 											<div>
 												<label for="project-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 													Project URL (Optional)
 												</label>
 												<input
-													id="project-url-{index}"
-													type="url"
-													bind:value={project.url}
-													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-													placeholder="https://github.com/username/project"
-												/>
+											id="project-url-{index}"
+											type="url"
+											bind:value={project.url}
+											on:focus={handleInputFocus}
+											on:blur={handleInputBlur}
+											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+											placeholder="https://github.com/username/project"
+										/>
 											</div>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1556,12 +1638,14 @@
 														Duration
 													</label>
 													<input
-														id="project-duration-{index}"
-														type="text"
-														bind:value={project.duration}
-														class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-														placeholder="3 months"
-													/>
+												id="project-duration-{index}"
+												type="text"
+												bind:value={project.duration}
+												on:focus={handleInputFocus}
+												on:blur={handleInputBlur}
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+												placeholder="3 months"
+											/>
 												</div>
 												<div>
 													<label for="project-image-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1570,12 +1654,14 @@
 													<div class="flex items-center gap-2">
 														<Image class="w-5 h-5 text-gray-400" />
 														<input
-															id="project-image-{index}"
-															type="url"
-															bind:value={project.image}
-															class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-															placeholder="https://example.com/project-screenshot.jpg"
-														/>
+												id="project-image-{index}"
+												type="url"
+												bind:value={project.image}
+												on:focus={handleInputFocus}
+												on:blur={handleInputBlur}
+												class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+												placeholder="https://example.com/project-screenshot.jpg"
+											/>
 													</div>
 													{#if project.image}
 														<div class="mt-2">
@@ -1589,12 +1675,14 @@
 												Description
 											</label>
 											<textarea
-												id="project-description-{index}"
-												bind:value={project.description}
-												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-												placeholder="Describe your project, its features, and your role..."
-												rows="4"
-											></textarea>
+								id="project-description-{index}"
+								bind:value={project.description}
+								on:focus={handleInputFocus}
+								on:blur={handleInputBlur}
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+								placeholder="Describe your project, its features, and your role..."
+								rows="4"
+							></textarea>
 										</div>
 										<div>
 											<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1604,11 +1692,13 @@
 												{#each project.technologies as tech, techIndex}
 													<div class="flex items-center gap-2">
 														<input
-															type="text"
-															bind:value={tech}
-															class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-															placeholder="React, Node.js, MongoDB..."
-														/>
+													type="text"
+													bind:value={tech}
+													on:focus={handleInputFocus}
+													on:blur={handleInputBlur}
+													class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+													placeholder="React, Node.js, MongoDB..."
+												/>
 														<button
 															on:click={() => {
 																project.technologies = project.technologies.filter((_, i) => i !== techIndex);

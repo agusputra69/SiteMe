@@ -71,25 +71,43 @@
   let showProcessingModelSelector = false;
   let pendingFile: File | null = null;
   let showAddSiteModal = false;
+  let openDropdownId: string | null = null;
 
-  onMount(async () => {
+  onMount(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.relative')) {
+        openDropdownId = null;
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    
     // Check authentication
-    try {
-      const { session, error } = await getValidSession();
-      if (error || !session) {
+    (async () => {
+      try {
+        const { session, error } = await getValidSession();
+        if (error || !session) {
+          goto('/login');
+          return;
+        }
+
+        user = session.user;
+        await loadProfile();
+        await loadSites();
+      } catch (error) {
+        console.error('Dashboard auth error:', error);
+        await handleAuthError(error);
         goto('/login');
         return;
       }
-
-      user = session.user;
-      await loadProfile();
-      await loadSites();
-    } catch (error) {
-      console.error('Dashboard auth error:', error);
-      await handleAuthError(error);
-      goto('/login');
-      return;
-    }
+    })();
+    
+    // Return cleanup function
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
     
     // Show onboarding for new users
     const hasSeenOnboarding = localStorage.getItem('siteme-onboarding-completed');
@@ -254,6 +272,12 @@
   function handleDeleteClick(site: any) {
     siteToDelete = site;
     showDeleteConfirm = true;
+  }
+
+  function handleDeleteSite() {
+    if (siteToDelete) {
+      deleteSite(siteToDelete.id);
+    }
   }
 
   async function handleFileUpload(event: Event) {
@@ -537,10 +561,10 @@
 
             if (siteError) {
               console.error('Failed to create site:', siteError);
-              toasts.error('Gagal membuat website baru');
+              toasts.error('Failed to create new website');
             } else {
               console.log('New site created successfully:', newSite);
-              toasts.success('Website baru berhasil dibuat!');
+              toasts.success('New website created successfully!');
               // Refresh sites data
               await loadSites();
             }
@@ -792,12 +816,12 @@
 
         if (siteError) {
           console.error('Failed to create site:', siteError);
-          toasts.error('Gagal membuat website baru');
+          toasts.error('Failed to create new website');
           return;
         }
         
         console.log('New site created successfully:', newSite);
-        toasts.success('Website baru berhasil dibuat!');
+        toasts.success('New website created successfully!');
         
         // Refresh sites data
         await loadSites();
@@ -1136,13 +1160,7 @@
                   Add New Site
                 </button>
               {/if}
-              <button
-                on:click={() => goto('/dashboard/sites')}
-                class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Globe class="w-4 h-4 mr-2" />
-                Manage All
-              </button>
+
             </div>
           </div>
 
@@ -1203,6 +1221,44 @@
                       <Edit3 class="w-3 h-3 mr-1" />
                       Edit
                     </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="relative">
+                      <button
+                        on:click={() => openDropdownId = openDropdownId === site.id ? null : site.id}
+                        class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <MoreVertical class="w-4 h-4" />
+                      </button>
+                      
+                      {#if openDropdownId === site.id}
+                        <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                          <div class="py-1">
+                            <button
+                              on:click={() => {
+                                duplicateSite(site.id);
+                                openDropdownId = null;
+                              }}
+                              class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center"
+                            >
+                              <Copy class="w-4 h-4 mr-2" />
+                              Duplicate Site
+                            </button>
+                            <button
+                              on:click={() => {
+                                siteToDelete = site;
+                                showDeleteConfirm = true;
+                                openDropdownId = null;
+                              }}
+                              class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
+                            >
+                              <Trash2 class="w-4 h-4 mr-2" />
+                              Delete Site
+                            </button>
+                          </div>
+                        </div>
+                      {/if}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1326,89 +1382,7 @@
 
         </div>
 
-        <!-- Profile Summary Card - Only show when user has data -->
-        {#if !showTutorial && resumeData && (resumeData.name || resumeData.email || resumeData.experience?.length > 0 || resumeData.education?.length > 0 || resumeData.skills?.length > 0)}
-          <div id="profile" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6" data-tour="profile-editor">
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-                  <User class="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    Profile Overview
-                  </h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-300">
-                    Manage your professional information
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <!-- Profile Summary -->
-            <div class="space-y-4 mb-6">
-              <div class="flex items-center space-x-3">
-                {#if resumeData.photo_url}
-                  <img src="{resumeData.photo_url}" alt="Profile" class="w-12 h-12 rounded-full object-cover" />
-                {:else}
-                  <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                    <User class="w-6 h-6 text-gray-400" />
-                  </div>
-                {/if}
-                <div>
-                  <h4 class="font-semibold text-gray-900 dark:text-white">
-                    {resumeData.name || 'Your Name'}
-                  </h4>
-                  {#if resumeData.email}
-                    <p class="text-sm text-gray-600 dark:text-gray-300">{resumeData.email}</p>
-                  {/if}
-                </div>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span class="text-gray-500 dark:text-gray-400">Experience:</span>
-                  <span class="ml-1 font-medium text-gray-900 dark:text-white">
-                    {resumeData.experience?.length || 0} entries
-                  </span>
-                </div>
-                <div>
-                  <span class="text-gray-500 dark:text-gray-400">Education:</span>
-                  <span class="ml-1 font-medium text-gray-900 dark:text-white">
-                    {resumeData.education?.length || 0} entries
-                  </span>
-                </div>
-                <div>
-                  <span class="text-gray-500 dark:text-gray-400">Skills:</span>
-                  <span class="ml-1 font-medium text-gray-900 dark:text-white">
-                    {resumeData.skills?.length || 0} skills
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex space-x-3">
-              <button
-                on:click={() => showProfileEditor = true}
-                class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Edit3 class="w-4 h-4 mr-2" />
-                Edit Profile
-              </button>
-              
-              {#if profile?.username}
-                <button
-                  on:click={() => window.open(`/u/${profile.username}`, '_blank')}
-                  class="inline-flex items-center px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200"
-                >
-                  <Eye class="w-4 h-4 mr-2" />
-                  Preview
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
 
 
       </div>
@@ -1482,9 +1456,24 @@
   />
 {/if}
 
-<!-- Delete Confirmation Dialog -->
+<!-- Delete Site Confirmation Dialog -->
 <ConfirmDialog
-  isOpen={showDeleteConfirm}
+  isOpen={showDeleteConfirm && siteToDelete}
+  title="Delete Site"
+  message="Are you sure you want to delete '{siteToDelete?.name}'? This action will permanently remove the site and all its data. This cannot be undone."
+  confirmText="Delete Site"
+  cancelText="Cancel"
+  type="danger"
+  on:confirm={handleDeleteSite}
+  on:cancel={() => {
+    showDeleteConfirm = false;
+    siteToDelete = null;
+  }}
+/>
+
+<!-- Delete Profile Confirmation Dialog -->
+<ConfirmDialog
+  isOpen={showDeleteConfirm && !siteToDelete}
   title="Delete All Profile Data"
   message="⚠️ WARNING: This will permanently delete ALL your profile data including personal information, work experience, education, skills, and all uploaded content. This action cannot be undone."
   confirmText="Delete Everything"

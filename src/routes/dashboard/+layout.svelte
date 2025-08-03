@@ -64,11 +64,8 @@
 
   $: currentPath = $page.url.pathname;
 
-  const navItems = [
-    { path: '/dashboard', label: 'Main', icon: Home },
-    { path: '/dashboard/editor', label: 'Site Editor', icon: Edit3 },
-    { path: '/dashboard/settings', label: 'Account Settings', icon: Settings }
-  ];
+  // Simplified navigation - removed Main and Site Editor
+  const navItems: Array<{path: string, label: string, icon: any}> = [];
 </script>
 
 <svelte:head>
@@ -94,24 +91,12 @@
             <span class="text-xl font-bold text-gray-900 dark:text-white">SiteMe</span>
           </div>
 
-          <!-- Navigation Tabs -->
+          <!-- Simplified Navigation - No main navigation items -->
           <nav class="hidden md:flex items-center space-x-1">
-            {#each navItems as item}
-              <a
-                href={item.path}
-                class="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 {
-                  currentPath === item.path
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                }"
-              >
-                <svelte:component this={item.icon} class="w-4 h-4" />
-                <span>{item.label}</span>
-              </a>
-            {/each}
+            <!-- Navigation removed as requested -->
           </nav>
 
-          <!-- User Menu -->
+          <!-- Simplified User Menu -->
           <div class="flex items-center space-x-3">
             <!-- Theme Toggle -->
             <button
@@ -126,36 +111,57 @@
               {/if}
             </button>
             
-            <div class="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-              <User class="w-4 h-4" />
-              <span>{user?.email?.split('@')[0] || 'User'}</span>
+            <!-- User Dropdown -->
+            <div class="relative group">
+              <button class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <span>{user?.email?.split('@')[0] || 'User'}</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              
+              <!-- Dropdown Menu -->
+              <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div class="py-1">
+                  <a
+                    href="/dashboard/settings"
+                    class="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Settings class="w-4 h-4" />
+                    <span>Account Settings</span>
+                  </a>
+                  <button
+                    on:click={handleSignOut}
+                    class="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                  >
+                    <LogOut class="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <button
-              on:click={handleSignOut}
-              class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-            >
-              <LogOut class="w-4 h-4" />
-              <span class="hidden sm:inline">Sign Out</span>
-            </button>
           </div>
         </div>
 
-        <!-- Mobile Navigation -->
+        <!-- Mobile Navigation - Simplified -->
         <div class="md:hidden border-t border-gray-200/50 dark:border-gray-700/50">
-          <nav class="flex items-center justify-around py-2">
-            {#each navItems as item}
+          <nav class="flex items-center justify-center py-2">
+            <div class="flex items-center space-x-4">
               <a
-                href={item.path}
-                class="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-all duration-200 {
-                  currentPath === item.path
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-300'
-                }"
+                href="/dashboard/settings"
+                class="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
-                <svelte:component this={item.icon} class="w-5 h-5" />
-                <span class="text-xs font-medium">{item.label}</span>
+                <Settings class="w-4 h-4" />
+                <span>Settings</span>
               </a>
-            {/each}
+              <button
+                on:click={handleSignOut}
+                class="flex items-center space-x-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              >
+                <LogOut class="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </nav>
         </div>
       </div>

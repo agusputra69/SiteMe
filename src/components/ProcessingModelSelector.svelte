@@ -49,13 +49,13 @@
                 <Zap class="w-5 h-5 text-blue-600" />
               </div>
               <div class="flex-1 text-left">
-                <h4 class="font-medium text-gray-900 mb-1">AI Processing (Direkomendasikan)</h4>
+                <h4 class="font-medium text-gray-900 mb-1">AI Processing (Recommended)</h4>
                 <p class="text-sm text-gray-600">
-                  Menggunakan AI untuk ekstraksi data yang lebih akurat dan lengkap dari resume PDF Anda.
+                  Using AI for more accurate and complete data extraction from your PDF resume.
                 </p>
                 <div class="mt-2">
                   <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Akurasi Tinggi
+                    High Accuracy
                   </span>
                 </div>
               </div>
@@ -74,11 +74,11 @@
               <div class="flex-1 text-left">
                 <h4 class="font-medium text-gray-900 mb-1">Basic Processing</h4>
                 <p class="text-sm text-gray-600">
-                  Ekstraksi dasar tanpa AI. Hasil mungkin terbatas dan memerlukan editing manual.
+                  Basic extraction without AI. Results may be limited and require manual editing.
                 </p>
                 <div class="mt-2">
                   <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    Cepat & Sederhana
+                    Fast & Simple
                   </span>
                 </div>
               </div>

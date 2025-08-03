@@ -75,7 +75,7 @@
     }
 
     if (data && data.length >= 3) {
-      toasts.error('Anda sudah mencapai batas maksimal 3 website. Hapus website yang tidak diperlukan terlebih dahulu.');
+      toasts.error('You have reached the maximum limit of 3 websites. Please delete unnecessary websites first.');
       goto('/dashboard/sites');
       return;
     }
@@ -241,14 +241,14 @@
     goto('/dashboard/sites');
   }
 
-  function handlePDFSuccessProceed() {
+  function handlePDFSuccessConfirm() {
     showPDFSuccess = false;
-    goto('/dashboard/sites');
+    goto('/dashboard');
   }
 
   function handlePDFSuccessClose() {
     showPDFSuccess = false;
-    goto('/dashboard/sites');
+    goto('/dashboard');
   }
 
   function handlePDFErrorRetry() {
@@ -279,8 +279,8 @@
 </script>
 
 <svelte:head>
-  <title>Buat Website Baru - SiteMe</title>
-  <meta name="description" content="Buat website profesional baru dengan SiteMe" />
+  <title>Create New Website - SiteMe</title>
+<meta name="description" content="Create a new professional website with SiteMe" />
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -295,10 +295,10 @@
       </button>
       <div>
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-          Buat Website Baru
+          Create New Website
         </h1>
         <p class="text-gray-600 dark:text-gray-300">
-          Pilih cara untuk membuat website profesional Anda
+          Choose how to create your professional website
         </p>
       </div>
     </div>
@@ -316,7 +316,7 @@
               Upload Resume PDF
             </h3>
             <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-              Upload resume PDF Anda dan biarkan AI mengekstrak informasi secara otomatis untuk membuat website yang sempurna.
+              Upload your resume PDF and let AI automatically extract information to create the perfect website.
             </p>
             
             <button
@@ -329,7 +329,7 @@
                 {uploading ? 'Mengupload...' : 'Memproses...'}
               {:else}
                 <FileText class="w-5 h-5 mr-3" />
-                Pilih File PDF
+                Choose PDF File
               {/if}
             </button>
           </div>
@@ -342,10 +342,10 @@
               <Edit3 class="w-8 h-8 text-white" />
             </div>
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Buat Manual
+              Create Manually
             </h3>
             <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-              Mulai dari template kosong dan isi informasi Anda secara manual untuk kontrol penuh atas konten website.
+              Start from an empty template and fill in your information manually for full control over website content.
             </p>
             
             <button
@@ -353,7 +353,7 @@
               class="w-full inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
             >
               <Edit3 class="w-5 h-5 mr-3" />
-              Mulai dari Kosong
+              Start from Scratch
             </button>
           </div>
         </div>
@@ -362,27 +362,27 @@
       <!-- Tips Section -->
       <div class="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-6">
         <h4 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
-          💡 Tips untuk hasil terbaik:
+          💡 Tips for best results:
         </h4>
         <div class="grid md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
           <ul class="space-y-2">
             <li class="flex items-start">
               <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-              Gunakan PDF resume yang terformat dengan baik
+              Use a well-formatted PDF resume
             </li>
             <li class="flex items-start">
               <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-              Pastikan teks dapat dibaca dengan jelas
+              Ensure text is clearly readable
             </li>
           </ul>
           <ul class="space-y-2">
             <li class="flex items-start">
               <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-              Sertakan semua bagian penting (pengalaman, pendidikan, skills)
+              Include all important sections (experience, education, skills)
             </li>
             <li class="flex items-start">
               <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-              Anda dapat mengedit hasil ekstraksi nanti
+              You can edit the extraction results later
             </li>
           </ul>
         </div>
@@ -397,10 +397,10 @@
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
       <div class="p-6">
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Pilih Mode Pemrosesan
+          Choose Processing Mode
         </h3>
         <p class="text-gray-600 dark:text-gray-300 mb-6">
-          Pilih bagaimana Anda ingin memproses resume PDF Anda:
+          Choose how you want to process your PDF resume:
         </p>
         
         <div class="space-y-3">
@@ -412,7 +412,7 @@
               <Sparkles class="w-5 h-5 mr-3" />
               <div>
                 <div class="font-semibold">AI Processing (Direkomendasikan)</div>
-                <div class="text-sm opacity-90">Ekstraksi otomatis dengan AI - hasil lebih akurat</div>
+                <div class="text-sm opacity-90">Automatic extraction with AI - more accurate results</div>
               </div>
             </div>
           </button>
@@ -425,7 +425,7 @@
               <Zap class="w-5 h-5 mr-3" />
               <div>
                 <div class="font-semibold">Basic Processing</div>
-                <div class="text-sm opacity-90">Ekstraksi sederhana tanpa AI - lebih cepat</div>
+                <div class="text-sm opacity-90">Simple extraction without AI - faster</div>
               </div>
             </div>
           </button>
@@ -435,7 +435,7 @@
           <div class="flex items-start">
             <AlertTriangle class="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" />
             <p class="text-sm text-yellow-800 dark:text-yellow-200">
-              <strong>Catatan:</strong> AI processing memiliki limitasi harian karena keterbatasan resource. Jika gagal, sistem akan otomatis menggunakan basic processing.
+              <strong>Note:</strong> AI processing has daily limitations due to resource constraints. If it fails, the system will automatically use basic processing.
             </p>
           </div>
         </div>
@@ -444,7 +444,7 @@
           on:click={() => showProcessingModeSelection = false}
           class="w-full mt-4 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
         >
-          Batal
+          Cancel
         </button>
       </div>
     </div>
@@ -476,7 +476,7 @@
   extractedData={extractedData}
   fileName={processedFileName}
   on:edit={handlePDFSuccessEdit}
-  on:proceed={handlePDFSuccessProceed}
+  on:proceed={handlePDFSuccessConfirm}
   on:close={handlePDFSuccessClose}
 />
 
