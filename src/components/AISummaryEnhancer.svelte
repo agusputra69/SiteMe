@@ -5,6 +5,9 @@
 	const dispatch = createEventDispatcher();
 
 	export let value = '';
+	
+	// Ensure value is never undefined
+	$: value = value || '';
 	export let placeholder = 'Write a brief summary of your professional background and goals...';
 	export let label = 'Professional Summary';
 	export let id = '';
@@ -16,7 +19,7 @@
 	let enhancementLevel = 'standard'; // standard, detailed, executive
 
 	async function enhanceSummary() {
-		if (!value.trim()) return;
+		if (!value || !value.trim()) return;
 		
 		isEnhancing = true;
 		showEnhanced = false;
@@ -226,7 +229,7 @@ IMPORTANT: Return ONLY the enhanced summary. Do NOT include any prefixes like "R
 		<button
 			type="button"
 			on:click={enhanceSummary}
-			disabled={isEnhancing || !value.trim()}
+			disabled={isEnhancing || !value || !value.trim()}
 			class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
 		>
 			{#if isEnhancing}
@@ -296,4 +299,4 @@ IMPORTANT: Return ONLY the enhanced summary. Do NOT include any prefixes like "R
 	<div class="text-xs text-gray-500 dark:text-gray-400">
 		Use AI to enhance your summary with professional language and impactful achievements
 	</div>
-</div> 
+</div>
