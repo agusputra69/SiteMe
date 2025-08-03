@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight, Globe, Palette, Settings, Award, Code, Trophy, Github, Twitter, Linkedin, Link2, Image, ExternalLink } from 'lucide-svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight, Globe, Palette, Settings, Award, Code, Trophy, Github, Twitter, Linkedin, Link2, Image, ExternalLink, CheckCircle, AlertCircle, Info, Zap, Star, Briefcase, GraduationCap, Languages, FolderOpen, Medal, Camera, Palette as PaletteIcon, Sparkles } from 'lucide-svelte';
 	import type { ResumeData } from '$lib/ai';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
@@ -15,6 +15,7 @@
 
 	const dispatch = createEventDispatcher();
 
+	// Props with better type safety
 	export let resumeData: ResumeData;
 	export let showPreview = false;
 	export let uploading = false;
@@ -22,21 +23,10 @@
 	export let username: string = '';
 	export let saveSuccess = false;
 
-	// Ensure skills array is always initialized
-	$: if (resumeData && !resumeData.skills) {
-		resumeData.skills = [];
-	}
-
-	// Listen for save success from parent
-	$: if (!uploading && saveSuccess) {
-		setTimeout(() => {
-			saveSuccess = false;
-		}, 3000);
-	}
-
+	// Enhanced state management with better typing
 	let profilePhotoFile: File | null = null;
 	let profilePhotoUrl = '';
-	let selectedTemplate = 'classic';
+	let selectedTemplate = 'modern';
 	let selectedTheme = 'blue';
 	let templateCustomization = {
 		theme: 'blue',
@@ -57,649 +47,1124 @@
 		verticalSpacing: 'normal',
 		horizontalPadding: 'normal'
 	};
+
+	// UI State with better organization
 	let showAdvancedCustomization = false;
-	let activeTab = 'basic'; // basic, experience, education, skills, links, design
+	let activeTab = 'basic';
 	let applyingTemplate = false;
 	let applyingTheme = false;
 	let applyingCustomization = false;
+	let showQuickActions = false;
+	let showTips = false;
+	let lastSaved = new Date();
 
-	// Accessibility and validation state
+	// Enhanced form validation and accessibility
 	let formErrors: Record<string, string> = {};
 	let isSubmitting = false;
 	let focusableElements: HTMLElement[] = [];
+	// Removed auto-save functionality to prevent data loss issues
 
-	// Initialize template settings from resumeData if available
-	$: if (resumeData) {
-		if (resumeData.template) {
-			selectedTemplate = resumeData.template;
-		}
-		if (resumeData.theme) {
-			selectedTheme = resumeData.theme;
-		}
-		if (resumeData.customization) {
-			templateCustomization = { ...templateCustomization, ...resumeData.customization };
-		}
-	}
-
-
-
-	// Tab configuration
+	// Enhanced tab configuration with better typing
 	const tabs = [
-		{ id: 'basic', label: 'Basic Info', icon: User },
-		{ id: 'experience', label: 'Experience', icon: FileText },
-		{ id: 'education', label: 'Education', icon: FileText },
-		{ id: 'certifications', label: 'Certifications', icon: Award },
-		{ id: 'languages', label: 'Languages', icon: Globe },
-		{ id: 'projects', label: 'Projects', icon: Code },
-		{ id: 'awards', label: 'Awards', icon: Trophy },
-		{ id: 'skills', label: 'Skills', icon: Plus },
-		{ id: 'links', label: 'Portfolio Showcase', icon: ExternalLink },
-		{ id: 'design', label: 'Design', icon: Edit3 }
-	];
-
-	// Form validation functions
-	function validateField(fieldName: string, value: string): string {
-		switch (fieldName) {
-			case 'name':
-				return value.trim() ? '' : 'Full name is required';
-			case 'email':
-				if (!value.trim()) return '';
-				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				return emailRegex.test(value) ? '' : 'Please enter a valid email address';
-			case 'phone':
-				if (!value.trim()) return '';
-				const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-				return phoneRegex.test(value.replace(/[\s\-\(\)]/g, '')) ? '' : 'Please enter a valid phone number';
-			case 'username':
-				if (!value.trim()) return 'Username is required';
-				const usernameRegex = /^[a-zA-Z0-9-_]+$/;
-				return usernameRegex.test(value) ? '' : 'Username can only contain letters, numbers, hyphens, and underscores';
-			default:
-				return '';
+		{ 
+			id: 'basic', 
+			label: 'Basic Info', 
+			icon: User,
+			description: 'Personal information and contact details',
+			color: 'blue',
+			required: true,
+			completion: () => !!(resumeData.name?.trim() && resumeData.email?.trim())
+		},
+		{ 
+			id: 'experience', 
+			label: 'Experience', 
+			icon: Briefcase,
+			description: 'Work history and professional experience',
+			color: 'green',
+			required: true,
+			completion: () => resumeData.experience?.length > 0
+		},
+		{ 
+			id: 'education', 
+			label: 'Education', 
+			icon: GraduationCap,
+			description: 'Academic background and qualifications',
+			color: 'purple',
+			required: true,
+			completion: () => resumeData.education?.length > 0
+		},
+		{ 
+			id: 'skills', 
+			label: 'Skills', 
+			icon: Zap,
+			description: 'Technical and professional skills',
+			color: 'orange',
+			required: true,
+			completion: () => resumeData.skills?.length > 0
+		},
+		{ 
+			id: 'certifications', 
+			label: 'Certifications', 
+			icon: Award,
+			description: 'Professional certifications and credentials',
+			color: 'yellow',
+			required: false,
+			completion: () => resumeData.certifications?.length > 0
+		},
+		{ 
+			id: 'languages', 
+			label: 'Languages', 
+			icon: Languages,
+			description: 'Language proficiencies',
+			color: 'blue',
+			required: false,
+			completion: () => resumeData.languages?.length > 0
+		},
+		{ 
+			id: 'projects', 
+			label: 'Projects', 
+			icon: FolderOpen,
+			description: 'Portfolio projects and achievements',
+			color: 'indigo',
+			required: false,
+			completion: () => resumeData.projects?.length > 0
+		},
+		{ 
+			id: 'awards', 
+			label: 'Awards', 
+			icon: Medal,
+			description: 'Awards and recognitions',
+			color: 'orange',
+			required: false,
+			completion: () => resumeData.awards?.length > 0
+		},
+		{ 
+			id: 'links', 
+			label: 'Portfolio', 
+			icon: ExternalLink,
+			description: 'Social media and portfolio links',
+			color: 'green',
+			required: false,
+			completion: () => (resumeData.links?.length || 0) > 0
+		},
+		{ 
+			id: 'design', 
+			label: 'Design', 
+			icon: PaletteIcon,
+			description: 'Template and visual customization',
+			color: 'indigo',
+			required: false,
+			completion: () => true
 		}
-	}
+	] as const;
 
-	function validateForm(): boolean {
-		const errors: Record<string, string> = {};
-		
-		errors.name = validateField('name', resumeData.name || '');
-		errors.email = validateField('email', resumeData.email || '');
-		errors.phone = validateField('phone', resumeData.phone || '');
-		errors.username = validateField('username', username);
-
-		formErrors = errors;
-		return !Object.values(errors).some(error => error !== '');
-	}
-
-	// Keyboard navigation support
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
-			// Close any open modals or return to edit mode
-			if (showPreview) {
-				showPreview = false;
-			}
-		}
-	}
-
-	// Focus management
-	function focusFirstElement() {
-		const firstInput = document.querySelector('input, button, textarea') as HTMLElement;
-		if (firstInput) {
-			firstInput.focus();
-		}
-	}
-
-	function addExperience() {
-		if (!resumeData.experience) resumeData.experience = [];
-		resumeData.experience = [
-			...resumeData.experience,
-			{ 
-				title: '', 
-				company: '', 
-				duration: '', 
-				description: '',
-				startDate: '',
-				endDate: '',
-				isCurrent: false,
-				location: '',
-				contractType: ''
-			}
-		];
-		// Focus the first input of the new experience entry
-		setTimeout(() => {
-			const newInput = document.querySelector(`#job-title-${resumeData.experience.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeExperience(index: number) {
-		resumeData.experience = resumeData.experience?.filter((_, i) => i !== index) || [];
-	}
-
-	function addEducation() {
-		if (!resumeData.education) resumeData.education = [];
-		resumeData.education = [
-			...resumeData.education,
-			{ 
-				degree: '', 
-				institution: '', 
-				year: '',
-				startDate: '',
-				endDate: '',
-				isCurrent: false
-			}
-		];
-		// Focus the first input of the new education entry
-		setTimeout(() => {
-			const newInput = document.querySelector(`#degree-${resumeData.education.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeEducation(index: number) {
-		resumeData.education = resumeData.education?.filter((_, i) => i !== index) || [];
-	}
-
-	function addSkill() {
-		if (!resumeData.skills) resumeData.skills = [];
-		resumeData.skills = [...resumeData.skills, ''];
-		// Focus the new skill input
-		setTimeout(() => {
-			const newInput = document.querySelector(`#skill-${resumeData.skills.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeSkill(index: number) {
-		resumeData.skills = resumeData.skills?.filter((_, i) => i !== index) || [];
-	}
-
-	// Predefined social media options
+	// Social media options with enhanced metadata
 	const socialMediaOptions = [
-		{ name: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/in/yourprofile', color: 'bg-blue-600' },
-		{ name: 'GitHub', icon: Github, placeholder: 'https://github.com/yourusername', color: 'bg-gray-800' },
-		{ name: 'Twitter', icon: Twitter, placeholder: 'https://twitter.com/yourusername', color: 'bg-blue-400' },
-		{ name: 'Portfolio', icon: Globe, placeholder: 'https://yourportfolio.com', color: 'bg-purple-600' },
-		{ name: 'Website', icon: Link2, placeholder: 'https://yourwebsite.com', color: 'bg-green-600' },
-		{ name: 'Other', icon: ExternalLink, placeholder: 'https://...', color: 'bg-gray-600' }
-	];
-
-	// Helper functions for social media
-	function addSocialMediaLink(platform: string) {
-		if (!resumeData.links) resumeData.links = [];
-		const option = socialMediaOptions.find(opt => opt.name === platform);
-		resumeData.links = [...resumeData.links, {
-			type: platform,
-			url: option?.placeholder || ''
-		}];
-		// Focus the new link input
-		setTimeout(() => {
-			const linksLength = resumeData.links?.length || 0;
-			const newInput = document.querySelector(`#link-url-${linksLength - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function getSocialMediaIcon(type: string) {
-		const option = socialMediaOptions.find(opt => opt.name.toLowerCase() === type.toLowerCase());
-		return option?.icon || ExternalLink;
-	}
-
-	function getSocialMediaColor(type: string) {
-		const option = socialMediaOptions.find(opt => opt.name.toLowerCase() === type.toLowerCase());
-		return option?.color || 'bg-gray-600';
-	}
-
-	function addLink() {
-		if (!resumeData.links) resumeData.links = [];
-		resumeData.links = [...resumeData.links, { type: 'LinkedIn', url: '' }];
-		// Focus the new link input
-		setTimeout(() => {
-			const linksLength = resumeData.links?.length || 0;
-			const newInput = document.querySelector(`#link-url-${linksLength - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeLink(index: number) {
-		resumeData.links = resumeData.links?.filter((_, i) => i !== index) || [];
-	}
-
-	function addCertification() {
-		if (!resumeData.certifications) resumeData.certifications = [];
-		resumeData.certifications = [
-			...resumeData.certifications,
-			{ 
-				name: '', 
-				issuer: '', 
-				date: '',
-				description: '',
-				credentialId: ''
-			}
-		];
-		// Focus the first input of the new certification entry
-		setTimeout(() => {
-			const newInput = document.querySelector(`#cert-name-${resumeData.certifications.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeCertification(index: number) {
-		resumeData.certifications = resumeData.certifications?.filter((_, i) => i !== index) || [];
-	}
-
-	function addLanguage() {
-		if (!resumeData.languages) resumeData.languages = [];
-		resumeData.languages = [
-			...resumeData.languages,
-			{ 
-				language: '', 
-				proficiency: ''
-			}
-		];
-		// Focus the first input of the new language entry
-		setTimeout(() => {
-			const newInput = document.querySelector(`#language-${resumeData.languages.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeLanguage(index: number) {
-		resumeData.languages = resumeData.languages?.filter((_, i) => i !== index) || [];
-	}
-
-	function addProject() {
-		if (!resumeData.projects) resumeData.projects = [];
-		resumeData.projects = [
-			...resumeData.projects,
-			{ 
-				name: '', 
-				description: '', 
-				technologies: [''],
-				url: '',
-				duration: '',
-				image: ''
-			}
-		];
-		// Focus the first input of the new project entry
-		setTimeout(() => {
-			const newInput = document.querySelector(`#project-name-${resumeData.projects.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeProject(index: number) {
-		resumeData.projects = resumeData.projects?.filter((_, i) => i !== index) || [];
-	}
-
-	function addAward() {
-		if (!resumeData.awards) resumeData.awards = [];
-		resumeData.awards = [
-			...resumeData.awards,
-			{ 
-				title: '', 
-				organization: '', 
-				date: '',
-				description: ''
-			}
-		];
-		// Focus the first input of the new award entry
-		setTimeout(() => {
-			const newInput = document.querySelector(`#award-title-${resumeData.awards.length - 1}`) as HTMLInputElement;
-			if (newInput) newInput.focus();
-		}, 100);
-	}
-
-	function removeAward(index: number) {
-		resumeData.awards = resumeData.awards?.filter((_, i) => i !== index) || [];
-	}
-
-	function handleProfilePhotoUpload(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const file = target.files?.[0];
-		
-		if (file && file.type.startsWith('image/')) {
-			profilePhotoFile = file;
-			// Create preview URL
-			profilePhotoUrl = URL.createObjectURL(file);
-			dispatch('photoUpload', { file });
+		{ 
+			name: 'LinkedIn', 
+			icon: Linkedin, 
+			placeholder: 'https://linkedin.com/in/yourprofile', 
+			color: 'bg-blue-600',
+			description: 'Professional networking'
+		},
+		{ 
+			name: 'GitHub', 
+			icon: Github, 
+			placeholder: 'https://github.com/yourusername', 
+			color: 'bg-gray-800',
+			description: 'Code repositories'
+		},
+		{ 
+			name: 'Twitter', 
+			icon: Twitter, 
+			placeholder: 'https://twitter.com/yourusername', 
+			color: 'bg-blue-400',
+			description: 'Social media presence'
+		},
+		{ 
+			name: 'Portfolio', 
+			icon: Globe, 
+			placeholder: 'https://yourportfolio.com', 
+			color: 'bg-purple-600',
+			description: 'Personal website'
+		},
+		{ 
+			name: 'Website', 
+			icon: Link2, 
+			placeholder: 'https://yourwebsite.com', 
+			color: 'bg-green-600',
+			description: 'Business website'
+		},
+		{ 
+			name: 'Other', 
+			icon: ExternalLink, 
+			placeholder: 'https://...', 
+			color: 'bg-gray-600',
+			description: 'Other professional links'
 		}
-	}
+	] as const;
 
-	function saveProfile() {
-		dispatch('save', { 
-			resumeData: resumeData, 
-			profilePhoto: profilePhotoFile,
-			username: username
-		});
-	}
+	// Initialize component with enhanced error handling
+	onMount(() => {
+		try {
+			// Initialize resumeData if empty
+			if (!resumeData) {
+				resumeData = getDefaultResumeData();
+			}
 
-	function togglePreview() {
-		showPreview = !showPreview;
-		dispatch('togglePreview', { showPreview });
-	}
+			// Initialize template settings from resumeData if available
+			if (resumeData.template) {
+				selectedTemplate = resumeData.template;
+			}
+			if (resumeData.theme) {
+				selectedTheme = resumeData.theme;
+			}
+			if (resumeData.customization) {
+				templateCustomization = { ...templateCustomization, ...resumeData.customization };
+			}
 
-	function publishProfile() {
-		profileStatus = 'published';
-		dispatch('publish', { 
-			resumeData: resumeData, 
-			profilePhoto: profilePhotoFile
-		});
-	}
-
-	// Manual save function
-	function saveDraft() {
-		if (uploading) {
-			return;
+					// Focus management
+		focusFirstElement();
+		} catch (error) {
+			console.error('Error initializing ProfileEditor:', error);
+			dispatch('error', { message: 'Failed to initialize profile editor' });
 		}
-		
-		// Create a fresh copy of resumeData to ensure reactivity
-		const dataToSave = {
-			...resumeData,
-			template: selectedTemplate,
-			theme: selectedTheme,
-			customization: templateCustomization
+	});
+
+	// Cleanup on component destruction
+	onMount(() => {
+		return () => {
+			// Component cleanup
 		};
+	});
+
+	// Ensure skills array is always initialized
+	$: if (resumeData && !resumeData.skills) {
+		resumeData.skills = [];
+	}
+
+	// Listen for save success from parent with better error handling
+	$: if (!uploading && saveSuccess) {
+		setTimeout(() => {
+			saveSuccess = false;
+		}, 3000);
+	}
+
+	// Ensure data synchronization with parent component
+	$: if (resumeData) {
+		console.log('ProfileEditor received updated resumeData:', resumeData);
 		
-		// Reset success state
-		saveSuccess = false;
-		
-		// Add a small delay to prevent rapid successive clicks
-		setTimeout(() => {
-			profileStatus = 'draft';
-			dispatch('save', { 
-				resumeData: dataToSave, 
-				profilePhoto: profilePhotoFile
-			});
-		}, 100);
+		// Ensure all required arrays are initialized
+		if (!resumeData.experience) resumeData.experience = [];
+		if (!resumeData.education) resumeData.education = [];
+		if (!resumeData.skills) resumeData.skills = [];
+		if (!resumeData.certifications) resumeData.certifications = [];
+		if (!resumeData.languages) resumeData.languages = [];
+		if (!resumeData.projects) resumeData.projects = [];
+		if (!resumeData.awards) resumeData.awards = [];
+		if (!resumeData.links) resumeData.links = [];
 	}
 
-
-
-	function togglePublishStatus() {
-		const newStatus = profileStatus === 'published' ? 'draft' : 'published';
-		profileStatus = newStatus;
-		dispatch('statusChange', { 
-			resumeData: resumeData, 
-			profilePhoto: profilePhotoFile
-		});
-	}
-
-	function applyTheme() {
-		applyingTheme = true;
-		setTimeout(() => {
-			dispatch('themeApply', { 
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			});
-			applyingTheme = false;
-		}, 500);
-	}
-
-	function applyTemplate() {
-		applyingTemplate = true;
-		setTimeout(() => {
-			dispatch('templateApply', { 
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			});
-			applyingTemplate = false;
-		}, 500);
-	}
-
-	function applyCustomization() {
-		applyingCustomization = true;
-		setTimeout(() => {
-			dispatch('customizationApply', { 
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			});
-			applyingCustomization = false;
-		}, 500);
-	}
-
-	function previewLive() {
-		if (username) {
-			window.open(`/u/${username}`, '_blank');
-		} else {
-			alert('Please set a username first to preview your live profile.');
-		}
-	}
-
-	function handleTemplateChange(event: CustomEvent) {
-		console.log('Template change received:', event.detail);
-		selectedTemplate = event.detail.template;
-		selectedTheme = event.detail.theme;
-		if (event.detail.customization) {
-			templateCustomization = { ...templateCustomization, ...event.detail.customization };
-		}
-		// Update resumeData with new template settings for immediate preview
-		resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: templateCustomization };
-		console.log('Updated selectedTemplate:', selectedTemplate, 'selectedTheme:', selectedTheme);
-	}
-
-	function handleThemeChange(event: CustomEvent) {
-		selectedTheme = event.detail.theme;
-		if (event.detail.customization) {
-			templateCustomization = { ...templateCustomization, ...event.detail.customization };
-		}
-		// Update resumeData with new theme settings for immediate preview
-		resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: templateCustomization };
-	}
-
-	function handleCustomizationChange(event: CustomEvent) {
-		templateCustomization = { ...templateCustomization, ...event.detail };
-		// Update resumeData with new customization settings for immediate preview
-		resumeData = { ...resumeData, customization: templateCustomization };
-	}
-
-	// Manual resume creation function
-	function createManualResume() {
-		resumeData = {
+	// Enhanced helper functions with better error handling
+	function getDefaultResumeData(): ResumeData {
+		return {
 			name: '',
 			email: '',
 			phone: '',
 			location: '',
 			summary: '',
-			experience: [
-				{ title: '', company: '', duration: '', description: '' }
-			],
-			education: [
-				{ degree: '', institution: '', year: '' }
-			],
-			certifications: [
-				{ name: '', issuer: '', date: '', description: '', credentialId: '' }
-			],
-			languages: [
-				{ language: '', proficiency: '' }
-			],
-			projects: [
-				{ name: '', description: '', technologies: [''], url: '', duration: '' }
-			],
-			awards: [
-				{ title: '', organization: '', date: '', description: '' }
-			],
-			skills: [''],
-			links: [
-				{ type: 'LinkedIn', url: '' }
-			]
+			experience: [],
+			education: [],
+			certifications: [],
+			languages: [],
+			projects: [],
+			awards: [],
+			skills: [],
+			links: []
 		};
-		dispatch('manualCreate', { resumeData });
 	}
 
-	// ATS-friendly resume export function
-	function exportATSResume() {
-		const atsContent = generateATSContent(resumeData);
-		downloadTextFile(atsContent, `${resumeData.name || 'resume'}_ATS.txt`);
+	// Enhanced form validation functions with better error messages
+	function validateField(fieldName: string, value: string): string {
+		try {
+			switch (fieldName) {
+				case 'name':
+					return value.trim() ? '' : 'Full name is required';
+				case 'email':
+					if (!value.trim()) return '';
+					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+					return emailRegex.test(value) ? '' : 'Please enter a valid email address';
+				case 'phone':
+					if (!value.trim()) return '';
+					const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+					return phoneRegex.test(value.replace(/[\s\-\(\)]/g, '')) ? '' : 'Please enter a valid phone number';
+				case 'username':
+					if (!value.trim()) return 'Username is required';
+					const usernameRegex = /^[a-zA-Z0-9-_]+$/;
+					return usernameRegex.test(value) ? '' : 'Username can only contain letters, numbers, hyphens, and underscores';
+				default:
+					return '';
+			}
+		} catch (error) {
+			console.error('Validation error:', error);
+			return 'Validation error occurred';
+		}
 	}
 
-	// Generate ATS-friendly content
-	function generateATSContent(data: ResumeData): string {
-		let content = '';
+	// Enhanced error handling with user feedback
+	function handleError(error: any, context: string) {
+		console.error(`${context} error:`, error);
+		dispatch('error', { 
+			message: `Failed to ${context.toLowerCase()}`,
+			details: error.message || 'An unexpected error occurred'
+		});
+	}
 
-		// Header
-		if (data.name) content += `${data.name.toUpperCase()}\n`;
-		content += '='.repeat(50) + '\n\n';
+	// Removed debounced save to prevent data loss issues
 
-		// Contact Information
-		content += 'CONTACT INFORMATION\n';
-		content += '-'.repeat(20) + '\n';
-		if (data.email) content += `Email: ${data.email}\n`;
-		if (data.phone) content += `Phone: ${data.phone}\n`;
-		if (data.location) content += `Location: ${data.location}\n`;
+	function validateForm(): boolean {
+		try {
+			const errors: Record<string, string> = {};
+			
+			errors.name = validateField('name', resumeData.name || '');
+			errors.email = validateField('email', resumeData.email || '');
+			errors.phone = validateField('phone', resumeData.phone || '');
+			errors.username = validateField('username', username);
+
+			formErrors = errors;
+			return !Object.values(errors).some(error => error !== '');
+		} catch (error) {
+			console.error('Form validation error:', error);
+			return false;
+		}
+	}
+
+	// Enhanced keyboard navigation support
+	function handleKeydown(event: KeyboardEvent) {
+		try {
+			if (event.key === 'Escape') {
+				if (showPreview) {
+					showPreview = false;
+				}
+				if (showQuickActions) {
+					showQuickActions = false;
+				}
+			} else if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
+				event.preventDefault();
+				saveDraft();
+			} else if (event.key === 'p' && (event.ctrlKey || event.metaKey)) {
+				event.preventDefault();
+				togglePreview();
+			}
+		} catch (error) {
+			console.error('Keyboard navigation error:', error);
+		}
+	}
+
+	// Enhanced accessibility: Screen reader announcements
+	function announceToScreenReader(message: string) {
+		const announcement = document.createElement('div');
+		announcement.setAttribute('aria-live', 'polite');
+		announcement.setAttribute('aria-atomic', 'true');
+		announcement.className = 'sr-only';
+		announcement.textContent = message;
+		document.body.appendChild(announcement);
 		
-		// Links
-		if (data.links && data.links.length > 0) {
-			data.links.forEach(link => {
-				if (link.url) content += `${link.type}: ${link.url}\n`;
-			});
-		}
-		content += '\n';
-
-		// Professional Summary
-		if (data.summary) {
-			content += 'PROFESSIONAL SUMMARY\n';
-			content += '-'.repeat(20) + '\n';
-			content += `${data.summary}\n\n`;
-		}
-
-		// Work Experience
-		if (data.experience && data.experience.length > 0) {
-			content += 'WORK EXPERIENCE\n';
-			content += '-'.repeat(15) + '\n';
-			data.experience.forEach((exp, index) => {
-				if (exp.title || exp.company) {
-					content += `${exp.title || 'Position'} | ${exp.company || 'Company'}\n`;
-					if (exp.duration) content += `Duration: ${exp.duration}\n`;
-					if (exp.description) {
-						content += `${exp.description}\n`;
-					}
-					if (index < data.experience.length - 1) content += '\n';
-				}
-			});
-			content += '\n';
-		}
-
-		// Education
-		if (data.education && data.education.length > 0) {
-			content += 'EDUCATION\n';
-			content += '-'.repeat(9) + '\n';
-			data.education.forEach((edu, index) => {
-				if (edu.degree || edu.institution) {
-					content += `${edu.degree || 'Degree'} | ${edu.institution || 'Institution'}\n`;
-					if (edu.year) content += `Year: ${edu.year}\n`;
-					if (index < data.education.length - 1) content += '\n';
-				}
-			});
-			content += '\n';
-		}
-
-		// Skills
-		if (data.skills && data.skills.length > 0) {
-			content += 'SKILLS\n';
-			content += '-'.repeat(6) + '\n';
-			const skillsList = data.skills.filter(skill => skill.trim()).join(', ');
-			content += `${skillsList}\n\n`;
-		}
-
-		// Certifications
-		if (data.certifications && data.certifications.length > 0) {
-			content += 'CERTIFICATIONS\n';
-			content += '-'.repeat(14) + '\n';
-			data.certifications.forEach((cert, index) => {
-				if (cert.name || cert.issuer) {
-					content += `${cert.name || 'Certification'} | ${cert.issuer || 'Issuer'}\n`;
-					if (cert.date) content += `Date: ${cert.date}\n`;
-					if (cert.description) content += `${cert.description}\n`;
-					if (cert.credentialId) content += `Credential ID: ${cert.credentialId}\n`;
-					if (index < data.certifications.length - 1) content += '\n';
-				}
-			});
-			content += '\n';
-		}
-
-		// Languages
-		if (data.languages && data.languages.length > 0) {
-			content += 'LANGUAGES\n';
-			content += '-'.repeat(10) + '\n';
-			data.languages.forEach((lang, index) => {
-				if (lang.language) {
-					content += `${lang.language}: ${lang.proficiency || 'Proficient'}\n`;
-					if (index < data.languages.length - 1) content += '\n';
-				}
-			});
-			content += '\n';
-		}
-
-		// Projects
-		if (data.projects && data.projects.length > 0) {
-			content += 'PROJECTS\n';
-			content += '-'.repeat(8) + '\n';
-			data.projects.forEach((project, index) => {
-				if (project.name) {
-					content += `${project.name}\n`;
-					if (project.description) content += `${project.description}\n`;
-					if (project.technologies && project.technologies.length > 0) {
-						const techList = project.technologies.filter(tech => tech.trim()).join(', ');
-						content += `Technologies: ${techList}\n`;
-					}
-					if (project.url) content += `URL: ${project.url}\n`;
-					if (project.duration) content += `Duration: ${project.duration}\n`;
-					if (index < data.projects.length - 1) content += '\n';
-				}
-			});
-			content += '\n';
-		}
-
-		// Awards
-		if (data.awards && data.awards.length > 0) {
-			content += 'AWARDS & RECOGNITIONS\n';
-			content += '-'.repeat(20) + '\n';
-			data.awards.forEach((award, index) => {
-				if (award.title || award.organization) {
-					content += `${award.title || 'Award'} | ${award.organization || 'Organization'}\n`;
-					if (award.date) content += `Date: ${award.date}\n`;
-					if (award.description) content += `${award.description}\n`;
-					if (index < data.awards.length - 1) content += '\n';
-				}
-			});
-			content += '\n';
-		}
-
-		return content;
+		setTimeout(() => {
+			document.body.removeChild(announcement);
+		}, 1000);
 	}
 
-	// Download text file helper
-	function downloadTextFile(content: string, filename: string) {
-		const blob = new Blob([content], { type: 'text/plain' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = filename;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
+	// Enhanced click outside handler for dropdowns
+	function handleClickOutside(event: MouseEvent) {
+		try {
+			const target = event.target as HTMLElement;
+			if (!target.closest('.quick-actions-dropdown')) {
+				showQuickActions = false;
+			}
+		} catch (error) {
+			console.error('Click outside handler error:', error);
+		}
 	}
 
-	// Get completion percentage for progress indicator
+	// Add click outside listener with cleanup
+	$: if (showQuickActions) {
+		setTimeout(() => {
+			document.addEventListener('click', handleClickOutside);
+		}, 0);
+	} else {
+		document.removeEventListener('click', handleClickOutside);
+	}
+
+	// Enhanced focus management
+	function focusFirstElement() {
+		try {
+			const firstInput = document.querySelector('input, button, textarea') as HTMLElement;
+			if (firstInput) {
+				firstInput.focus();
+			}
+		} catch (error) {
+			console.error('Focus management error:', error);
+		}
+	}
+
+	// Enhanced completion percentage calculation
 	function getCompletionPercentage(): number {
-		let completed = 0;
-		let total = 8; // Total fields to check
+		try {
+			let completed = 0;
+			let total = 8; // Total fields to check
 
-		if (resumeData.name?.trim()) completed++;
-		if (resumeData.email?.trim()) completed++;
-		if (resumeData.phone?.trim()) completed++;
-		if (resumeData.location?.trim()) completed++;
-		if (resumeData.summary?.trim()) completed++;
-		if (resumeData.experience?.length > 0) completed++;
-		if (resumeData.education?.length > 0) completed++;
-		if (resumeData.skills?.length > 0) completed++;
+			if (resumeData.name?.trim()) completed++;
+			if (resumeData.email?.trim()) completed++;
+			if (resumeData.phone?.trim()) completed++;
+			if (resumeData.location?.trim()) completed++;
+			if (resumeData.summary?.trim()) completed++;
+			if (resumeData.experience?.length > 0) completed++;
+			if (resumeData.education?.length > 0) completed++;
+			if (resumeData.skills?.length > 0) completed++;
 
-		return Math.round((completed / total) * 100);
+			return Math.round((completed / total) * 100);
+		} catch (error) {
+			console.error('Completion calculation error:', error);
+			return 0;
+		}
+	}
+
+	// Enhanced tab completion status
+	function getTabCompletion(tabId: string): boolean {
+		try {
+			switch (tabId) {
+				case 'basic':
+					return !!(resumeData.name?.trim() && resumeData.email?.trim());
+				case 'experience':
+					return resumeData.experience?.length > 0;
+				case 'education':
+					return resumeData.education?.length > 0;
+				case 'skills':
+					return resumeData.skills?.length > 0;
+				case 'certifications':
+					return resumeData.certifications?.length > 0;
+				case 'languages':
+					return resumeData.languages?.length > 0;
+				case 'projects':
+					return resumeData.projects?.length > 0;
+				case 'awards':
+					return resumeData.awards?.length > 0;
+				case 'links':
+					return (resumeData.links?.length || 0) > 0;
+				default:
+					return false;
+			}
+		} catch (error) {
+			console.error('Tab completion error:', error);
+			return false;
+		}
+	}
+
+	// Enhanced CRUD operations with better error handling and UX
+	function addExperience() {
+		try {
+			if (!resumeData.experience) resumeData.experience = [];
+			resumeData.experience = [
+				...resumeData.experience,
+				{ 
+					title: '', 
+					company: '', 
+					duration: '', 
+					description: '',
+					startDate: '',
+					endDate: '',
+					isCurrent: false,
+					location: '',
+					contractType: ''
+				}
+			];
+			// Focus the first input of the new experience entry
+			setTimeout(() => {
+				const newInput = document.querySelector(`#job-title-${resumeData.experience.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add experience error:', error);
+			dispatch('error', { message: 'Failed to add experience entry' });
+		}
+	}
+
+	function removeExperience(index: number) {
+		try {
+			resumeData.experience = resumeData.experience?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove experience error:', error);
+			dispatch('error', { message: 'Failed to remove experience entry' });
+		}
+	}
+
+	function addEducation() {
+		try {
+			if (!resumeData.education) resumeData.education = [];
+			resumeData.education = [
+				...resumeData.education,
+				{ 
+					degree: '', 
+					institution: '', 
+					year: '',
+					startDate: '',
+					endDate: '',
+					isCurrent: false
+				}
+			];
+			// Focus the first input of the new education entry
+			setTimeout(() => {
+				const newInput = document.querySelector(`#degree-${resumeData.education.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add education error:', error);
+			dispatch('error', { message: 'Failed to add education entry' });
+		}
+	}
+
+	function removeEducation(index: number) {
+		try {
+			resumeData.education = resumeData.education?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove education error:', error);
+			dispatch('error', { message: 'Failed to remove education entry' });
+		}
+	}
+
+	function addSkill() {
+		try {
+			if (!resumeData.skills) resumeData.skills = [];
+			resumeData.skills = [...resumeData.skills, ''];
+			// Focus the new skill input
+			setTimeout(() => {
+				const newInput = document.querySelector(`#skill-${resumeData.skills.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add skill error:', error);
+			dispatch('error', { message: 'Failed to add skill' });
+		}
+	}
+
+	function removeSkill(index: number) {
+		try {
+			resumeData.skills = resumeData.skills?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove skill error:', error);
+			dispatch('error', { message: 'Failed to remove skill' });
+		}
+	}
+
+	// Enhanced helper functions for social media
+	function addSocialMediaLink(platform: string) {
+		try {
+			if (!resumeData.links) resumeData.links = [];
+			const option = socialMediaOptions.find(opt => opt.name === platform);
+			resumeData.links = [...resumeData.links, {
+				type: platform,
+				url: option?.placeholder || ''
+			}];
+			// Focus the new link input
+			setTimeout(() => {
+				const linksLength = resumeData.links?.length || 0;
+				const newInput = document.querySelector(`#link-url-${linksLength - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add social media link error:', error);
+			dispatch('error', { message: 'Failed to add social media link' });
+		}
+	}
+
+	function getSocialMediaIcon(type: string) {
+		try {
+			const option = socialMediaOptions.find(opt => opt.name.toLowerCase() === type.toLowerCase());
+			return option?.icon || ExternalLink;
+		} catch (error) {
+			console.error('Get social media icon error:', error);
+			return ExternalLink;
+		}
+	}
+
+	function getSocialMediaColor(type: string) {
+		try {
+			const option = socialMediaOptions.find(opt => opt.name.toLowerCase() === type.toLowerCase());
+			return option?.color || 'bg-gray-600';
+		} catch (error) {
+			console.error('Get social media color error:', error);
+			return 'bg-gray-600';
+		}
+	}
+
+	function addLink() {
+		try {
+			if (!resumeData.links) resumeData.links = [];
+			resumeData.links = [...resumeData.links, { type: 'LinkedIn', url: '' }];
+			// Focus the new link input
+			setTimeout(() => {
+				const linksLength = resumeData.links?.length || 0;
+				const newInput = document.querySelector(`#link-url-${linksLength - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add link error:', error);
+			dispatch('error', { message: 'Failed to add link' });
+		}
+	}
+
+	function removeLink(index: number) {
+		try {
+			resumeData.links = resumeData.links?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove link error:', error);
+			dispatch('error', { message: 'Failed to remove link' });
+		}
+	}
+
+	function addCertification() {
+		try {
+			if (!resumeData.certifications) resumeData.certifications = [];
+			resumeData.certifications = [
+				...resumeData.certifications,
+				{ 
+					name: '', 
+					issuer: '', 
+					date: '',
+					description: '',
+					credentialId: ''
+				}
+			];
+			// Focus the first input of the new certification entry
+			setTimeout(() => {
+				const newInput = document.querySelector(`#cert-name-${resumeData.certifications.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add certification error:', error);
+			dispatch('error', { message: 'Failed to add certification' });
+		}
+	}
+
+	function removeCertification(index: number) {
+		try {
+			resumeData.certifications = resumeData.certifications?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove certification error:', error);
+			dispatch('error', { message: 'Failed to remove certification' });
+		}
+	}
+
+	function addLanguage() {
+		try {
+			if (!resumeData.languages) resumeData.languages = [];
+			resumeData.languages = [
+				...resumeData.languages,
+				{ 
+					language: '', 
+					proficiency: ''
+				}
+			];
+			// Focus the first input of the new language entry
+			setTimeout(() => {
+				const newInput = document.querySelector(`#language-${resumeData.languages.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add language error:', error);
+			dispatch('error', { message: 'Failed to add language' });
+		}
+	}
+
+	function removeLanguage(index: number) {
+		try {
+			resumeData.languages = resumeData.languages?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove language error:', error);
+			dispatch('error', { message: 'Failed to remove language' });
+		}
+	}
+
+	function addProject() {
+		try {
+			if (!resumeData.projects) resumeData.projects = [];
+			resumeData.projects = [
+				...resumeData.projects,
+				{ 
+					name: '', 
+					description: '', 
+					technologies: [''],
+					url: '',
+					duration: '',
+					image: ''
+				}
+			];
+			// Focus the first input of the new project entry
+			setTimeout(() => {
+				const newInput = document.querySelector(`#project-name-${resumeData.projects.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add project error:', error);
+			dispatch('error', { message: 'Failed to add project' });
+		}
+	}
+
+	function removeProject(index: number) {
+		try {
+			resumeData.projects = resumeData.projects?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove project error:', error);
+			dispatch('error', { message: 'Failed to remove project' });
+		}
+	}
+
+	function addAward() {
+		try {
+			if (!resumeData.awards) resumeData.awards = [];
+			resumeData.awards = [
+				...resumeData.awards,
+				{ 
+					title: '', 
+					organization: '', 
+					date: '',
+					description: ''
+				}
+			];
+			// Focus the first input of the new award entry
+			setTimeout(() => {
+				const newInput = document.querySelector(`#award-title-${resumeData.awards.length - 1}`) as HTMLInputElement;
+				if (newInput) newInput.focus();
+			}, 100);
+		} catch (error) {
+			console.error('Add award error:', error);
+			dispatch('error', { message: 'Failed to add award' });
+		}
+	}
+
+	function removeAward(index: number) {
+		try {
+			resumeData.awards = resumeData.awards?.filter((_, i) => i !== index) || [];
+		} catch (error) {
+			console.error('Remove award error:', error);
+			dispatch('error', { message: 'Failed to remove award' });
+		}
+	}
+
+	function handleProfilePhotoUpload(event: Event) {
+		try {
+			const target = event.target as HTMLInputElement;
+			const file = target.files?.[0];
+			
+			if (file && file.type.startsWith('image/')) {
+				profilePhotoFile = file;
+				// Create preview URL
+				profilePhotoUrl = URL.createObjectURL(file);
+				dispatch('photoUpload', { file });
+			}
+		} catch (error) {
+			console.error('Profile photo upload error:', error);
+			dispatch('error', { message: 'Failed to upload profile photo' });
+		}
+	}
+
+	function saveProfile() {
+		try {
+			dispatch('save', { 
+				resumeData: resumeData, 
+				profilePhoto: profilePhotoFile,
+				username: username
+			});
+		} catch (error) {
+			console.error('Save profile error:', error);
+			dispatch('error', { message: 'Failed to save profile' });
+		}
+	}
+
+	function togglePreview() {
+		try {
+			showPreview = !showPreview;
+			dispatch('togglePreview', { showPreview });
+		} catch (error) {
+			console.error('Toggle preview error:', error);
+		}
+	}
+
+	function publishProfile() {
+		try {
+			profileStatus = 'published';
+			dispatch('publish', { 
+				resumeData: resumeData, 
+				profilePhoto: profilePhotoFile
+			});
+		} catch (error) {
+			console.error('Publish profile error:', error);
+			dispatch('error', { message: 'Failed to publish profile' });
+		}
+	}
+
+	// Enhanced manual save function with better error handling
+	function saveDraft() {
+		try {
+			if (uploading) {
+				return;
+			}
+			
+			// Create a fresh copy of resumeData to ensure reactivity
+			const dataToSave = {
+				...resumeData,
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: templateCustomization
+			};
+			
+			// Reset success state
+			saveSuccess = false;
+			
+			// Add a small delay to prevent rapid successive clicks
+			setTimeout(() => {
+				profileStatus = 'draft';
+				dispatch('save', { 
+					resumeData: dataToSave, 
+					profilePhoto: profilePhotoFile
+				});
+				announceToScreenReader('Profile saved successfully');
+			}, 100);
+		} catch (error) {
+			handleError(error, 'save draft');
+		}
+	}
+
+	// Removed force save to prevent data loss issues
+
+	function togglePublishStatus() {
+		try {
+			const newStatus = profileStatus === 'published' ? 'draft' : 'published';
+			profileStatus = newStatus;
+			dispatch('statusChange', { 
+				resumeData: resumeData, 
+				profilePhoto: profilePhotoFile
+			});
+		} catch (error) {
+			console.error('Toggle publish status error:', error);
+			dispatch('error', { message: 'Failed to change publish status' });
+		}
+	}
+
+	function applyTheme() {
+		try {
+			applyingTheme = true;
+			setTimeout(() => {
+				dispatch('themeApply', { 
+					template: selectedTemplate,
+					theme: selectedTheme,
+					customization: templateCustomization
+				});
+				applyingTheme = false;
+			}, 500);
+		} catch (error) {
+			console.error('Apply theme error:', error);
+			applyingTheme = false;
+			dispatch('error', { message: 'Failed to apply theme' });
+		}
+	}
+
+	function applyTemplate() {
+		try {
+			applyingTemplate = true;
+			setTimeout(() => {
+				dispatch('templateApply', { 
+					template: selectedTemplate,
+					theme: selectedTheme,
+					customization: templateCustomization
+				});
+				applyingTemplate = false;
+			}, 500);
+		} catch (error) {
+			console.error('Apply template error:', error);
+			applyingTemplate = false;
+			dispatch('error', { message: 'Failed to apply template' });
+		}
+	}
+
+	function applyCustomization() {
+		try {
+			applyingCustomization = true;
+			setTimeout(() => {
+				dispatch('customizationApply', { 
+					template: selectedTemplate,
+					theme: selectedTheme,
+					customization: templateCustomization
+				});
+				applyingCustomization = false;
+			}, 500);
+		} catch (error) {
+			console.error('Apply customization error:', error);
+			applyingCustomization = false;
+			dispatch('error', { message: 'Failed to apply customization' });
+		}
+	}
+
+	function previewLive() {
+		try {
+			if (username) {
+				window.open(`/u/${username}`, '_blank');
+			} else {
+				alert('Please set a username first to preview your live profile.');
+			}
+		} catch (error) {
+			console.error('Preview live error:', error);
+			dispatch('error', { message: 'Failed to open live preview' });
+		}
+	}
+
+	function handleTemplateChange(event: CustomEvent) {
+		try {
+			console.log('Template change received:', event.detail);
+			selectedTemplate = event.detail.template;
+			selectedTheme = event.detail.theme;
+			if (event.detail.customization) {
+				templateCustomization = { ...templateCustomization, ...event.detail.customization };
+			}
+			// Update resumeData with new template settings for immediate preview
+			resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: templateCustomization };
+			console.log('Updated selectedTemplate:', selectedTemplate, 'selectedTheme:', selectedTheme);
+		} catch (error) {
+			console.error('Template change error:', error);
+		}
+	}
+
+	function handleThemeChange(event: CustomEvent) {
+		try {
+			selectedTheme = event.detail.theme;
+			if (event.detail.customization) {
+				templateCustomization = { ...templateCustomization, ...event.detail.customization };
+			}
+			// Update resumeData with new theme settings for immediate preview
+			resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: templateCustomization };
+		} catch (error) {
+			console.error('Theme change error:', error);
+		}
+	}
+
+	function handleCustomizationChange(event: CustomEvent) {
+		try {
+			templateCustomization = { ...templateCustomization, ...event.detail };
+			// Update resumeData with new customization settings for immediate preview
+			resumeData = { ...resumeData, customization: templateCustomization };
+		} catch (error) {
+			console.error('Customization change error:', error);
+		}
+	}
+
+	// Enhanced manual resume creation function
+	function createManualResume() {
+		try {
+			resumeData = {
+				name: '',
+				email: '',
+				phone: '',
+				location: '',
+				summary: '',
+				experience: [
+					{ title: '', company: '', duration: '', description: '' }
+				],
+				education: [
+					{ degree: '', institution: '', year: '' }
+				],
+				certifications: [
+					{ name: '', issuer: '', date: '', description: '', credentialId: '' }
+				],
+				languages: [
+					{ language: '', proficiency: '' }
+				],
+				projects: [
+					{ name: '', description: '', technologies: [''], url: '', duration: '' }
+				],
+				awards: [
+					{ title: '', organization: '', date: '', description: '' }
+				],
+				skills: [''],
+				links: [
+					{ type: 'LinkedIn', url: '' }
+				]
+			};
+			dispatch('manualCreate', { resumeData });
+		} catch (error) {
+			console.error('Create manual resume error:', error);
+			dispatch('error', { message: 'Failed to create manual resume' });
+		}
+	}
+
+	// Enhanced ATS-friendly resume export function
+	function exportATSResume() {
+		try {
+			const atsContent = generateATSContent(resumeData);
+			downloadTextFile(atsContent, `${resumeData.name || 'resume'}_ATS.txt`);
+		} catch (error) {
+			console.error('Export ATS resume error:', error);
+			dispatch('error', { message: 'Failed to export ATS resume' });
+		}
+	}
+
+	// Enhanced Generate ATS-friendly content
+	function generateATSContent(data: ResumeData): string {
+		try {
+			let content = '';
+
+			// Header
+			if (data.name) content += `${data.name.toUpperCase()}\n`;
+			content += '='.repeat(50) + '\n\n';
+
+			// Contact Information
+			content += 'CONTACT INFORMATION\n';
+			content += '-'.repeat(20) + '\n';
+			if (data.email) content += `Email: ${data.email}\n`;
+			if (data.phone) content += `Phone: ${data.phone}\n`;
+			if (data.location) content += `Location: ${data.location}\n`;
+			
+			// Links
+			if (data.links && data.links.length > 0) {
+				data.links.forEach(link => {
+					if (link.url) content += `${link.type}: ${link.url}\n`;
+				});
+			}
+			content += '\n';
+
+			// Professional Summary
+			if (data.summary) {
+				content += 'PROFESSIONAL SUMMARY\n';
+				content += '-'.repeat(20) + '\n';
+				content += `${data.summary}\n\n`;
+			}
+
+			// Work Experience
+			if (data.experience && data.experience.length > 0) {
+				content += 'WORK EXPERIENCE\n';
+				content += '-'.repeat(15) + '\n';
+				data.experience.forEach((exp, index) => {
+					if (exp.title || exp.company) {
+						content += `${exp.title || 'Position'} | ${exp.company || 'Company'}\n`;
+						if (exp.duration) content += `Duration: ${exp.duration}\n`;
+						if (exp.description) {
+							content += `${exp.description}\n`;
+						}
+						if (index < data.experience.length - 1) content += '\n';
+					}
+				});
+				content += '\n';
+			}
+
+			// Education
+			if (data.education && data.education.length > 0) {
+				content += 'EDUCATION\n';
+				content += '-'.repeat(9) + '\n';
+				data.education.forEach((edu, index) => {
+					if (edu.degree || edu.institution) {
+						content += `${edu.degree || 'Degree'} | ${edu.institution || 'Institution'}\n`;
+						if (edu.year) content += `Year: ${edu.year}\n`;
+						if (index < data.education.length - 1) content += '\n';
+					}
+				});
+				content += '\n';
+			}
+
+			// Skills
+			if (data.skills && data.skills.length > 0) {
+				content += 'SKILLS\n';
+				content += '-'.repeat(6) + '\n';
+				const skillsList = data.skills.filter(skill => skill.trim()).join(', ');
+				content += `${skillsList}\n\n`;
+			}
+
+			// Certifications
+			if (data.certifications && data.certifications.length > 0) {
+				content += 'CERTIFICATIONS\n';
+				content += '-'.repeat(14) + '\n';
+				data.certifications.forEach((cert, index) => {
+					if (cert.name || cert.issuer) {
+						content += `${cert.name || 'Certification'} | ${cert.issuer || 'Issuer'}\n`;
+						if (cert.date) content += `Date: ${cert.date}\n`;
+						if (cert.description) content += `${cert.description}\n`;
+						if (cert.credentialId) content += `Credential ID: ${cert.credentialId}\n`;
+						if (index < data.certifications.length - 1) content += '\n';
+					}
+				});
+				content += '\n';
+			}
+
+			// Languages
+			if (data.languages && data.languages.length > 0) {
+				content += 'LANGUAGES\n';
+				content += '-'.repeat(10) + '\n';
+				data.languages.forEach((lang, index) => {
+					if (lang.language) {
+						content += `${lang.language}: ${lang.proficiency || 'Proficient'}\n`;
+						if (index < data.languages.length - 1) content += '\n';
+					}
+				});
+				content += '\n';
+			}
+
+			// Projects
+			if (data.projects && data.projects.length > 0) {
+				content += 'PROJECTS\n';
+				content += '-'.repeat(8) + '\n';
+				data.projects.forEach((project, index) => {
+					if (project.name) {
+						content += `${project.name}\n`;
+						if (project.description) content += `${project.description}\n`;
+						if (project.technologies && project.technologies.length > 0) {
+							const techList = project.technologies.filter(tech => tech.trim()).join(', ');
+							content += `Technologies: ${techList}\n`;
+						}
+						if (project.url) content += `URL: ${project.url}\n`;
+						if (project.duration) content += `Duration: ${project.duration}\n`;
+						if (index < data.projects.length - 1) content += '\n';
+					}
+				});
+				content += '\n';
+			}
+
+			// Awards
+			if (data.awards && data.awards.length > 0) {
+				content += 'AWARDS & RECOGNITIONS\n';
+				content += '-'.repeat(20) + '\n';
+				data.awards.forEach((award, index) => {
+					if (award.title || award.organization) {
+						content += `${award.title || 'Award'} | ${award.organization || 'Organization'}\n`;
+						if (award.date) content += `Date: ${award.date}\n`;
+						if (award.description) content += `${award.description}\n`;
+						if (index < data.awards.length - 1) content += '\n';
+					}
+				});
+				content += '\n';
+			}
+
+			return content;
+		} catch (error) {
+			console.error('Generate ATS content error:', error);
+			return 'Error generating ATS content';
+		}
+	}
+
+	// Enhanced Download text file helper
+	function downloadTextFile(content: string, filename: string) {
+		try {
+			const blob = new Blob([content], { type: 'text/plain' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error('Download text file error:', error);
+			dispatch('error', { message: 'Failed to download file' });
+		}
 	}
 </script>
 
@@ -710,14 +1175,27 @@
 			<div class="flex items-center space-x-4">
 				<div class="text-white">
 					<h3 class="text-lg font-semibold" id="profile-editor-title">Profile Editor</h3>
-					<p class="text-blue-100 text-sm" aria-live="polite" aria-label="Profile completion status">
-						{getCompletionPercentage()}% Complete
-					</p>
+					<div class="flex items-center space-x-4">
+						<p class="text-blue-100 text-sm" aria-live="polite" aria-label="Profile completion status">
+							{getCompletionPercentage()}% Complete
+						</p>
+						{#if getCompletionPercentage() === 100}
+							<div class="flex items-center text-green-300 text-sm">
+								<CheckCircle class="w-4 h-4 mr-1" />
+								Profile Complete!
+							</div>
+						{:else if getCompletionPercentage() >= 80}
+							<div class="flex items-center text-yellow-300 text-sm">
+								<Star class="w-4 h-4 mr-1" />
+								Almost Complete
+							</div>
+						{/if}
+					</div>
 				</div>
-				<!-- Progress Bar -->
+				<!-- Enhanced Progress Bar -->
 				<div class="w-32 bg-blue-500/30 rounded-full h-2" role="progressbar" aria-valuenow={getCompletionPercentage()} aria-valuemin="0" aria-valuemax="100" aria-labelledby="profile-editor-title">
 					<div 
-						class="bg-white rounded-full h-2 transition-all duration-300" 
+						class="bg-white rounded-full h-2 transition-all duration-300 {getCompletionPercentage() === 100 ? 'bg-green-400' : getCompletionPercentage() >= 80 ? 'bg-yellow-400' : ''}" 
 						style="width: {getCompletionPercentage()}%"
 						aria-label="Profile completion progress"
 					></div>
@@ -737,10 +1215,52 @@
 			</div>
 		</div>
 
-		<!-- Action Buttons -->
+		<!-- Enhanced Action Buttons -->
 		<div class="bg-white/10 backdrop-blur px-6 py-3 border-t border-white/20">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center space-x-2">
+					<!-- Quick Actions Dropdown -->
+					<div class="relative quick-actions-dropdown">
+						<button
+							on:click={() => showQuickActions = !showQuickActions}
+							class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+							aria-label="Quick actions"
+							title="Quick actions"
+							aria-expanded={showQuickActions}
+						>
+							<Sparkles class="w-4 h-4 mr-2" aria-hidden="true" />
+							Quick Actions
+						</button>
+						
+						{#if showQuickActions}
+							<div class="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+								<div class="p-2">
+									<button
+										on:click={() => { showQuickActions = false; createManualResume(); }}
+										class="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+									>
+										<Plus class="w-4 h-4 mr-2" />
+										Create New Resume
+									</button>
+									<button
+										on:click={() => { showQuickActions = false; exportATSResume(); }}
+										class="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-colors"
+									>
+										<Download class="w-4 h-4 mr-2" />
+										Export ATS Resume
+									</button>
+									<button
+										on:click={() => { showQuickActions = false; showTips = !showTips; }}
+										class="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+									>
+										<Info class="w-4 h-4 mr-2" />
+										Show Tips
+									</button>
+								</div>
+							</div>
+						{/if}
+					</div>
+
 					<!-- ATS Export Button -->
 					{#if resumeData.name || resumeData.experience?.length > 0}
 						<button
@@ -783,14 +1303,20 @@
 					{/if}
 				</div>
 
-				<!-- Info Message -->
+				<!-- Enhanced Info Message -->
 				<div class="flex items-center space-x-2">
 					<div class="text-white/80 text-sm">
 						<span class="flex items-center">
 							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
-							Use the Save and Publish buttons in the header to save changes
+							{uploading ? 'Saving...' : 'Use Ctrl+S to save manually'}
 						</span>
 					</div>
+					{#if uploading}
+						<div class="flex items-center text-white/80 text-sm">
+							<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+							Saving...
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -849,30 +1375,71 @@
 	{:else}
 		<!-- Edit Mode with Tabs -->
 		<div class="flex">
-			<!-- Sidebar Navigation -->
+			<!-- Enhanced Sidebar Navigation -->
 			<div class="w-64 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">
-				<nav class="p-4 space-y-2" role="tablist" aria-label="Profile editor sections">
+				<div class="p-4 space-y-2" role="tablist" aria-label="Profile editor sections">
 					{#each tabs as tab}
 						<button
 							on:click={() => activeTab = tab.id}
-							class="w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors {activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+							class="w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors group {activeTab === tab.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
 							role="tab"
 							aria-selected={activeTab === tab.id}
 							aria-controls="tabpanel-{tab.id}"
 							id="tab-{tab.id}"
 						>
-							<svelte:component this={tab.icon} class="w-4 h-4 mr-3" aria-hidden="true" />
-							{tab.label}
-							{#if activeTab === tab.id}
-								<ChevronRight class="w-4 h-4 ml-auto" aria-hidden="true" />
-							{/if}
+							<div class="flex items-center flex-1">
+								<svelte:component this={tab.icon} class="w-4 h-4 mr-3" aria-hidden="true" />
+								<div class="flex-1">
+									<div class="font-medium">{tab.label}</div>
+									<div class="text-xs opacity-70 {activeTab === tab.id ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}">
+										{tab.description}
+									</div>
+								</div>
+							</div>
+							
+							<div class="flex items-center space-x-2">
+								{#if tab.completion()}
+									<CheckCircle class="w-4 h-4 text-green-500" aria-hidden="true" />
+								{:else if tab.required}
+									<AlertCircle class="w-4 h-4 text-orange-500" aria-hidden="true" />
+								{/if}
+								{#if activeTab === tab.id}
+									<ChevronRight class="w-4 h-4" aria-hidden="true" />
+								{/if}
+							</div>
 						</button>
 					{/each}
-				</nav>
+				</div>
 			</div>
 
-			<!-- Main Content Area -->
+			<!-- Enhanced Main Content Area -->
 			<div class="flex-1 p-6">
+				{#if showTips}
+					<!-- Tips Panel -->
+					<div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+						<div class="flex items-center justify-between mb-2">
+							<h3 class="text-sm font-semibold text-blue-800 dark:text-blue-200 flex items-center">
+								<Info class="w-4 h-4 mr-2" />
+								Tips for Better Profile
+							</h3>
+							<button
+								on:click={() => showTips = false}
+								class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+								aria-label="Close tips"
+							>
+								×
+							</button>
+						</div>
+						<div class="text-sm text-blue-700 dark:text-blue-300 space-y-2">
+							<p>• <strong>Complete all required sections</strong> for better profile completion</p>
+							<p>• <strong>Use specific, measurable achievements</strong> in your experience descriptions</p>
+							<p>• <strong>Include relevant skills</strong> that match your target industry</p>
+							<p>• <strong>Add a professional photo</strong> to make your profile more personal</p>
+							<p>• <strong>Keep descriptions concise</strong> but informative</p>
+							<p>• <strong>Keyboard shortcuts:</strong> Ctrl+S to save, Ctrl+P to toggle preview</p>
+						</div>
+					</div>
+				{/if}
 				{#if activeTab === 'basic'}
 					<!-- Basic Information Tab -->
 					<div class="space-y-6" role="tabpanel" id="tabpanel-basic" aria-labelledby="tab-basic">
@@ -881,14 +1448,29 @@
 							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h4>
 						</div>
 
-						<!-- Profile Photo Upload -->
+						<!-- Enhanced Profile Photo Upload -->
 						<div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-								Profile Photo
-							</label>
+							<div class="flex items-center justify-between mb-4">
+								<span class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+									Profile Photo
+								</span>
+								{#if profilePhotoUrl || resumeData.photo_url}
+									<button
+										on:click={() => { profilePhotoUrl = ''; profilePhotoFile = null; }}
+										class="text-red-600 hover:text-red-700 text-sm"
+									>
+										Remove
+									</button>
+								{/if}
+							</div>
 							<div class="flex items-center space-x-4">
 								{#if profilePhotoUrl || resumeData.photo_url}
-									<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
+									<div class="relative">
+										<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
+										<div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+											<CheckCircle class="w-4 h-4 text-white" />
+										</div>
+									</div>
 								{:else}
 									<div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
 										<span class="text-2xl font-bold text-white">
@@ -896,16 +1478,21 @@
 										</span>
 									</div>
 								{/if}
-								<label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
-									<Upload class="w-4 h-4 mr-2" />
-									Upload Photo
-									<input
-										type="file"
-										accept="image/*"
-										on:change={handleProfilePhotoUpload}
-										class="hidden"
-									/>
-								</label>
+								<div class="flex flex-col space-y-2">
+									<label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
+										<Camera class="w-4 h-4 mr-2" />
+										Upload Photo
+										<input
+											type="file"
+											accept="image/*"
+											on:change={handleProfilePhotoUpload}
+											class="hidden"
+										/>
+									</label>
+									<p class="text-xs text-gray-500 dark:text-gray-400">
+										Recommended: Square image, 400x400px or larger
+									</p>
+								</div>
 							</div>
 						</div>
 
@@ -1023,7 +1610,7 @@
 					<div class="space-y-6" role="tabpanel" id="tabpanel-experience" aria-labelledby="tab-experience">
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<FileText class="w-6 h-6 text-green-600 mr-3" aria-hidden="true" />
+								<Briefcase class="w-6 h-6 text-green-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Work Experience</h4>
 							</div>
 							<button
@@ -1122,7 +1709,7 @@
 							</div>
 						{:else}
 							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
-								<FileText class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<Briefcase class="w-12 h-12 text-gray-400 mx-auto mb-4" />
 								<p class="text-gray-500 dark:text-gray-400 mb-4">No work experience added yet</p>
 								<button
 									on:click={addExperience}
@@ -1140,14 +1727,14 @@
 					<div class="space-y-6">
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<FileText class="w-6 h-6 text-purple-600 mr-3" />
+								<GraduationCap class="w-6 h-6 text-purple-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Education</h4>
 							</div>
 							<button
 								on:click={addEducation}
 								class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
 							>
-								<Plus class="w-4 h-4 mr-2" />
+								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 								Add Education
 							</button>
 						</div>
@@ -1167,7 +1754,7 @@
 												on:click={() => removeEducation(index)}
 												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1216,13 +1803,13 @@
 							</div>
 						{:else}
 							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
-								<FileText class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<GraduationCap class="w-12 h-12 text-gray-400 mx-auto mb-4" />
 								<p class="text-gray-500 dark:text-gray-400 mb-4">No education added yet</p>
 								<button
 									on:click={addEducation}
 									class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
 								>
-									<Plus class="w-4 h-4 mr-2" />
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 									Add Your First Education
 								</button>
 							</div>
@@ -1234,14 +1821,14 @@
 					<div class="space-y-6">
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<Award class="w-6 h-6 text-yellow-600 mr-3" />
+								<Award class="w-6 h-6 text-yellow-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Certifications</h4>
 							</div>
 							<button
 								on:click={addCertification}
 								class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
 							>
-								<Plus class="w-4 h-4 mr-2" />
+								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 								Add Certification
 							</button>
 						</div>
@@ -1261,7 +1848,7 @@
 												on:click={() => removeCertification(index)}
 												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1339,7 +1926,7 @@
 									on:click={addCertification}
 									class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
 								>
-									<Plus class="w-4 h-4 mr-2" />
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 									Add Your First Certification
 								</button>
 							</div>
@@ -1351,14 +1938,14 @@
 					<div class="space-y-6">
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<Globe class="w-6 h-6 text-blue-600 mr-3" />
+								<Languages class="w-6 h-6 text-blue-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Languages</h4>
 							</div>
 							<button
 								on:click={addLanguage}
 								class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
 							>
-								<Plus class="w-4 h-4 mr-2" />
+								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 								Add Language
 							</button>
 						</div>
@@ -1378,7 +1965,7 @@
 												on:click={() => removeLanguage(index)}
 												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1417,13 +2004,13 @@
 					</div>
 						{:else}
 							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
-								<Globe class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<Languages class="w-12 h-12 text-gray-400 mx-auto mb-4" />
 								<p class="text-gray-500 dark:text-gray-400 mb-4">No languages added yet</p>
 								<button
 									on:click={addLanguage}
 									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
 								>
-									<Plus class="w-4 h-4 mr-2" />
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 									Add Your First Language
 								</button>
 							</div>
@@ -1435,14 +2022,14 @@
 					<div class="space-y-6">
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<Code class="w-6 h-6 text-indigo-600 mr-3" />
+								<Code class="w-6 h-6 text-indigo-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Projects</h4>
 							</div>
 							<button
 								on:click={addProject}
 								class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
 							>
-								<Plus class="w-4 h-4 mr-2" />
+								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 								Add Project
 							</button>
 						</div>
@@ -1462,7 +2049,7 @@
 												on:click={() => removeProject(index)}
 												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1538,9 +2125,9 @@
 							></textarea>
 										</div>
 										<div>
-											<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+											<span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 												Technologies Used
-											</label>
+											</span>
 											<div class="space-y-2">
 												{#each project.technologies as tech, techIndex}
 													<div class="flex items-center gap-2">
@@ -1556,7 +2143,7 @@
 															}}
 															class="text-red-600 hover:text-red-700 p-1"
 														>
-															<Trash2 class="w-4 h-4" />
+															<Trash2 class="w-4 h-4" aria-hidden="true" />
 														</button>
 													</div>
 												{/each}
@@ -1581,7 +2168,7 @@
 									on:click={addProject}
 									class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
 								>
-									<Plus class="w-4 h-4 mr-2" />
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 									Add Your First Project
 								</button>
 							</div>
@@ -1593,14 +2180,14 @@
 					<div class="space-y-6">
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<Trophy class="w-6 h-6 text-orange-600 mr-3" />
+								<Medal class="w-6 h-6 text-orange-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Awards & Recognitions</h4>
 							</div>
 							<button
 								on:click={addAward}
 								class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
 							>
-								<Plus class="w-4 h-4 mr-2" />
+								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 								Add Award
 							</button>
 						</div>
@@ -1620,7 +2207,7 @@
 												on:click={() => removeAward(index)}
 												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1678,13 +2265,13 @@
 							</div>
 						{:else}
 							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
-								<Trophy class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<Medal class="w-12 h-12 text-gray-400 mx-auto mb-4" />
 								<p class="text-gray-500 dark:text-gray-400 mb-4">No awards added yet</p>
 								<button
 									on:click={addAward}
 									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
 								>
-									<Plus class="w-4 h-4 mr-2" />
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 									Add Your First Award
 								</button>
 							</div>
@@ -1695,7 +2282,7 @@
 					<!-- Skills Tab -->
 					<div>
 						<div class="flex items-center mb-6">
-							<Plus class="w-6 h-6 text-blue-600 mr-3" />
+							<Plus class="w-6 h-6 text-blue-600 mr-3" aria-hidden="true" />
 							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
 						</div>
 						
@@ -1716,14 +2303,14 @@
 					<div>
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<Plus class="w-6 h-6 text-orange-600 mr-3" />
+								<Plus class="w-6 h-6 text-orange-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
 							</div>
 							<button
 								on:click={addSkill}
 								class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
 							>
-								<Plus class="w-4 h-4 mr-2" />
+								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 								Add Skill
 							</button>
 						</div>
@@ -1745,7 +2332,7 @@
 											on:click={() => removeSkill(index)}
 											class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
 										>
-											<Trash2 class="w-4 h-4" />
+											<Trash2 class="w-4 h-4" aria-hidden="true" />
 										</button>
 									</div>
 								{/each}
@@ -1758,7 +2345,7 @@
 									on:click={addSkill}
 									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
 								>
-									<Plus class="w-4 h-4 mr-2" />
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 									Add Your First Skill
 								</button>
 							</div>
@@ -1769,7 +2356,7 @@
 					<!-- Social Links Tab -->
 					<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
-								<Link2 class="w-6 h-6 text-blue-600 mr-3" />
+								<Link2 class="w-6 h-6 text-blue-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Showcase Project</h4>
 							</div>
 							<div class="flex flex-wrap gap-2">
@@ -1801,7 +2388,7 @@
 												on:click={() => removeLink(index)}
 												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 											<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1841,7 +2428,7 @@
 										on:click={addLink}
 										class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
 									>
-										<Plus class="w-4 h-4 mr-2" />
+										<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
 										Add Your First Link
 									</button>
 								</div>
@@ -1851,7 +2438,7 @@
 					<!-- Design Tab -->
 					<div class="space-y-6">
 						<div class="flex items-center mb-6">
-							<Edit3 class="w-6 h-6 text-indigo-600 mr-3" />
+							<Edit3 class="w-6 h-6 text-indigo-600 mr-3" aria-hidden="true" />
 							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Template & Design</h4>
 						</div>
 
@@ -1951,7 +2538,7 @@
 									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
 									Applying...
 								{:else}
-									<Palette class="w-4 h-4 mr-2" />
+									<PaletteIcon class="w-4 h-4 mr-2" />
 									Apply Theme
 								{/if}
 							</button>

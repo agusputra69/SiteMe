@@ -9,7 +9,6 @@
 
   import OnboardingTour from '../../components/OnboardingTour.svelte';
   import InteractiveTutorial from '../../components/InteractiveTutorial.svelte';
-  import ProfileEditor from '../../components/ProfileEditor.svelte';
   import ProcessingModelSelector from '../../components/ProcessingModelSelector.svelte';
   import { toasts } from '$lib/stores/toast';
   import { 
@@ -49,7 +48,7 @@
   let showTutorial = true;
   let tutorialContext: 'dashboard' | 'upload' | 'edit' | 'preview' = 'dashboard';
   let showDeleteConfirm = false;
-  let showProfileEditor = false;
+  // Removed showProfileEditor - now redirects to editor page
   let showPDFError = false;
   let pdfError = '';
   let currentFile: File | null = null;
@@ -654,7 +653,8 @@
 
   function handlePDFSuccessEdit() {
     showPDFSuccess = false;
-    showProfileEditor = true;
+    // Redirect to the editor page instead of showing popup
+    goto('/dashboard/editor');
   }
 
   function handlePDFSuccessProceed() {
@@ -738,46 +738,7 @@
     return data.publicUrl;
   }
 
-  async function handleProfileSave(event: CustomEvent) {
-    const { resumeData: newResumeData, profilePhoto, username: newUsername } = event.detail;
-    
-    try {
-      uploading = true;
-      
-      // Handle profile photo upload if provided
-      if (profilePhoto) {
-        const photoUrl = await uploadProfilePhoto(profilePhoto);
-        newResumeData.photo_url = photoUrl;
-      }
-      
-      // Update profile in database
-      const { error } = await updateProfile(user.id, {
-        data: newResumeData,
-        full_name: newResumeData.name || '',
-        username: newUsername
-      });
-      
-      if (error) {
-        toasts.error('Failed to save profile: ' + (error as any)?.message || 'Unknown error');
-        return;
-      }
-      
-      // Update local state
-      resumeData = newResumeData;
-      profile = { ...profile, data: newResumeData, full_name: newResumeData.name, username: newUsername };
-      profileStatus = 'draft'; // Default to draft when saving
-      
-      // Close the profile editor modal
-      showProfileEditor = false;
-      
-      toasts.success('Profile saved successfully!');
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toasts.error('Failed to save profile');
-    } finally {
-      uploading = false;
-    }
-  }
+  // Profile editor functions moved to /dashboard/editor page
 
   // Handle manual resume creation
   async function handleManualCreate(event: CustomEvent) {
@@ -836,130 +797,9 @@
     }
   }
 
-  // Handle profile publishing
-  async function handleProfilePublish(event: CustomEvent) {
-    const { resumeData: newResumeData, profilePhoto } = event.detail;
-    
-    try {
-      uploading = true;
-      
-      // Handle profile photo upload if provided
-      if (profilePhoto) {
-        const photoUrl = await uploadProfilePhoto(profilePhoto);
-        newResumeData.photo_url = photoUrl;
-      }
-      
-      // Update profile in database
-      const { error } = await updateProfile(user.id, {
-        data: newResumeData,
-        full_name: newResumeData.name || ''
-      });
-      
-      if (error) {
-        toasts.error('Failed to publish profile: ' + (error as any)?.message || 'Unknown error');
-        return;
-      }
-      
-      // Update local state
-      resumeData = newResumeData;
-      profile = { ...profile, data: newResumeData, full_name: newResumeData.name || '' };
-      profileStatus = 'published';
-      
-      toasts.success('Profile published successfully!');
-    } catch (error) {
-      console.error('Error publishing profile:', error);
-      toasts.error('Failed to publish profile');
-    } finally {
-      uploading = false;
-    }
-  }
+  // Profile editor functions moved to /dashboard/editor page
 
-  // Handle profile status changes
-  async function handleProfileStatusChange(event: CustomEvent) {
-    const { resumeData: newResumeData, profilePhoto } = event.detail;
-    
-    try {
-      uploading = true;
-      
-      // Handle profile photo upload if provided
-      if (profilePhoto) {
-        const photoUrl = await uploadProfilePhoto(profilePhoto);
-        newResumeData.photo_url = photoUrl;
-      }
-      
-      // Update profile in database
-      const { error } = await updateProfile(user.id, {
-        data: newResumeData,
-        full_name: newResumeData.name || ''
-      });
-      
-      if (error) {
-        toasts.error('Failed to update profile status: ' + (error as any)?.message || 'Unknown error');
-        return;
-      }
-      
-      // Update local state
-      resumeData = newResumeData;
-      profile = { ...profile, data: newResumeData, full_name: newResumeData.name || '' };
-      profileStatus = 'published'; // Default to published for this action
-      
-      toasts.success('Profile published successfully!');
-    } catch (error) {
-      console.error('Error updating profile status:', error);
-      toasts.error('Failed to update profile status');
-    } finally {
-      uploading = false;
-    }
-  }
-
-  // Handle template application
-  function handleTemplateApply(event: CustomEvent) {
-    const { template, theme, customization } = event.detail;
-    if (resumeData) {
-      resumeData = { ...resumeData, template, theme, customization };
-      toasts.success('Template applied successfully!');
-    }
-  }
-
-  // Handle theme application
-  function handleThemeApply(event: CustomEvent) {
-    const { template, theme, customization } = event.detail;
-    if (resumeData) {
-      resumeData = { ...resumeData, template, theme, customization };
-      toasts.success('Theme applied successfully!');
-    }
-  }
-
-  // Handle customization application
-  function handleCustomizationApply(event: CustomEvent) {
-    const { template, theme, customization } = event.detail;
-    if (resumeData) {
-      resumeData = { ...resumeData, template, theme, customization };
-      toasts.success('Customization applied successfully!');
-    }
-  }
-
-  // Handle preview toggle
-  function handleTogglePreview(event: CustomEvent) {
-    const { showPreview } = event.detail;
-    // This is handled internally by the ProfileEditor component
-    console.log('Preview toggled:', showPreview);
-  }
-
-  // Handle photo upload
-  async function handlePhotoUpload(event: CustomEvent) {
-    const { file } = event.detail;
-    try {
-      const photoUrl = await uploadProfilePhoto(file);
-      if (resumeData) {
-        resumeData = { ...resumeData, photo_url: photoUrl };
-      }
-      toasts.success('Profile photo uploaded successfully!');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toasts.error('Failed to upload profile photo');
-    }
-  }
+  // Profile editor functions moved to /dashboard/editor page
 
   // Handle rate limit retry
   function handleRateLimitRetry() {
@@ -1395,42 +1235,7 @@
       </div>
     </div>
 
-<!-- Profile Editor Modal -->
-{#if showProfileEditor && resumeData}
-  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h2>
-        <button
-          on:click={() => showProfileEditor = false}
-          class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-      <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-        <ProfileEditor 
-          {resumeData}
-          username={profile?.username || ''}
-          uploading={uploading}
-          profileStatus={profileStatus}
-          saveSuccess={false}
-          on:save={handleProfileSave}
-          on:manualCreate={handleManualCreate}
-          on:publish={handleProfilePublish}
-          on:statusChange={handleProfileStatusChange}
-          on:templateApply={handleTemplateApply}
-          on:themeApply={handleThemeApply}
-          on:customizationApply={handleCustomizationApply}
-          on:togglePreview={handleTogglePreview}
-          on:photoUpload={handlePhotoUpload}
-        />
-      </div>
-    </div>
-  </div>
-{/if}
+      <!-- Profile Editor Modal - Removed, now redirects to /dashboard/editor -->
 
 <!-- Add Site Modal -->
 <AddSiteModal 

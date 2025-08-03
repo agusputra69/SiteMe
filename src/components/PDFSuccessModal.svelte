@@ -182,7 +182,7 @@
 						class="flex-1 inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
 					>
 						<Edit3 class="w-4 h-4 mr-2" />
-						Edit Profile Data
+						Open Editor
 					</button>
 					
 					<button
