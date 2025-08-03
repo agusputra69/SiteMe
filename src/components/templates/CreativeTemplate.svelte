@@ -83,7 +83,8 @@
 	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
-<div class="min-h-screen {paddingClass} {fontClass} transition-all duration-300" style="background: linear-gradient(135deg, {dynamicBackgroundColor}, {dynamicSecondaryColor}); color: {dynamicTextColor};">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+<div class="{paddingClass} {fontClass} transition-all duration-300 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-800 text-gray-900 dark:text-gray-100">
 	<div class="{containerClass} mx-auto">
 		<!-- Artistic Header -->
 		<div class="relative mb-16">
@@ -315,6 +316,119 @@
 					</div>
 				</div>
 
+				<!-- Certifications Section -->
+				{#if profileData.certifications && profileData.certifications.length > 0}
+					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+						<div class="flex items-center mb-6">
+							<div class="w-1 h-6 bg-gradient-to-b from-purple-600 to-pink-500 rounded-full mr-3" aria-hidden="true"></div>
+							<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+								Certifications
+							</h2>
+						</div>
+						<div class="space-y-4">
+							{#each profileData.certifications as cert}
+								<div class="bg-gradient-to-r from-purple-100/20 to-transparent dark:from-purple-600/5 dark:to-transparent rounded-xl p-4 border-l-4 border-pink-500">
+									<h3 class="font-bold text-gray-900 dark:text-white mb-1">
+										{cert.name}
+									</h3>
+									<p class="text-gray-600 dark:text-gray-300 text-sm mb-1">
+										{cert.issuer}
+									</p>
+									<p class="text-pink-600 text-sm font-medium">
+										{cert.date}
+									</p>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Languages Section -->
+				{#if profileData.languages && profileData.languages.length > 0}
+					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+						<div class="flex items-center mb-6">
+							<div class="w-1 h-6 bg-gradient-to-b from-purple-600 to-pink-500 rounded-full mr-3" aria-hidden="true"></div>
+							<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+								Languages
+							</h2>
+						</div>
+						<div class="space-y-3">
+							{#each profileData.languages as language}
+								<div class="flex justify-between items-center p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+									<span class="font-medium text-gray-900 dark:text-white">
+										{language.language}
+									</span>
+									<span class="text-sm px-3 py-1 bg-purple-600 text-white rounded-full">
+										{language.proficiency}
+									</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Projects Section -->
+				{#if profileData.projects && profileData.projects.length > 0}
+					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+						<div class="flex items-center mb-6">
+							<div class="w-1 h-6 bg-gradient-to-b from-purple-600 to-pink-500 rounded-full mr-3" aria-hidden="true"></div>
+							<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+								Projects
+							</h2>
+						</div>
+						<div class="space-y-6">
+							{#each profileData.projects as project}
+								<div class="bg-gradient-to-r from-purple-100/20 to-transparent dark:from-purple-600/5 dark:to-transparent rounded-xl p-4 border-l-4 border-pink-500">
+									<h3 class="font-bold text-gray-900 dark:text-white mb-2">
+										{project.name}
+									</h3>
+									{#if project.description}
+										<p class="text-gray-600 dark:text-gray-400 mb-3">
+											{project.description}
+										</p>
+									{/if}
+									{#if project.technologies && project.technologies.length > 0}
+										<div class="flex flex-wrap gap-2">
+											{#each project.technologies as tech}
+												<span class="text-xs px-2 py-1 bg-gradient-to-r from-purple-600/20 to-pink-500/20 text-purple-800 dark:text-purple-200 rounded-full border border-purple-600/30">
+													{tech}
+												</span>
+											{/each}
+										</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Awards Section -->
+				{#if profileData.awards && profileData.awards.length > 0}
+					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+						<div class="flex items-center mb-6">
+							<div class="w-1 h-6 bg-gradient-to-b from-purple-600 to-pink-500 rounded-full mr-3" aria-hidden="true"></div>
+							<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+								Awards
+							</h2>
+						</div>
+						<div class="space-y-4">
+							{#each profileData.awards as award}
+								<div class="bg-gradient-to-r from-purple-100/20 to-transparent dark:from-purple-600/5 dark:to-transparent rounded-xl p-4 border-l-4 border-pink-500">
+									<h3 class="font-bold text-gray-900 dark:text-white mb-1">
+										{award.title}
+									</h3>
+									<p class="text-gray-600 dark:text-gray-300 text-sm mb-1">
+										{award.organization}
+									</p>
+									<p class="text-pink-600 text-sm font-medium">
+										{award.date}
+									</p>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
 				<!-- Links Section -->
 				{#if profileData.links && profileData.links.length > 0}
 					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
@@ -354,6 +468,33 @@
 			</div>
 		</div>
 	</div>
+</div>
+
+<!-- SiteMe Footer -->
+<footer class="mt-12 py-8 px-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+	<div class="max-w-4xl mx-auto text-center">
+		<div class="flex items-center justify-center space-x-2 mb-4">
+			<svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+			</svg>
+			<span class="text-lg font-bold text-gray-900 dark:text-white">SiteMe</span>
+		</div>
+		<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+			Create your professional portfolio in minutes
+		</p>
+		<div class="flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+			<a href="/features" class="hover:text-blue-600 transition-colors">Features</a>
+			<a href="/templates" class="hover:text-blue-600 transition-colors">Templates</a>
+			<a href="/pricing" class="hover:text-blue-600 transition-colors">Pricing</a>
+			<a href="/about" class="hover:text-blue-600 transition-colors">About</a>
+		</div>
+		<div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+			<p class="text-xs text-gray-400 dark:text-gray-500">
+				© 2024 SiteMe. All rights reserved.
+			</p>
+		</div>
+	</div>
+</footer>
 </div>
 
 <style>

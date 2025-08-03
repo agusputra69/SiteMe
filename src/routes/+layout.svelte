@@ -192,7 +192,8 @@
 </svelte:head>
 
 <div class="min-h-screen bg-white dark:bg-gray-900">
-  <!-- Header -->
+  <!-- Header (hidden on dashboard pages) -->
+  {#if !isOnDashboard}
   <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40" role="banner">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
@@ -397,9 +398,10 @@
       </div>
     </div>
   </header>
+  {/if}
 
   <!-- Main content -->
-  <main style="padding-top: 68px;">
+  <main class="{isOnDashboard ? '' : 'pt-[68px]'}">
     <slot />
   </main>
 

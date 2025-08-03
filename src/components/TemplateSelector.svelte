@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import CVTemplate from '$lib/../components/CVTemplate.svelte';
-	import ModernTemplate from '$lib/../components/templates/ModernTemplate.svelte';
-	import MinimalistTemplate from '$lib/../components/templates/MinimalistTemplate.svelte';
-	import CreativeTemplate from '$lib/../components/templates/CreativeTemplate.svelte';
+import ModernTemplate from '$lib/../components/templates/ModernTemplate.svelte';
+import MinimalistTemplate from '$lib/../components/templates/MinimalistTemplate.svelte';
+import CreativeTemplate from '$lib/../components/templates/CreativeTemplate.svelte';
+import PortfolioTemplate from '$lib/../components/templates/PortfolioTemplate.svelte';
+import PersonalTemplate from '$lib/../components/templates/PersonalTemplate.svelte';
+import CreativePortfolioTemplate from '$lib/../components/templates/CreativePortfolioTemplate.svelte';
 	import TemplateCustomizer from '$lib/../components/TemplateCustomizer.svelte';
 	import { Settings, Palette, Eye } from 'lucide-svelte';
 	import type { ProfileData, Theme } from '$lib/types';
@@ -103,6 +106,57 @@
 				{ name: 'Amber', primary: 'amber-600', secondary: 'yellow-500', accent: 'amber-100', text: 'gray-900', textSecondary: 'gray-600' }
 			],
 			category: 'Artistic'
+		},
+		{
+			id: 'portfolio',
+			name: 'Portfolio',
+			description: 'Dynamic portfolio website with project showcase and modern layout',
+			component: PortfolioTemplate,
+			themes: [
+				{ name: 'Blue', primary: 'blue-600', secondary: 'blue-500', accent: 'blue-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Purple', primary: 'purple-600', secondary: 'purple-500', accent: 'purple-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Green', primary: 'green-600', secondary: 'green-500', accent: 'green-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Red', primary: 'red-600', secondary: 'red-500', accent: 'red-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Indigo', primary: 'indigo-600', secondary: 'indigo-500', accent: 'indigo-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Teal', primary: 'teal-600', secondary: 'teal-500', accent: 'teal-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Orange', primary: 'orange-600', secondary: 'orange-500', accent: 'orange-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Pink', primary: 'pink-600', secondary: 'pink-500', accent: 'pink-100', text: 'gray-900', textSecondary: 'gray-600' }
+			],
+			category: 'Portfolio'
+		},
+		{
+			id: 'personal',
+			name: 'Personal',
+			description: 'Personal branding focused template with clean modern design',
+			component: PersonalTemplate,
+			themes: [
+				{ name: 'Blue', primary: 'blue-600', secondary: 'blue-500', accent: 'blue-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Purple', primary: 'purple-600', secondary: 'purple-500', accent: 'purple-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Green', primary: 'green-600', secondary: 'green-500', accent: 'green-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Red', primary: 'red-600', secondary: 'red-500', accent: 'red-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Indigo', primary: 'indigo-600', secondary: 'indigo-500', accent: 'indigo-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Teal', primary: 'teal-600', secondary: 'teal-500', accent: 'teal-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Orange', primary: 'orange-600', secondary: 'orange-500', accent: 'orange-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Pink', primary: 'pink-600', secondary: 'pink-500', accent: 'pink-100', text: 'gray-900', textSecondary: 'gray-600' }
+			],
+			category: 'Portfolio'
+		},
+		{
+			id: 'creative-portfolio',
+			name: 'Creative Portfolio',
+			description: 'Creative portfolio with gradients, animations and modern aesthetics',
+			component: CreativePortfolioTemplate,
+			themes: [
+				{ name: 'Purple', primary: 'purple-600', secondary: 'pink-500', accent: 'purple-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Ocean', primary: 'blue-600', secondary: 'cyan-500', accent: 'blue-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Sunset', primary: 'orange-600', secondary: 'red-500', accent: 'orange-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Forest', primary: 'green-600', secondary: 'emerald-500', accent: 'green-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Galaxy', primary: 'indigo-600', secondary: 'purple-500', accent: 'indigo-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Rose', primary: 'pink-600', secondary: 'rose-500', accent: 'pink-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Mint', primary: 'teal-600', secondary: 'green-500', accent: 'teal-100', text: 'gray-900', textSecondary: 'gray-600' },
+				{ name: 'Amber', primary: 'amber-600', secondary: 'yellow-500', accent: 'amber-100', text: 'gray-900', textSecondary: 'gray-600' }
+			],
+			category: 'Portfolio'
 		}
 	];
 
@@ -267,13 +321,30 @@
 	<div>
 		<!-- Debug: Current template: {selectedTemplate}, theme: {selectedTheme} -->
 		{#if selectedTemplate === 'classic'}
-			<CVTemplate {profileData} {customizable} {customization} />
+			<CVTemplate 
+				profileData={{
+					...profileData,
+					skills: profileData.skills || [],
+					certifications: profileData.certifications || [],
+					languages: profileData.languages || [],
+					projects: profileData.projects || [],
+					awards: profileData.awards || []
+				}} 
+				{customizable} 
+				{customization} 
+			/>
 		{:else if selectedTemplate === 'modern'}
 			<ModernTemplate {profileData} theme={currentTheme} {customizable} {customization} />
 		{:else if selectedTemplate === 'minimalist'}
 			<MinimalistTemplate {profileData} theme={currentTheme} {customizable} {customization} />
 		{:else if selectedTemplate === 'creative'}
 			<CreativeTemplate {profileData} theme={currentTheme} {customizable} {customization} />
+		{:else if selectedTemplate === 'portfolio'}
+			<PortfolioTemplate {profileData} theme={currentTheme} {customizable} />
+		{:else if selectedTemplate === 'personal'}
+			<PersonalTemplate {profileData} theme={currentTheme} {customizable} />
+		{:else if selectedTemplate === 'creative-portfolio'}
+			<CreativePortfolioTemplate {profileData} theme={currentTheme} {customizable} />
 		{/if}
 	</div>
 </div>

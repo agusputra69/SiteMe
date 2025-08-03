@@ -64,13 +64,29 @@ export async function getProfile(userId: string) {
 }
 
 export async function updateProfile(userId: string, updates: Partial<Tables<'profiles'>>) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert({ id: userId, ...updates })
-    .select()
-    .single();
-  
-  return { data, error };
+  try {
+    // Ensure data is properly structured for JSONB storage
+    const cleanUpdates = {
+      id: userId,
+      ...updates
+    };
+    
+    // If data exists, ensure it's a valid object
+    if (cleanUpdates.data && typeof cleanUpdates.data === 'object') {
+      cleanUpdates.data = JSON.parse(JSON.stringify(cleanUpdates.data));
+    }
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(cleanUpdates)
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Profile update error:', err);
+    return { data: null, error: err };
+  }
 }
 
 export async function getProfileByUsername(username: string) {

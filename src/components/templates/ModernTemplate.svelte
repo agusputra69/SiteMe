@@ -85,7 +85,8 @@
 	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
-<div class="rounded-xl shadow-2xl overflow-hidden {containerClass} mx-auto {fontClass} {sizeClass} transition-all duration-300" style="background-color: {dynamicBackgroundColor}; color: {dynamicTextColor};">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+<div class="rounded-xl shadow-2xl overflow-hidden {containerClass} mx-auto {fontClass} {sizeClass} transition-all duration-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
 	<!-- Header Section -->
 	<div class="text-white p-4 sm:p-8 transition-all duration-300" style="background: linear-gradient(135deg, {dynamicAccentColor}, {dynamicAccentColor}dd);">
 		<div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
@@ -286,6 +287,116 @@
 					</div>
 				</section>
 
+				<!-- Certifications Section -->
+				{#if profileData.certifications && profileData.certifications.length > 0}
+					<section>
+						<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+							Certifications
+						</h2>
+						<div class="space-y-4">
+							{#each profileData.certifications as cert}
+								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+									<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+										{cert.name}
+									</h3>
+									<p class="text-gray-700 dark:text-gray-200 text-sm">
+										{cert.issuer}
+									</p>
+									{#if cert.date}
+										<p class="text-blue-600 dark:text-blue-400 text-sm font-medium">
+											{cert.date}
+										</p>
+									{/if}
+									{#if cert.description}
+										<p class="text-sm text-gray-600 dark:text-gray-300 mt-2">
+											{cert.description}
+										</p>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
+				<!-- Languages Section -->
+				{#if profileData.languages && profileData.languages.length > 0}
+					<section>
+						<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+							Languages
+						</h2>
+						<div class="space-y-3">
+							{#each profileData.languages as lang}
+								<div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+									<span class="font-medium text-gray-900 dark:text-gray-100">{lang.language}</span>
+									<span class="text-sm text-blue-600 dark:text-blue-400 font-medium">{lang.proficiency}</span>
+								</div>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
+				<!-- Projects Section -->
+				{#if profileData.projects && profileData.projects.length > 0}
+					<section>
+						<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+							Projects
+						</h2>
+						<div class="space-y-4">
+							{#each profileData.projects as project}
+								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+									<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+										{project.title || project.name}
+									</h3>
+									<p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+										{project.description}
+									</p>
+									{#if project.technologies && project.technologies.length > 0}
+										<div class="flex flex-wrap gap-1 mb-2">
+											{#each project.technologies as tech}
+												<span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-xs rounded">{tech}</span>
+											{/each}
+										</div>
+									{/if}
+									{#if project.liveUrl || project.url}
+										<a href={project.liveUrl || project.url} target="_blank" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">View Project</a>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
+				<!-- Awards Section -->
+				{#if profileData.awards && profileData.awards.length > 0}
+					<section>
+						<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+							Awards
+						</h2>
+						<div class="space-y-4">
+							{#each profileData.awards as award}
+								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+									<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+										{award.title}
+									</h3>
+									<p class="text-gray-700 dark:text-gray-200 text-sm">
+										{award.organization}
+									</p>
+									{#if award.date}
+										<p class="text-blue-600 dark:text-blue-400 text-sm font-medium">
+											{award.date}
+										</p>
+									{/if}
+									{#if award.description}
+										<p class="text-sm text-gray-600 dark:text-gray-300 mt-2">
+											{award.description}
+										</p>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
 				<!-- Links Section -->
 				{#if profileData.links && profileData.links.length > 0}
 					<section>
@@ -322,6 +433,33 @@
 			</div>
 		</div>
 	</div>
+</div>
+
+<!-- SiteMe Footer -->
+<footer class="mt-12 py-8 px-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+	<div class="max-w-4xl mx-auto text-center">
+		<div class="flex items-center justify-center space-x-2 mb-4">
+			<svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+			</svg>
+			<span class="text-lg font-bold text-gray-900 dark:text-white">SiteMe</span>
+		</div>
+		<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+			Create your professional portfolio in minutes
+		</p>
+		<div class="flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+			<a href="/features" class="hover:text-blue-600 transition-colors">Features</a>
+			<a href="/templates" class="hover:text-blue-600 transition-colors">Templates</a>
+			<a href="/pricing" class="hover:text-blue-600 transition-colors">Pricing</a>
+			<a href="/about" class="hover:text-blue-600 transition-colors">About</a>
+		</div>
+		<div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+			<p class="text-xs text-gray-400 dark:text-gray-500">
+				© 2024 SiteMe. All rights reserved.
+			</p>
+		</div>
+	</div>
+</footer>
 </div>
 
 <style>

@@ -24,6 +24,38 @@ export interface Contact {
 	location?: string;
 }
 
+export interface Project {
+	title: string;
+	description: string;
+	image?: string;
+	technologies?: string[];
+	liveUrl?: string;
+	githubUrl?: string;
+	name?: string;
+	url?: string;
+	duration?: string;
+}
+
+export interface Certification {
+	name: string;
+	issuer: string;
+	date: string;
+	description?: string;
+	credentialId?: string;
+}
+
+export interface Language {
+	language: string;
+	proficiency: string;
+}
+
+export interface Award {
+	title: string;
+	organization: string;
+	date: string;
+	description?: string;
+}
+
 export interface ProfileData {
 	name: string;
 	avatar: string;
@@ -33,6 +65,10 @@ export interface ProfileData {
 	skills?: string[];
 	contact?: Contact;
 	links?: Link[];
+	projects?: Project[];
+	certifications?: Certification[];
+	languages?: Language[];
+	awards?: Award[];
 }
 
 export interface Theme {

@@ -10,6 +10,7 @@
   import OnboardingTour from '../../components/OnboardingTour.svelte';
   import InteractiveTutorial from '../../components/InteractiveTutorial.svelte';
   import ProfileEditor from '../../components/ProfileEditor.svelte';
+  import ProcessingModelSelector from '../../components/ProcessingModelSelector.svelte';
   import { toasts } from '$lib/stores/toast';
   import { 
     Upload, 
@@ -21,7 +22,12 @@
     Edit3, 
     Eye,
     Copy,
-    Check
+    Check,
+    Globe,
+    Calendar,
+    MoreVertical,
+    Trash2,
+    ExternalLink
   } from 'lucide-svelte';
   import ConfirmDialog from '../../components/ConfirmDialog.svelte';
   import PDFErrorHandler from '../../components/PDFErrorHandler.svelte';
@@ -59,6 +65,10 @@
   let rateLimitRetryAfter = 60;
   let rateLimitMessage = '';
   let useAIProcessing = true; // Toggle for AI vs basic processing
+  let sites: Array<{id: string, name: string, status: 'draft' | 'published', updated_at: string, template: string, is_primary: boolean, data: any}> = [];
+  let siteToDelete: any = null;
+  let showProcessingModelSelector = false;
+  let pendingFile: File | null = null;
 
   onMount(async () => {
     // Check authentication
@@ -71,6 +81,7 @@
 
       user = session.user;
       await loadProfile();
+      await loadSites();
     } catch (error) {
       console.error('Dashboard auth error:', error);
       await handleAuthError(error);
@@ -127,6 +138,122 @@
     }
   }
 
+  async function loadSites() {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('sites')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading sites:', error);
+        toasts.error('Failed to load sites');
+        return;
+      }
+
+      sites = data || [];
+    } catch (error) {
+      console.error('Error loading sites:', error);
+    }
+  }
+
+  async function publishSite(siteId: string) {
+    try {
+      // First, unpublish any other published sites
+      await supabase
+        .from('sites')
+        .update({ status: 'draft', is_primary: false })
+        .eq('user_id', user.id)
+        .eq('status', 'published');
+
+      // Then publish this site
+      const { error } = await supabase
+        .from('sites')
+        .update({ 
+          status: 'published',
+          is_primary: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', siteId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error publishing site:', error);
+        toasts.error('Failed to publish site');
+        return;
+      }
+
+      toasts.success('Site published successfully!');
+      await loadSites(); // Refresh the list
+    } catch (error) {
+      console.error('Error publishing site:', error);
+      toasts.error('Failed to publish site');
+    }
+  }
+
+  async function duplicateSite(siteId: string) {
+    try {
+      const originalSite = sites.find((site: any) => site.id === siteId);
+      if (originalSite) {
+        const { data: newSite, error } = await supabase
+          .from('sites')
+          .insert({
+            user_id: user.id,
+            name: `${originalSite.name} (Copy)`,
+            data: originalSite.data,
+            template: originalSite.template,
+            status: 'draft'
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error duplicating site:', error);
+          toasts.error('Failed to duplicate site');
+          return;
+        }
+        
+        await loadSites();
+        toasts.success('Site duplicated successfully!');
+      }
+    } catch (error) {
+      console.error('Error duplicating site:', error);
+      toasts.error('Failed to duplicate site');
+    }
+  }
+
+  async function deleteSite(siteId: string) {
+    try {
+      const { error } = await supabase
+        .from('sites')
+        .delete()
+        .eq('id', siteId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting site:', error);
+        toasts.error('Failed to delete site');
+        return;
+      }
+
+      toasts.success('Site deleted successfully!');
+      await loadSites(); // Refresh the list
+      showDeleteConfirm = false;
+      siteToDelete = null;
+    } catch (error) {
+      console.error('Error deleting site:', error);
+      toasts.error('Failed to delete site');
+    }
+  }
+
+  function handleDeleteClick(site: any) {
+    siteToDelete = site;
+    showDeleteConfirm = true;
+  }
+
   async function handleFileUpload(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
@@ -154,6 +281,27 @@
       });
     }
 
+    // Store file and show model selector
+    pendingFile = file;
+    showProcessingModelSelector = true;
+  }
+
+  function handleModelSelection(event: CustomEvent<{useAI: boolean}>) {
+    const { useAI } = event.detail;
+    useAIProcessing = useAI;
+    showProcessingModelSelector = false;
+    
+    if (pendingFile) {
+      processFile(pendingFile);
+    }
+  }
+
+  function handleModelSelectorClose() {
+    showProcessingModelSelector = false;
+    pendingFile = null;
+  }
+
+  async function processFile(file: File) {
     // Show processing modal
     showPDFProcessing = true;
     processingStep = 'uploading';
@@ -549,7 +697,7 @@
       });
       
       if (error) {
-        toasts.error('Failed to save profile: ' + error.message);
+        toasts.error('Failed to save profile: ' + (error as any)?.message || 'Unknown error');
         return;
       }
       
@@ -597,7 +745,7 @@
       });
       
       if (error) {
-        toasts.error('Failed to publish profile: ' + error.message);
+        toasts.error('Failed to publish profile: ' + (error as any)?.message || 'Unknown error');
         return;
       }
       
@@ -635,7 +783,7 @@
       });
       
       if (error) {
-        toasts.error('Failed to update profile status: ' + error.message);
+        toasts.error('Failed to update profile status: ' + (error as any)?.message || 'Unknown error');
         return;
       }
       
@@ -832,40 +980,30 @@
   }
 </script>
 
-<svelte:head>
-  <title>Dashboard - SiteMe</title>
-  <meta name="description" content="Manage your SiteMe profile" />
-</svelte:head>
-
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-20 sm:pt-16">
-  <div class="container mx-auto px-4 py-4 sm:py-6">
-    <!-- Welcome Section -->
-    <div class="mb-8">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div>
-          <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {resumeData?.name || user?.email?.split('@')[0] || 'there'}! 👋
-          </h2>
-          <p class="text-gray-600 dark:text-gray-300">
-            {profile?.username ? `Your site is live at siteme.app/u/${profile.username}` : 'Let\'s get your professional website set up'}
-          </p>
+<div class="container mx-auto px-4 py-6">
+  <!-- Welcome Section -->
+  <div class="mb-8">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Welcome back, {resumeData?.name || user?.email?.split('@')[0] || 'there'}! 👋
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        {profile?.username ? `Your site is live at siteme.app/u/${profile.username}` : 'Create your professional website in minutes'}
+      </p>
+      {#if profile?.username}
+        <div class="mt-4">
+          <a 
+            href="/u/{profile.username}" 
+            target="_blank"
+            class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            <Eye class="w-5 h-5 mr-2" />
+            View Live Site
+          </a>
         </div>
-        {#if profile?.username}
-          <div class="mt-4 sm:mt-0">
-            <a 
-              href="/u/{profile.username}" 
-              target="_blank"
-              class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <Eye class="w-4 h-4 mr-2" />
-              View Live Site
-            </a>
-          </div>
-        {/if}
-      </div>
-
-
+      {/if}
     </div>
+  </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
@@ -878,45 +1016,91 @@
               <Sparkles class="w-8 h-8 text-white" />
             </div>
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Get Started
+              Create New Website
             </h3>
             <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
-              Choose how you'd like to create your professional website
+              Choose how to create your professional website
             </p>
-            
-            <!-- Processing Mode Toggle -->
-            <div class="flex items-center justify-center space-x-4 mt-4">
-              <span class="text-sm text-gray-600 dark:text-gray-300">Processing Mode:</span>
-              <div class="flex items-center space-x-2">
-                <button
-                  on:click={() => useAIProcessing = true}
-                  class="px-3 py-1 text-sm font-medium rounded-lg transition-colors {useAIProcessing ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
-                >
-                  AI Processing
-                </button>
-                <button
-                  on:click={() => useAIProcessing = false}
-                  class="px-3 py-1 text-sm font-medium rounded-lg transition-colors {!useAIProcessing ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
-                >
-                  Basic Processing
-                </button>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Manual Creation -->
+            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+              <div class="space-y-4">
+                <div class="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <Edit3 class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Build from Scratch
+                  </h3>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                    Start with an empty template and fill in data manually
+                  </p>
+                  <button
+                    on:click={() => goto('/dashboard/editor/new?mode=manual')}
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Edit3 class="w-4 h-4 mr-2" />
+                    Start Manual
+                  </button>
+                </div>
               </div>
             </div>
             
-            {#if !useAIProcessing}
-              <div class="mt-2 text-center">
-                <p class="text-xs text-green-600 dark:text-green-400">
-                  💰 Cost-free processing • Limited extraction • Manual editing recommended
-                </p>
+            <!-- PDF Upload -->
+            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-green-400 dark:hover:border-green-500 transition-colors">
+              <div class="space-y-4">
+                <div class="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <Upload class="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Upload Resume PDF
+                  </h3>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                    Upload your PDF resume and choose processing mode
+                  </p>
+                  <input
+                    id="resume-upload"
+                    type="file"
+                    accept=".pdf"
+                    on:change={handleFileUpload}
+                    class="hidden"
+                  />
+                  <button
+                    on:click={() => document.getElementById('resume-upload')?.click()}
+                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Upload class="w-4 h-4 mr-2" />
+                    Upload PDF
+                  </button>
+                </div>
               </div>
-            {:else}
-              <div class="mt-2 text-center">
-                <p class="text-xs text-blue-600 dark:text-blue-400">
-                  🤖 AI-powered extraction • More accurate results • Uses API credits
-                </p>
-              </div>
-            {/if}
+            </div>
           </div>
+          
+          <!-- Info about limitations -->
+          <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div class="flex items-start space-x-3">
+              <div class="flex-shrink-0">
+                <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <span class="text-blue-600 dark:text-blue-400 text-sm font-bold">ℹ</span>
+                </div>
+              </div>
+              <div>
+                <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  Important Information:
+                </h5>
+                <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                  <li>You can create a maximum of 3 websites</li>
+                  <li>AI processing has daily limitations due to API constraints</li>
+                  <li>Use well-formatted PDFs for best results</li>
+                </ul>
+              </div>
+            </div>
+           </div>
+        </div>
 
           {#if errorMessage}
             <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
@@ -930,102 +1114,7 @@
             </div>
           {/if}
 
-          <div class="grid grid-cols-2 gap-3 sm:gap-6 mb-8">
-            <!-- Upload PDF Option -->
-            <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl p-4 sm:p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Upload class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <h4 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Upload Resume
-              </h4>
-              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
-                AI will extract your information automatically
-              </p>
-              
-              {#if uploading || processing}
-                <div class="flex flex-col items-center space-y-2 sm:space-y-3">
-                  {#if uploading}
-                    <div class="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-blue-600 border-t-transparent"></div>
-                    <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Uploading...</span>
-                  {:else if processing}
-                    <div class="animate-pulse">
-                      <Sparkles class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
-                    </div>
-                    <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Processing...</span>
-                  {/if}
-                </div>
-              {:else}
-                <label class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg text-sm" data-tour="upload-button">
-                  <FileText class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  Choose PDF
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    on:change={handleFileUpload}
-                    class="hidden"
-                  />
-                </label>
-              {/if}
-            </div>
 
-            <!-- Manual Creation Option -->
-            <div class="group relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-4 sm:p-6 text-center hover:border-green-400 dark:hover:border-green-500 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Edit3 class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <h4 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Build Manually
-              </h4>
-              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
-                Create your profile step by step
-              </p>
-                              <button 
-                on:click={() => {
-                  resumeData = {
-                    name: '',
-                    email: '',
-                    phone: '',
-                    location: '',
-                    summary: '',
-                    experience: [],
-                    education: [],
-                    certifications: [],
-                    languages: [],
-                    projects: [],
-                    awards: [],
-                    skills: [],
-                    links: []
-                  };
-                  showProfileEditor = true;
-                  toasts.success('Manual resume template created! Start filling in your information.');
-                }}
-                class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg text-sm"
-              >
-                <User class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Start Fresh
-              </button>
-            </div>
-          </div>
-
-          <!-- Upload Instructions -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
-            <div class="flex items-start space-x-3">
-              <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span class="text-blue-600 dark:text-blue-400 text-sm font-bold">💡</span>
-              </div>
-              <div>
-                <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  Tips for best results:
-                </h5>
-                <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
-                  <li>Use a well-formatted PDF resume</li>
-                  <li>Ensure text is clear and readable</li>
-                  <li>Include all relevant sections (experience, education, skills)</li>
-                </ul>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Profile Summary Card - Only show when user has data -->
@@ -1111,59 +1200,134 @@
             </div>
           </div>
         {/if}
+
+        <!-- Draft Sites Section -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <Globe class="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                  My Sites
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                  Manage your draft and published sites
+                </p>
+              </div>
+            </div>
+            <button
+              on:click={() => goto('/dashboard/sites')}
+              class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <Globe class="w-4 h-4 mr-2" />
+              Manage Sites
+            </button>
+          </div>
+
+          <!-- Sites List -->
+          <div class="space-y-3">
+            {#if sites.length === 0}
+              <div class="text-center py-8">
+                <Globe class="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p class="text-gray-500 dark:text-gray-400 mb-4">No websites created yet</p>
+                <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">Maximum 3 websites per account</p>
+                <button
+                  on:click={() => goto('/dashboard/create')}
+                  class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Edit3 class="w-4 h-4 mr-2" />
+                  Create First Website
+                </button>
+              </div>
+            {:else}
+              {#each sites as site (site.id)}
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-3">
+                        <h4 class="font-semibold text-gray-900 dark:text-white">
+                          {site.name}
+                        </h4>
+                        {#if site.status === 'published'}
+                          <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium rounded-full">
+                            <Globe class="w-3 h-3 mr-1" />
+                            Live
+                          </span>
+                        {:else}
+                          <span class="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300 text-xs font-medium rounded-full">
+                            Draft
+                          </span>
+                        {/if}
+                      </div>
+                      <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        <span class="flex items-center">
+                          <Calendar class="w-3 h-3 mr-1" />
+                          {new Date(site.updated_at).toLocaleDateString()}
+                        </span>
+                        <span class="capitalize">{site.template} template</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                      {#if site.status === 'published'}
+                        <a
+                          href="/u/{profile?.username}"
+                          target="_blank"
+                          class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <ExternalLink class="w-3 h-3 mr-1" />
+                          View
+                        </a>
+                      {:else}
+                        <button
+                          on:click={() => publishSite(site.id)}
+                          class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Globe class="w-3 h-3 mr-1" />
+                          Publish
+                        </button>
+                      {/if}
+                      
+                      <button
+                        on:click={() => goto(`/dashboard/editor/${site.id}`)}
+                        class="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
+                      >
+                        <Edit3 class="w-3 h-3 mr-1" />
+                        Edit
+                      </button>
+                      
+                      <button
+                        on:click={() => handleDeleteClick(site)}
+                        class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        <Trash2 class="w-3 h-3 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+
+          <!-- Info Note -->
+          <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+            <p class="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Note:</strong> Only one site can be published at a time. Publishing a new site will unpublish the current one.
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- Modern Sidebar -->
       <div class="xl:col-span-1 space-y-6">
 
 
-        <!-- Data Management Card -->
-        {#if resumeData && (resumeData.name || resumeData.email || resumeData.experience?.length > 0 || resumeData.education?.length > 0 || resumeData.skills?.length > 0)}
-          <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-red-200/50 dark:border-red-700/50 p-6">
-            <div class="flex items-center mb-4">
-              <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3">
-                <Settings class="w-4 h-4 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                Data Management
-              </h3>
-            </div>
-            
-            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <div class="flex items-start space-x-3">
-                <div class="w-6 h-6 bg-red-100 dark:bg-red-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span class="text-red-600 dark:text-red-400 text-sm font-bold">⚠️</span>
-                </div>
-                <div class="flex-1">
-                  <h4 class="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
-                    Danger Zone
-                  </h4>
-                  <p class="text-xs text-red-800 dark:text-red-200 mb-3">
-                    This will permanently delete ALL your profile data including personal info, experience, education, skills, and uploaded content. This action cannot be undone.
-                  </p>
-                  
-                  <button
-                    on:click={handleDeleteData}
-                    disabled={loading}
-                    class="w-full flex items-center justify-center px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {#if loading}
-                      <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                      Deleting All Data...
-                    {:else}
-                      <Settings class="w-5 h-5 mr-2" />
-                      🗑️ Delete All Data
-                    {/if}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        {/if}
+
       </div>
     </div>
-  </div>
-</div>
 
 <!-- Profile Editor Modal -->
 {#if showProfileEditor && resumeData}
@@ -1266,4 +1430,25 @@
       message={rateLimitMessage}
       on:retry={handleRateLimitRetry}
       on:close={() => showRateLimitModal = false}
+    />
+
+    <ProcessingModelSelector
+      show={showProcessingModelSelector}
+      fileName={pendingFile?.name || ''}
+      on:select={handleModelSelection}
+      on:close={handleModelSelectorClose}
+    />
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      isOpen={showDeleteConfirm}
+      title="Delete Site"
+      message="Are you sure you want to delete '{siteToDelete?.name}'? This action cannot be undone."
+      confirmText="Delete"
+      type="danger"
+      on:confirm={() => deleteSite(siteToDelete?.id)}
+      on:cancel={() => {
+        showDeleteConfirm = false;
+        siteToDelete = null;
+      }}
     />

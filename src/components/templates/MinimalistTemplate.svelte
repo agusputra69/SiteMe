@@ -83,7 +83,8 @@
 	$: avatarInitial = profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U';
 </script>
 
-<div class="{containerClass} mx-auto {paddingClass} {fontClass} transition-all duration-300" style="{appliedStyles}">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+<div class="{containerClass} mx-auto {paddingClass} {fontClass} transition-all duration-300 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 	<!-- Header -->
 	<header class="text-center mb-12 border-b border-gray-200 dark:border-gray-700 pb-8">
 		<!-- Profile Image/Initial -->
@@ -284,6 +285,115 @@
 		</section>
 	{/if}
 
+	<!-- Certifications Section -->
+	{#if profileData.certifications && profileData.certifications.length > 0}
+		<section>
+			<h2 class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-6 font-sans">
+				Certifications
+			</h2>
+			<div class="space-y-4">
+				{#each profileData.certifications as cert}
+					<div class="flex">
+						<div class="w-32 flex-shrink-0">
+							<p class="text-sm text-gray-600 dark:text-gray-400 font-sans">
+								{cert.date}
+							</p>
+						</div>
+						<div class="flex-1">
+							<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
+								{cert.name}
+							</h3>
+							<p class="text-gray-600 dark:text-gray-300 font-sans">
+								{cert.issuer}
+							</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	<!-- Languages Section -->
+	{#if profileData.languages && profileData.languages.length > 0}
+		<section>
+			<h2 class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-6 font-sans">
+				Languages
+			</h2>
+			<div class="space-y-3">
+				{#each profileData.languages as language}
+					<div class="flex justify-between items-center">
+						<span class="text-gray-900 dark:text-gray-300 font-sans">
+							{language.language}
+						</span>
+						<span class="text-sm text-gray-600 dark:text-gray-400 font-sans">
+							{language.proficiency}
+						</span>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	<!-- Projects Section -->
+	{#if profileData.projects && profileData.projects.length > 0}
+		<section>
+			<h2 class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-6 font-sans">
+				Projects
+			</h2>
+			<div class="space-y-6">
+				{#each profileData.projects as project}
+					<div>
+						<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+							{project.name}
+						</h3>
+						{#if project.description}
+							<p class="text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
+								{project.description}
+							</p>
+						{/if}
+						{#if project.technologies && project.technologies.length > 0}
+							<div class="flex flex-wrap gap-2">
+								{#each project.technologies as tech}
+									<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-sans">
+										{tech}
+									</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	<!-- Awards Section -->
+	{#if profileData.awards && profileData.awards.length > 0}
+		<section>
+			<h2 class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-6 font-sans">
+				Awards
+			</h2>
+			<div class="space-y-4">
+				{#each profileData.awards as award}
+					<div class="flex">
+						<div class="w-32 flex-shrink-0">
+							<p class="text-sm text-gray-600 dark:text-gray-400 font-sans">
+								{award.date}
+							</p>
+						</div>
+						<div class="flex-1">
+							<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
+								{award.title}
+							</h3>
+							<p class="text-gray-600 dark:text-gray-300 font-sans">
+								{award.organization}
+							</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	<!-- Links Section -->
 	{#if profileData.links && profileData.links.length > 0}
 		<section class="mb-12">
@@ -315,6 +425,33 @@
 		</section>
 	{/if}
 	</div>
+</div>
+
+<!-- SiteMe Footer -->
+<footer class="mt-12 py-8 px-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+	<div class="max-w-4xl mx-auto text-center">
+		<div class="flex items-center justify-center space-x-2 mb-4">
+			<svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+			</svg>
+			<span class="text-lg font-bold text-gray-900 dark:text-white">SiteMe</span>
+		</div>
+		<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+			Create your professional portfolio in minutes
+		</p>
+		<div class="flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+			<a href="/features" class="hover:text-blue-600 transition-colors">Features</a>
+			<a href="/templates" class="hover:text-blue-600 transition-colors">Templates</a>
+			<a href="/pricing" class="hover:text-blue-600 transition-colors">Pricing</a>
+			<a href="/about" class="hover:text-blue-600 transition-colors">About</a>
+		</div>
+		<div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+			<p class="text-xs text-gray-400 dark:text-gray-500">
+				© 2024 SiteMe. All rights reserved.
+			</p>
+		</div>
+	</div>
+</footer>
 </div>
 
 <style>
