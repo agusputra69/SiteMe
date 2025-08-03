@@ -22,6 +22,11 @@
 	export let username: string = '';
 	export let saveSuccess = false;
 
+	// Ensure skills array is always initialized
+	$: if (resumeData && !resumeData.skills) {
+		resumeData.skills = [];
+	}
+
 	// Autosave functionality
 	let autosaveTimeout: NodeJS.Timeout | null = null;
 	let lastSavedData: string = '';
@@ -884,11 +889,16 @@
 						period: 'Start - End'
 					}],
 					skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
-					contact: {
-						email: resumeData?.email || '',
-						phone: resumeData?.phone || '',
-						location: resumeData?.location || ''
-					}
+				projects: [],
+				certifications: resumeData?.certifications || [],
+				languages: resumeData?.languages || [],
+				awards: resumeData?.awards || [],
+				links: resumeData?.links || [],
+				contact: {
+					email: resumeData?.email || '',
+					phone: resumeData?.phone || '',
+					location: resumeData?.location || ''
+				}
 				}}
 				customizable={false}
 				selectedTemplate={selectedTemplate}
@@ -1748,14 +1758,16 @@
 							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
 						</div>
 						
-						<SkillsInput
-							bind:skills={resumeData.skills}
-							on:input={(e) => {
-								resumeData.skills = e.detail.skills;
-							}}
-							label="Professional Skills"
-							placeholder="Add a skill (e.g., JavaScript, React, Project Management)"
-						/>
+						{#if resumeData.skills}
+							<SkillsInput
+								bind:skills={resumeData.skills}
+								on:input={(e) => {
+									resumeData.skills = e.detail.skills;
+								}}
+								label="Professional Skills"
+								placeholder="Add a skill (e.g., JavaScript, React, Project Management)"
+							/>
+						{/if}
 					</div>
 
 				{:else if activeTab === 'skills'}
@@ -1943,11 +1955,16 @@
 										period: 'Start - End'
 									}],
 									skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
-									contact: {
-										email: resumeData?.email || '',
-										phone: resumeData?.phone || '',
-										location: resumeData?.location || ''
-									}
+							projects: [],
+							certifications: resumeData?.certifications || [],
+							languages: resumeData?.languages || [],
+							awards: resumeData?.awards || [],
+							links: resumeData?.links || [],
+							contact: {
+								email: resumeData?.email || '',
+								phone: resumeData?.phone || '',
+								location: resumeData?.location || ''
+							}
 								}}
 								customizable={true}
 								{selectedTemplate}

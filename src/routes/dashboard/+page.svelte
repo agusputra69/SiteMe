@@ -34,6 +34,7 @@
   import PDFSuccessModal from '../../components/PDFSuccessModal.svelte';
   import PDFProcessingModal from '../../components/PDFProcessingModal.svelte';
   import RateLimitModal from '../../components/RateLimitModal.svelte';
+  import AddSiteModal from '../../components/AddSiteModal.svelte';
 
   let user: any = null;
   let profile: any = null;
@@ -69,6 +70,7 @@
   let siteToDelete: any = null;
   let showProcessingModelSelector = false;
   let pendingFile: File | null = null;
+  let showAddSiteModal = false;
 
   onMount(async () => {
     // Check authentication
@@ -516,6 +518,41 @@
         // Complete processing
         processingProgress = 100;
         
+        // Create new site with extracted data if called from modal
+        if (pendingFile && extractedData && extractedData.name) {
+          try {
+            const siteName = `${extractedData.name}'s Site`;
+            
+            const { data: newSite, error: siteError } = await supabase
+              .from('sites')
+              .insert({
+                user_id: user.id,
+                name: siteName,
+                data: extractedData,
+                template: 'modern',
+                status: 'draft'
+              })
+              .select()
+              .single();
+
+            if (siteError) {
+              console.error('Failed to create site:', siteError);
+              toasts.error('Gagal membuat website baru');
+            } else {
+              console.log('New site created successfully:', newSite);
+              toasts.success('Website baru berhasil dibuat!');
+              // Refresh sites data
+              await loadSites();
+            }
+          } catch (siteError) {
+            console.error('Error creating site:', siteError);
+            toasts.error('Terjadi kesalahan saat membuat website');
+          }
+          
+          // Clear pending file
+          pendingFile = null;
+        }
+        
         // Hide processing modal and show success modal
         showPDFProcessing = false;
         processedFileName = file.name;
@@ -719,10 +756,60 @@
   }
 
   // Handle manual resume creation
-  function handleManualCreate(event: CustomEvent) {
-    const { resumeData: newResumeData } = event.detail;
-    resumeData = newResumeData;
-    toasts.success('Manual resume template created! Start filling in your information.');
+  async function handleManualCreate(event: CustomEvent) {
+    if (event.detail && event.detail.resumeData) {
+      const { resumeData: newResumeData } = event.detail;
+      resumeData = newResumeData;
+      toasts.success('Manual resume template created! Start filling in your information.');
+    } else {
+      // Handle modal manual create - create new site
+      showAddSiteModal = false;
+      
+      try {
+        const siteName = 'My New Site';
+        
+        const { data: newSite, error: siteError } = await supabase
+          .from('sites')
+          .insert({
+            user_id: user.id,
+            name: siteName,
+            data: {
+              name: '',
+              email: '',
+              phone: '',
+              location: '',
+              summary: '',
+              experience: [],
+              education: [],
+              skills: [],
+              projects: []
+            },
+            template: 'modern',
+            status: 'draft'
+          })
+          .select()
+          .single();
+
+        if (siteError) {
+          console.error('Failed to create site:', siteError);
+          toasts.error('Gagal membuat website baru');
+          return;
+        }
+        
+        console.log('New site created successfully:', newSite);
+        toasts.success('Website baru berhasil dibuat!');
+        
+        // Refresh sites data
+        await loadSites();
+        
+        // Navigate to editor with the new site ID
+        goto(`/dashboard/editor/${newSite.id}?mode=manual`);
+        
+      } catch (error) {
+        console.error('Error creating site:', error);
+        toasts.error('Terjadi kesalahan saat membuat website');
+      }
+    }
   }
 
   // Handle profile publishing
@@ -978,16 +1065,32 @@
       console.log('Delete process completed, loading set to false');
     }
   }
+
+  // AddSiteModal handlers
+  function handleAddSiteModal() {
+    showAddSiteModal = true;
+  }
+
+  function handleAddSiteModalClose() {
+    showAddSiteModal = false;
+  }
+
+  function handleModalPDFUpload(event: CustomEvent) {
+    const file = event.detail.file;
+    showAddSiteModal = false;
+    pendingFile = file;
+    showProcessingModelSelector = true;
+  }
 </script>
 
 <div class="container mx-auto px-4 py-6">
   <!-- Welcome Section -->
   <div class="mb-8">
-    <div class="text-center mb-8">
+    <div class="text-left mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
         Welcome back, {resumeData?.name || user?.email?.split('@')[0] || 'there'}! 👋
       </h1>
-      <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+      <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
         {profile?.username ? `Your site is live at siteme.app/u/${profile.username}` : 'Create your professional website in minutes'}
       </p>
       {#if profile?.username}
@@ -1005,23 +1108,128 @@
     </div>
   </div>
 
+    <!-- My Sites Section (for users with existing sites) -->
+    {#if sites.length > 0}
+      <div class="mb-8">
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <Globe class="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                  My Sites
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                  Manage your draft and published sites ({sites.length}/3)
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              {#if sites.length < 3}
+                <button
+                  on:click={handleAddSiteModal}
+                  class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Sparkles class="w-4 h-4 mr-2" />
+                  Add New Site
+                </button>
+              {/if}
+              <button
+                on:click={() => goto('/dashboard/sites')}
+                class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Globe class="w-4 h-4 mr-2" />
+                Manage All
+              </button>
+            </div>
+          </div>
+
+          <!-- Sites List -->
+          <div class="space-y-3">
+            {#each sites.slice(0, 3) as site (site.id)}
+              <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                <div class="flex items-center justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                      <h4 class="font-semibold text-gray-900 dark:text-white">
+                        {site.name}
+                      </h4>
+                      {#if site.status === 'published'}
+                        <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium rounded-full">
+                          <Globe class="w-3 h-3 mr-1" />
+                          Live
+                        </span>
+                      {:else}
+                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300 text-xs font-medium rounded-full">
+                          Draft
+                        </span>
+                      {/if}
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span class="flex items-center">
+                        <Calendar class="w-3 h-3 mr-1" />
+                        {new Date(site.updated_at).toLocaleDateString()}
+                      </span>
+                      <span class="capitalize">{site.template} template</span>
+                    </div>
+                  </div>
+                  
+                  <div class="flex items-center space-x-2">
+                    {#if site.status === 'published'}
+                      <a
+                        href="/u/{profile?.username}"
+                        target="_blank"
+                        class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <ExternalLink class="w-3 h-3 mr-1" />
+                        View
+                      </a>
+                    {:else}
+                      <button
+                        on:click={() => publishSite(site.id)}
+                        class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Globe class="w-3 h-3 mr-1" />
+                        Publish
+                      </button>
+                    {/if}
+                    
+                    <button
+                      on:click={() => goto(`/dashboard/editor/${site.id}`)}
+                      class="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      <Edit3 class="w-3 h-3 mr-1" />
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
       <!-- Quick Actions -->
       <div class="xl:col-span-2 space-y-6">
-        <!-- Getting Started Section -->
-        <div id="upload" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
-          <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Sparkles class="w-8 h-8 text-white" />
+        <!-- Getting Started Section (only for users without sites) -->
+        {#if sites.length === 0}
+          <div id="upload" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+            <div class="text-center mb-8">
+              <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Sparkles class="w-8 h-8 text-white" />
+              </div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Create Your First Website
+              </h3>
+              <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
+                Choose how to create your professional website
+              </p>
             </div>
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Create New Website
-            </h3>
-            <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
-              Choose how to create your professional website
-            </p>
-          </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Manual Creation -->
@@ -1100,7 +1308,8 @@
               </div>
             </div>
            </div>
-        </div>
+          </div>
+        {/if}
 
           {#if errorMessage}
             <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
@@ -1201,124 +1410,7 @@
           </div>
         {/if}
 
-        <!-- Draft Sites Section -->
-        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
-          <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <Globe class="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                  My Sites
-                </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-300">
-                  Manage your draft and published sites
-                </p>
-              </div>
-            </div>
-            <button
-              on:click={() => goto('/dashboard/sites')}
-              class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <Globe class="w-4 h-4 mr-2" />
-              Manage Sites
-            </button>
-          </div>
 
-          <!-- Sites List -->
-          <div class="space-y-3">
-            {#if sites.length === 0}
-              <div class="text-center py-8">
-                <Globe class="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p class="text-gray-500 dark:text-gray-400 mb-4">No websites created yet</p>
-                <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">Maximum 3 websites per account</p>
-                <button
-                  on:click={() => goto('/dashboard/create')}
-                  class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <Edit3 class="w-4 h-4 mr-2" />
-                  Create First Website
-                </button>
-              </div>
-            {:else}
-              {#each sites as site (site.id)}
-                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                  <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center space-x-3">
-                        <h4 class="font-semibold text-gray-900 dark:text-white">
-                          {site.name}
-                        </h4>
-                        {#if site.status === 'published'}
-                          <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium rounded-full">
-                            <Globe class="w-3 h-3 mr-1" />
-                            Live
-                          </span>
-                        {:else}
-                          <span class="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300 text-xs font-medium rounded-full">
-                            Draft
-                          </span>
-                        {/if}
-                      </div>
-                      <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        <span class="flex items-center">
-                          <Calendar class="w-3 h-3 mr-1" />
-                          {new Date(site.updated_at).toLocaleDateString()}
-                        </span>
-                        <span class="capitalize">{site.template} template</span>
-                      </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-2">
-                      {#if site.status === 'published'}
-                        <a
-                          href="/u/{profile?.username}"
-                          target="_blank"
-                          class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          <ExternalLink class="w-3 h-3 mr-1" />
-                          View
-                        </a>
-                      {:else}
-                        <button
-                          on:click={() => publishSite(site.id)}
-                          class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <Globe class="w-3 h-3 mr-1" />
-                          Publish
-                        </button>
-                      {/if}
-                      
-                      <button
-                        on:click={() => goto(`/dashboard/editor/${site.id}`)}
-                        class="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
-                      >
-                        <Edit3 class="w-3 h-3 mr-1" />
-                        Edit
-                      </button>
-                      
-                      <button
-                        on:click={() => handleDeleteClick(site)}
-                        class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        <Trash2 class="w-3 h-3 mr-1" />
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              {/each}
-            {/if}
-          </div>
-
-          <!-- Info Note -->
-          <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-            <p class="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Note:</strong> Only one site can be published at a time. Publishing a new site will unpublish the current one.
-            </p>
-          </div>
-        </div>
       </div>
 
       <!-- Modern Sidebar -->
@@ -1365,6 +1457,14 @@
     </div>
   </div>
 {/if}
+
+<!-- Add Site Modal -->
+<AddSiteModal 
+  bind:show={showAddSiteModal}
+  on:close={handleAddSiteModalClose}
+  on:manualCreate={handleManualCreate}
+  on:pdfUpload={handleModalPDFUpload}
+/>
 
 <!-- Onboarding Tour -->
 {#if showOnboarding}

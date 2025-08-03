@@ -104,6 +104,11 @@
             period: 'Start - End'
           }],
           skills: profile.data?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
+          projects: profile.data?.projects || [],
+          certifications: profile.data?.certifications || [],
+          languages: profile.data?.languages || [],
+          awards: profile.data?.awards || [],
+          links: profile.data?.links || [],
           contact: {
             email: profile.data?.email || '',
             phone: profile.data?.phone || '',
@@ -135,4 +140,4 @@
       />
     </div>
   {/if}
-</div> 
+</div>

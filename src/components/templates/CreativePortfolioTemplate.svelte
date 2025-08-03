@@ -10,7 +10,10 @@
 		skills: [],
 		contact: { email: '', phone: '', location: '' },
 		links: [],
-		projects: []
+		projects: [],
+		certifications: [],
+		languages: [],
+		awards: []
 	};
 
 	export let theme = {

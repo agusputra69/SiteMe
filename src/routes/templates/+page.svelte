@@ -36,6 +36,11 @@
 			}
 		],
 		skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'Docker', 'GraphQL'],
+		projects: [],
+		certifications: [],
+		languages: [],
+		awards: [],
+		links: [],
 		contact: {
 			email: 'alex@example.com',
 			phone: '+1 (555) 123-4567',

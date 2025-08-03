@@ -30,6 +30,11 @@
       }
     ],
     skills: ['TypeScript', 'React', 'Next.js', 'AI/ML', 'Developer Relations'],
+    projects: [],
+    certifications: [],
+    languages: [],
+    awards: [],
+    links: [],
     contact: {
       email: 'agus@example.com',
       location: 'San Francisco, CA'
@@ -57,6 +62,11 @@
       }
     ],
     skills: ['Skill 1', 'Skill 2', 'Skill 3'],
+    projects: [],
+    certifications: [],
+    languages: [],
+    awards: [],
+    links: [],
     contact: {
       email: 'your@email.com',
       location: 'Your Location'

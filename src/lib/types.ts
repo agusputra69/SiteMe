@@ -62,13 +62,13 @@ export interface ProfileData {
 	about: string;
 	workExperience: WorkExperience[];
 	education: Education[];
-	skills?: string[];
-	contact?: Contact;
-	links?: Link[];
-	projects?: Project[];
-	certifications?: Certification[];
-	languages?: Language[];
-	awards?: Award[];
+	skills: string[];
+	contact: Contact;
+	links: Link[];
+	projects: Project[];
+	certifications: Certification[];
+	languages: Language[];
+	awards: Award[];
 }
 
 export interface Theme {
