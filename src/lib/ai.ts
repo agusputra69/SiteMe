@@ -46,6 +46,7 @@ export interface ResumeData {
     technologies: string[];
     url?: string;
     duration?: string;
+    image?: string;
   }>;
   awards: Array<{
     title: string;

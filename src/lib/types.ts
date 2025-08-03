@@ -13,6 +13,11 @@ export interface Education {
 	period: string;
 }
 
+export interface Link {
+	type: string;
+	url: string;
+}
+
 export interface Contact {
 	email?: string;
 	phone?: string;
@@ -27,6 +32,7 @@ export interface ProfileData {
 	education: Education[];
 	skills?: string[];
 	contact?: Contact;
+	links?: Link[];
 }
 
 export interface Theme {

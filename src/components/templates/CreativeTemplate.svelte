@@ -287,6 +287,43 @@
 						{/each}
 					</div>
 				</div>
+
+				<!-- Links Section -->
+				{#if profileData.links && profileData.links.length > 0}
+					<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+						<div class="flex items-center mb-6">
+							<div class="w-1 h-8 bg-gradient-to-b from-purple-600 to-pink-500 rounded-full mr-4" aria-hidden="true"></div>
+							<h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
+								Links
+							</h2>
+						</div>
+						<div class="space-y-4">
+							{#each profileData.links as link}
+								<a 
+									href={link.url} 
+									target="_blank" 
+									rel="noopener noreferrer"
+									class="flex items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-800/30 dark:hover:to-pink-800/30 transition-all duration-300 group border border-purple-200/50 dark:border-purple-700/50"
+								>
+									<div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-500 rounded-xl flex items-center justify-center mr-4 text-white font-bold text-lg shadow-lg">
+										{link.type.charAt(0).toUpperCase()}
+									</div>
+									<div class="flex-1">
+										<div class="font-bold text-gray-900 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+											{link.type}
+										</div>
+										<div class="text-sm text-gray-600 dark:text-gray-400 truncate">
+											{link.url}
+										</div>
+									</div>
+									<svg class="w-5 h-5 text-purple-600 group-hover:text-pink-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+									</svg>
+								</a>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight, Globe, Palette, Settings, Award, Code, Trophy } from 'lucide-svelte';
+	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight, Globe, Palette, Settings, Award, Code, Trophy, Github, Twitter, Linkedin, Link2, Image, ExternalLink } from 'lucide-svelte';
 	import type { ResumeData } from '$lib/ai';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
@@ -22,11 +22,38 @@
 	export let username: string = '';
 	export let saveSuccess = false;
 
+	// Autosave functionality
+	let autosaveTimeout: NodeJS.Timeout | null = null;
+	let lastSavedData: string = '';
+
 	// Listen for save success from parent
 	$: if (!uploading && saveSuccess) {
 		setTimeout(() => {
 			saveSuccess = false;
 		}, 3000);
+	}
+
+	// Autosave when resumeData changes
+	$: {
+		if (resumeData) {
+			const currentData = JSON.stringify(resumeData);
+			if (currentData !== lastSavedData && lastSavedData !== '') {
+				// Clear existing timeout
+				if (autosaveTimeout) {
+					clearTimeout(autosaveTimeout);
+				}
+				// Set new timeout for autosave
+				autosaveTimeout = setTimeout(() => {
+					if (!uploading) {
+						saveDraft();
+						lastSavedData = currentData;
+					}
+				}, 2000); // Autosave after 2 seconds of inactivity
+			} else if (lastSavedData === '') {
+				// Initialize lastSavedData on first load
+				lastSavedData = currentData;
+			}
+		}
 	}
 
 	let profilePhotoFile: File | null = null;
@@ -87,7 +114,8 @@
 		{ id: 'languages', label: 'Languages', icon: Globe },
 		{ id: 'projects', label: 'Projects', icon: Code },
 		{ id: 'awards', label: 'Awards', icon: Trophy },
-		{ id: 'skills', label: 'Skills & Links', icon: Plus },
+		{ id: 'skills', label: 'Skills', icon: Plus },
+		{ id: 'links', label: 'Social Links', icon: ExternalLink },
 		{ id: 'design', label: 'Design', icon: Edit3 }
 	];
 
@@ -208,6 +236,42 @@
 		resumeData.skills = resumeData.skills?.filter((_, i) => i !== index) || [];
 	}
 
+	// Predefined social media options
+	const socialMediaOptions = [
+		{ name: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/in/yourprofile', color: 'bg-blue-600' },
+		{ name: 'GitHub', icon: Github, placeholder: 'https://github.com/yourusername', color: 'bg-gray-800' },
+		{ name: 'Twitter', icon: Twitter, placeholder: 'https://twitter.com/yourusername', color: 'bg-blue-400' },
+		{ name: 'Portfolio', icon: Globe, placeholder: 'https://yourportfolio.com', color: 'bg-purple-600' },
+		{ name: 'Website', icon: Link2, placeholder: 'https://yourwebsite.com', color: 'bg-green-600' },
+		{ name: 'Other', icon: ExternalLink, placeholder: 'https://...', color: 'bg-gray-600' }
+	];
+
+	// Helper functions for social media
+	function addSocialMediaLink(platform: string) {
+		if (!resumeData.links) resumeData.links = [];
+		const option = socialMediaOptions.find(opt => opt.name === platform);
+		resumeData.links = [...resumeData.links, {
+			type: platform,
+			url: option?.placeholder || ''
+		}];
+		// Focus the new link input
+		setTimeout(() => {
+			const linksLength = resumeData.links?.length || 0;
+			const newInput = document.querySelector(`#link-url-${linksLength - 1}`) as HTMLInputElement;
+			if (newInput) newInput.focus();
+		}, 100);
+	}
+
+	function getSocialMediaIcon(type: string) {
+		const option = socialMediaOptions.find(opt => opt.name.toLowerCase() === type.toLowerCase());
+		return option?.icon || ExternalLink;
+	}
+
+	function getSocialMediaColor(type: string) {
+		const option = socialMediaOptions.find(opt => opt.name.toLowerCase() === type.toLowerCase());
+		return option?.color || 'bg-gray-600';
+	}
+
 	function addLink() {
 		if (!resumeData.links) resumeData.links = [];
 		resumeData.links = [...resumeData.links, { type: 'LinkedIn', url: '' }];
@@ -275,7 +339,8 @@
 				description: '', 
 				technologies: [''],
 				url: '',
-				duration: ''
+				duration: '',
+				image: ''
 			}
 		];
 		// Focus the first input of the new project entry
@@ -1395,10 +1460,10 @@
 													<option value="Basic">Basic</option>
 												</select>
 											</div>
-										</div>
 									</div>
-								{/each}
 							</div>
+						{/each}
+					</div>
 						{:else}
 							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
 								<Globe class="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -1475,19 +1540,41 @@
 												/>
 											</div>
 										</div>
-										<div class="mb-4">
-											<label for="project-duration-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-												Duration
-											</label>
-											<input
-												id="project-duration-{index}"
-												type="text"
-												bind:value={project.duration}
-												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-												placeholder="3 months"
-											/>
-										</div>
-										<div class="mb-4">
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+												<div>
+													<label for="project-duration-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+														Duration
+													</label>
+													<input
+														id="project-duration-{index}"
+														type="text"
+														bind:value={project.duration}
+														class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+														placeholder="3 months"
+													/>
+												</div>
+												<div>
+													<label for="project-image-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+														Project Image URL (Optional)
+													</label>
+													<div class="flex items-center gap-2">
+														<Image class="w-5 h-5 text-gray-400" />
+														<input
+															id="project-image-{index}"
+															type="url"
+															bind:value={project.image}
+															class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+															placeholder="https://example.com/project-screenshot.jpg"
+														/>
+													</div>
+													{#if project.image}
+														<div class="mt-2">
+															<img src={project.image} alt="Project preview" class="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600" on:error={() => project.image = ''} />
+														</div>
+								{/if}
+							</div>
+						</div>
+											<div class="mb-4">
 											<label for="project-description-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 												Description
 											</label>
@@ -1654,194 +1741,116 @@
 					</div>
 
 				{:else if activeTab === 'skills'}
-					<!-- Skills & Links Tab -->
-					<div class="space-y-6">
-						<!-- Skills Section -->
-						<div>
-							<div class="flex items-center mb-6">
-								<Plus class="w-6 h-6 text-blue-600 mr-3" />
-								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
-							</div>
-							
-							<SkillsInput
-								bind:skills={resumeData.skills}
-								on:input={(e) => {
-									resumeData.skills = e.detail.skills;
-								}}
-								label="Professional Skills"
-								placeholder="Add a skill (e.g., JavaScript, React, Project Management)"
-							/>
+					<!-- Skills Tab -->
+					<div>
+						<div class="flex items-center mb-6">
+							<Plus class="w-6 h-6 text-blue-600 mr-3" />
+							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
 						</div>
-
-						<!-- Links Section -->
-						<div>
-							<div class="flex items-center justify-between mb-6">
-								<div class="flex items-center">
-									<ChevronRight class="w-6 h-6 text-indigo-600 mr-3" />
-									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Links</h4>
-								</div>
-								<button
-									on:click={addLink}
-									class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-								>
-									<Plus class="w-4 h-4 mr-2" />
-									Add Link
-								</button>
-							</div>
-
-							{#if resumeData.links && resumeData.links.length > 0}
-								<div class="space-y-4">
-									{#each resumeData.links as link, index}
-										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
-											<div class="flex items-center justify-between mb-4">
-												<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
-													<span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
-														{index + 1}
-													</span>
-													Link {index + 1}
-												</h6>
-												<button
-													on:click={() => removeLink(index)}
-													class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-												>
-													<Trash2 class="w-4 h-4" />
-												</button>
-											</div>
-											<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-												<div>
-													<label for="link-label-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-														Label
-													</label>
-													<input
-														id="link-label-{index}"
-														type="text"
-														bind:value={link.type}
-														class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-														placeholder="LinkedIn, GitHub, Portfolio"
-													/>
-												</div>
-												<div>
-													<label for="link-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-														URL
-													</label>
-													<input
-														id="link-url-{index}"
-														type="url"
-														bind:value={link.url}
-														class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-														placeholder="https://..."
-													/>
-												</div>
-											</div>
-										</div>
-									{/each}
-								</div>
-							{:else}
-								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-									<ChevronRight class="w-8 h-8 text-gray-400 mx-auto mb-2" />
-									<p class="text-gray-500 dark:text-gray-400 mb-4">No links added yet</p>
-									<button
-										on:click={addLink}
-										class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-									>
-										<Plus class="w-4 h-4 mr-2" />
-										Add Your First Link
-									</button>
-								</div>
-							{/if}
-						</div>
+						
+						<SkillsInput
+							bind:skills={resumeData.skills}
+							on:input={(e) => {
+								resumeData.skills = e.detail.skills;
+							}}
+							label="Professional Skills"
+							placeholder="Add a skill (e.g., JavaScript, React, Project Management)"
+						/>
 					</div>
 
 				{:else if activeTab === 'skills'}
-					<!-- Skills & Links Tab -->
-					<div class="space-y-8">
-						<!-- Skills Section -->
-						<div>
-							<div class="flex items-center justify-between mb-6">
-								<div class="flex items-center">
-									<Plus class="w-6 h-6 text-orange-600 mr-3" />
-									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
-								</div>
+					<!-- Skills Tab -->
+					<div>
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Plus class="w-6 h-6 text-orange-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
+							</div>
+							<button
+								on:click={addSkill}
+								class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Skill
+							</button>
+						</div>
+
+						{#if resumeData.skills && resumeData.skills.length > 0}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{#each resumeData.skills as skill, index}
+									<div class="flex items-center space-x-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+										<span class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+											{index + 1}
+										</span>
+										<input
+											type="text"
+											bind:value={resumeData.skills[index]}
+											class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+											placeholder="Enter skill name"
+										/>
+										<button
+											on:click={() => removeSkill(index)}
+											class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+										>
+											<Trash2 class="w-4 h-4" />
+										</button>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Plus class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No skills added yet</p>
 								<button
 									on:click={addSkill}
 									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
 								>
 									<Plus class="w-4 h-4 mr-2" />
-									Add Skill
+									Add Your First Skill
 								</button>
 							</div>
+			{/if}
+		</div>
 
-							{#if resumeData.skills && resumeData.skills.length > 0}
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									{#each resumeData.skills as skill, index}
-										<div class="flex items-center space-x-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-											<span class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-												{index + 1}
-											</span>
-											<input
-												type="text"
-												bind:value={resumeData.skills[index]}
-												class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-												placeholder="Enter skill name"
-											/>
+		{:else if activeTab === 'links'}
+					<!-- Social Links Tab -->
+					<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Link2 class="w-6 h-6 text-blue-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Showcase Project</h4>
+							</div>
+							<div class="flex flex-wrap gap-2">
+								{#each socialMediaOptions as option}
+						<button
+							on:click={() => addSocialMediaLink(option.name)}
+							class="inline-flex items-center px-3 py-2 text-white rounded-lg transition-colors text-sm"
+							style="background-color: {option.color};"
+						>
+							<svelte:component this={option.icon} class="w-4 h-4 mr-2" />
+							{option.name}
+						</button>
+					{/each}
+							</div>
+						</div>
+
+						{#if resumeData.links && resumeData.links.length > 0}
+							<div class="space-y-4">
+								{#each resumeData.links as link, index}
+									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span class="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold mr-2" style="background-color: {getSocialMediaColor(link.type)}20; color: {getSocialMediaColor(link.type)};">
+													<svelte:component this={getSocialMediaIcon(link.type)} class="w-4 h-4" />
+												</span>
+												{link.type || 'Link'}
+											</h6>
 											<button
-												on:click={() => removeSkill(index)}
-												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+												on:click={() => removeLink(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											>
 												<Trash2 class="w-4 h-4" />
 											</button>
 										</div>
-									{/each}
-								</div>
-							{:else}
-								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-									<Plus class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-									<p class="text-gray-500 dark:text-gray-400 mb-4">No skills added yet</p>
-									<button
-										on:click={addSkill}
-										class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
-									>
-										<Plus class="w-4 h-4 mr-2" />
-										Add Your First Skill
-									</button>
-								</div>
-							{/if}
-						</div>
-
-						<!-- Links Section -->
-						<div>
-							<div class="flex items-center justify-between mb-6">
-								<div class="flex items-center">
-									<ChevronRight class="w-6 h-6 text-blue-600 mr-3" />
-									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Professional Links</h4>
-								</div>
-								<button
-									on:click={addLink}
-									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-								>
-									<Plus class="w-4 h-4 mr-2" />
-									Add Link
-								</button>
-							</div>
-
-							{#if resumeData.links && resumeData.links.length > 0}
-								<div class="space-y-4">
-									{#each resumeData.links as link, index}
-										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
-											<div class="flex items-center justify-between mb-4">
-												<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
-													<span class="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
-														{index + 1}
-													</span>
-													Link {index + 1}
-												</h6>
-												<button
-													on:click={() => removeLink(index)}
-													class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-												>
-													<Trash2 class="w-4 h-4" />
-												</button>
-											</div>
 											<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 												<div>
 													<label for="link-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1884,10 +1893,8 @@
 									</button>
 								</div>
 							{/if}
-						</div>
-					</div>
 
-				{:else if activeTab === 'design'}
+		{:else if activeTab === 'design'}
 					<!-- Design Tab -->
 					<div class="space-y-6">
 						<div class="flex items-center mb-6">

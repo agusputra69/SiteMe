@@ -266,6 +266,40 @@
 						{/each}
 					</div>
 				</section>
+
+				<!-- Links Section -->
+				{#if profileData.links && profileData.links.length > 0}
+					<section>
+						<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+							Links
+						</h2>
+						<div class="space-y-3">
+							{#each profileData.links as link}
+								<a 
+									href={link.url} 
+									target="_blank" 
+									rel="noopener noreferrer"
+									class="flex items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+								>
+									<span class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center mr-3 text-sm font-medium">
+										{link.type.charAt(0).toUpperCase()}
+									</span>
+									<div class="flex-1">
+										<div class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+											{link.type}
+										</div>
+										<div class="text-sm text-gray-600 dark:text-gray-400 truncate">
+											{link.url}
+										</div>
+									</div>
+									<svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+									</svg>
+								</a>
+							{/each}
+						</div>
+					</section>
+				{/if}
 			</div>
 		</div>
 	</div>

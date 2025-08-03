@@ -254,6 +254,37 @@
 			</div>
 		</section>
 	{/if}
+
+	<!-- Links Section -->
+	{#if profileData.links && profileData.links.length > 0}
+		<section class="mb-12">
+			<h2 class="text-xs uppercase tracking-widest text-gray-700 dark:text-gray-300 mb-4 font-sans">
+				Links
+			</h2>
+			<div class="space-y-3">
+				{#each profileData.links as link}
+					<a 
+						href={link.url} 
+						target="_blank" 
+						rel="noopener noreferrer"
+						class="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 hover:border-gray-900 dark:hover:border-gray-300 transition-colors group"
+					>
+						<div>
+							<div class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">
+								{link.type}
+							</div>
+							<div class="text-sm text-gray-600 dark:text-gray-400">
+								{link.url}
+							</div>
+						</div>
+						<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						</svg>
+					</a>
+				{/each}
+			</div>
+		</section>
+	{/if}
 </div>
 
 <style>
