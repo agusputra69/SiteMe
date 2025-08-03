@@ -27,42 +27,11 @@
 		resumeData.skills = [];
 	}
 
-	// Autosave functionality
-	let autosaveTimeout: NodeJS.Timeout | null = null;
-	let lastSavedData: string = '';
-	let isAutoSaving = false;
-	let autoSaveEnabled = true;
-	let hasUnsavedChanges = false;
-
 	// Listen for save success from parent
 	$: if (!uploading && saveSuccess) {
-		hasUnsavedChanges = false;
 		setTimeout(() => {
 			saveSuccess = false;
 		}, 3000);
-	}
-
-	// Improved autosave with better conflict handling
-	$: {
-		if (resumeData && autoSaveEnabled) {
-			const currentData = JSON.stringify(resumeData);
-			if (currentData !== lastSavedData && lastSavedData !== '') {
-				hasUnsavedChanges = true;
-				// Clear existing timeout
-				if (autosaveTimeout) {
-					clearTimeout(autosaveTimeout);
-				}
-				// Set new timeout for autosave with longer delay
-				autosaveTimeout = setTimeout(() => {
-					if (!uploading && !isAutoSaving && hasUnsavedChanges) {
-						performAutoSave();
-					}
-				}, 5000); // Increased to 5 seconds to reduce conflicts
-			} else if (lastSavedData === '') {
-				// Initialize lastSavedData on first load
-				lastSavedData = currentData;
-			}
-		}
 	}
 
 	let profilePhotoFile: File | null = null;
@@ -420,12 +389,9 @@
 
 	// Manual save function
 	function saveDraft() {
-		if (uploading || isAutoSaving) {
+		if (uploading) {
 			return;
 		}
-		
-		// Disable autosave temporarily during manual save
-		autoSaveEnabled = false;
 		
 		// Create a fresh copy of resumeData to ensure reactivity
 		const dataToSave = {
@@ -437,10 +403,6 @@
 		
 		// Reset success state
 		saveSuccess = false;
-		hasUnsavedChanges = false;
-		
-		// Update lastSavedData to prevent auto save conflicts
-		lastSavedData = JSON.stringify(resumeData);
 		
 		// Add a small delay to prevent rapid successive clicks
 		setTimeout(() => {
@@ -449,58 +411,10 @@
 				resumeData: dataToSave, 
 				profilePhoto: profilePhotoFile
 			});
-			
-			// Re-enable autosave after manual save completes
-			setTimeout(() => {
-				autoSaveEnabled = true;
-			}, 1000);
 		}, 100);
 	}
 
-	// Auto save function
-	async function performAutoSave() {
-		if (uploading || !hasUnsavedChanges) {
-			return;
-		}
-		
-		isAutoSaving = true;
-		
-		try {
-			const dataToSave = {
-				...resumeData,
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			};
-			
-			// Update lastSavedData before dispatching
-			lastSavedData = JSON.stringify(resumeData);
-			hasUnsavedChanges = false;
-			
-			dispatch('save', { 
-				resumeData: dataToSave, 
-				profilePhoto: profilePhotoFile,
-				isAutoSave: true
-			});
-		} catch (error) {
-			console.error('Auto save failed:', error);
-			hasUnsavedChanges = true;
-		} finally {
-			isAutoSaving = false;
-		}
-	}
 
-	// Function to disable autosave when user is actively typing
-	function handleInputFocus() {
-		autoSaveEnabled = false;
-	}
-
-	// Function to re-enable autosave when user stops typing
-	function handleInputBlur() {
-		setTimeout(() => {
-			autoSaveEnabled = true;
-		}, 500);
-	}
 
 	function togglePublishStatus() {
 		const newStatus = profileStatus === 'published' ? 'draft' : 'published';
@@ -819,23 +733,7 @@
 					</span>
 				</div>
 				
-				<!-- Auto Save Indicator -->
-				{#if isAutoSaving}
-					<div class="flex items-center space-x-2 text-white/80">
-						<div class="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
-						<span class="text-xs">Auto saving...</span>
-					</div>
-				{:else if hasUnsavedChanges}
-					<div class="flex items-center space-x-2 text-yellow-300">
-						<div class="w-2 h-2 rounded-full bg-yellow-300"></div>
-						<span class="text-xs">Unsaved changes</span>
-					</div>
-				{:else if !hasUnsavedChanges && lastSavedData}
-					<div class="flex items-center space-x-2 text-green-300">
-						<div class="w-2 h-2 rounded-full bg-green-300"></div>
-						<span class="text-xs">All changes saved</span>
-					</div>
-				{/if}
+
 			</div>
 		</div>
 
@@ -1021,11 +919,8 @@
 								id="fullName"
 								type="text"
 								bind:value={resumeData.name}
-								on:focus={handleInputFocus}
-								on:blur={() => {
-									formErrors.name = validateField('name', resumeData.name || '');
-									handleInputBlur();
-								}}
+								
+								on:blur={() => formErrors.name = validateField('name', resumeData.name || '')}
 								class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
 								placeholder="Your full name"
 								aria-describedby="fullName-error"
@@ -1045,11 +940,7 @@
 								id="email"
 								type="email"
 								bind:value={resumeData.email}
-								on:focus={handleInputFocus}
-								on:blur={() => {
-									formErrors.email = validateField('email', resumeData.email || '');
-									handleInputBlur();
-								}}
+								on:blur={() => formErrors.email = validateField('email', resumeData.email || '')}
 								class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
 								placeholder="your.email@example.com"
 								aria-describedby="email-error"
@@ -1085,9 +976,7 @@
 								id="location"
 								type="text"
 								bind:value={resumeData.location}
-								on:focus={handleInputFocus}
-								on:blur={handleInputBlur}
-								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								placeholder="City, State/Country"
 							/>
 							</div>
@@ -1100,11 +989,7 @@
 								id="username"
 								type="text"
 								bind:value={username}
-								on:focus={handleInputFocus}
-								on:blur={() => {
-									formErrors.username = validateField('username', username);
-									handleInputBlur();
-								}}
+					on:blur={() => formErrors.username = validateField('username', username)}
 								class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
 								placeholder="your-username"
 								pattern="[a-zA-Z0-9-_]+"
@@ -1179,9 +1064,7 @@
 											id="job-title-{index}"
 											type="text"
 											bind:value={exp.title}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+					class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
 											placeholder="Software Engineer"
 											aria-describedby="experience-{index}-title"
 										/>
@@ -1194,9 +1077,7 @@
 											id="company-{index}"
 											type="text"
 											bind:value={exp.company}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+					class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
 											placeholder="Tech Company Inc."
 											aria-describedby="experience-{index}-title"
 										/>
@@ -1298,9 +1179,7 @@
 											id="degree-{index}"
 											type="text"
 											bind:value={edu.degree}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
 											placeholder="Bachelor of Science"
 										/>
 											</div>
@@ -1312,9 +1191,7 @@
 											id="institution-{index}"
 											type="text"
 											bind:value={edu.institution}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
 											placeholder="University Name"
 										/>
 											</div>
@@ -1396,9 +1273,7 @@
 											id="cert-name-{index}"
 											type="text"
 											bind:value={cert.name}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
 											placeholder="AWS Certified Solutions Architect"
 										/>
 											</div>
@@ -1410,9 +1285,7 @@
 											id="cert-issuer-{index}"
 											type="text"
 											bind:value={cert.issuer}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
 											placeholder="Amazon Web Services"
 										/>
 											</div>
@@ -1426,9 +1299,7 @@
 											id="cert-date-{index}"
 											type="text"
 											bind:value={cert.date}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
 											placeholder="January 2024"
 										/>
 											</div>
@@ -1440,9 +1311,7 @@
 											id="cert-credential-{index}"
 											type="text"
 											bind:value={cert.credentialId}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
 											placeholder="ABC123XYZ"
 										/>
 											</div>
@@ -1454,9 +1323,7 @@
 											<textarea
 								id="cert-description-{index}"
 								bind:value={cert.description}
-								on:focus={handleInputFocus}
-								on:blur={handleInputBlur}
-								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+					class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
 								placeholder="Brief description of the certification..."
 								rows="3"
 							></textarea>
@@ -1523,9 +1390,7 @@
 											id="language-{index}"
 											type="text"
 											bind:value={lang.language}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 											placeholder="English"
 										/>
 											</div>
@@ -1536,9 +1401,7 @@
 												<select
 											id="proficiency-{index}"
 											bind:value={lang.proficiency}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										>
 													<option value="">Select proficiency</option>
 													<option value="Native">Native</option>
@@ -1611,9 +1474,7 @@
 											id="project-name-{index}"
 											type="text"
 											bind:value={project.name}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 											placeholder="E-commerce Website"
 										/>
 											</div>
@@ -1625,9 +1486,7 @@
 											id="project-url-{index}"
 											type="url"
 											bind:value={project.url}
-											on:focus={handleInputFocus}
-											on:blur={handleInputBlur}
-											class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 											placeholder="https://github.com/username/project"
 										/>
 											</div>
@@ -1641,9 +1500,7 @@
 												id="project-duration-{index}"
 												type="text"
 												bind:value={project.duration}
-												on:focus={handleInputFocus}
-												on:blur={handleInputBlur}
-												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 												placeholder="3 months"
 											/>
 												</div>
@@ -1657,9 +1514,7 @@
 												id="project-image-{index}"
 												type="url"
 												bind:value={project.image}
-												on:focus={handleInputFocus}
-												on:blur={handleInputBlur}
-												class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 												placeholder="https://example.com/project-screenshot.jpg"
 											/>
 													</div>
@@ -1677,9 +1532,7 @@
 											<textarea
 								id="project-description-{index}"
 								bind:value={project.description}
-								on:focus={handleInputFocus}
-								on:blur={handleInputBlur}
-								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+					class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 								placeholder="Describe your project, its features, and your role..."
 								rows="4"
 							></textarea>
@@ -1694,9 +1547,7 @@
 														<input
 													type="text"
 													bind:value={tech}
-													on:focus={handleInputFocus}
-													on:blur={handleInputBlur}
-													class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 													placeholder="React, Node.js, MongoDB..."
 												/>
 														<button
