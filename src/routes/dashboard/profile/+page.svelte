@@ -3,8 +3,23 @@
   import { goto } from '$app/navigation';
   import { supabase, getProfile, updateProfile } from '$lib/supabase';
   import ProfileEditor from '../../../components/ProfileEditor.svelte';
+  import TemplateSelector from '../../../components/TemplateSelector.svelte';
   import { toasts } from '$lib/stores/toast';
-  import { ArrowLeft, User, Eye, Edit3 } from 'lucide-svelte';
+  import { ArrowLeft, User, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
+
+  // Type definitions
+  interface Experience {
+    title?: string;
+    company?: string;
+    duration?: string;
+    description?: string;
+  }
+
+  interface Education {
+    institution?: string;
+    degree?: string;
+    year?: string;
+  }
 
   let user: any = null;
   let profile: any = null;
@@ -12,6 +27,30 @@
   let loading = false;
   let saving = false;
   let saveSuccess = false;
+  
+  // Template and design state
+  let selectedTemplate = 'modern';
+  let selectedTheme = 'blue';
+  let templateCustomization = {
+    theme: 'blue',
+    fontFamily: 'inter',
+    fontSize: 'medium',
+    layout: 'standard',
+    spacing: 'normal',
+    borderRadius: 'medium',
+    shadow: 'medium',
+    accentColor: '#3B82F6',
+    textColor: '#1F2937',
+    backgroundColor: '#FFFFFF',
+    sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+    lineHeight: 'normal',
+    letterSpacing: 'normal',
+    headingFont: 'inter',
+    containerWidth: 'standard',
+    verticalSpacing: 'normal',
+    horizontalPadding: 'normal'
+  };
+  let showDesignPanel = false;
 
   onMount(async () => {
     // Check authentication
@@ -39,6 +78,12 @@
     profile = data;
     if (profile?.data) {
       resumeData = profile.data;
+      // Load template settings from profile data
+      if (resumeData.template) selectedTemplate = resumeData.template;
+      if (resumeData.theme) selectedTheme = resumeData.theme;
+      if (resumeData.customization) {
+        templateCustomization = { ...templateCustomization, ...resumeData.customization };
+      }
     } else {
       // Initialize with default structure if no profile data exists
       resumeData = {
@@ -100,7 +145,10 @@
 
       const updatedResumeData = {
         ...eventData.resumeData,
-        photo_url: photoUrl
+        photo_url: photoUrl,
+        template: selectedTemplate,
+        theme: selectedTheme,
+        customization: templateCustomization
       };
 
       console.log('Updated resume data:', updatedResumeData);
@@ -232,6 +280,71 @@
       toasts.error('Failed to save customization settings');
     }
   }
+
+  function handleTemplateChange(event: CustomEvent) {
+    try {
+      console.log('Template change received:', event.detail);
+      selectedTemplate = event.detail.template;
+      selectedTheme = event.detail.theme;
+      if (event.detail.customization) {
+        templateCustomization = { ...templateCustomization, ...event.detail.customization };
+      }
+      // Update resumeData with new template settings for immediate preview
+      resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: templateCustomization };
+      console.log('Updated selectedTemplate:', selectedTemplate, 'selectedTheme:', selectedTheme);
+    } catch (error) {
+      console.error('Template change error:', error);
+    }
+  }
+
+  function handleThemeChange(event: CustomEvent) {
+    try {
+      selectedTheme = event.detail.theme;
+      if (event.detail.customization) {
+        templateCustomization = { ...templateCustomization, ...event.detail.customization };
+      }
+      // Update resumeData with new theme settings for immediate preview
+      resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: templateCustomization };
+    } catch (error) {
+      console.error('Theme change error:', error);
+    }
+  }
+
+  function handleCustomizationChange(event: CustomEvent) {
+    try {
+      templateCustomization = { ...templateCustomization, ...event.detail };
+      // Update resumeData with new customization settings for immediate preview
+      resumeData = { ...resumeData, customization: templateCustomization };
+    } catch (error) {
+      console.error('Customization change error:', error);
+    }
+  }
+
+  // Helper functions for direct customization updates
+  function updateTheme(theme: string) {
+    selectedTheme = theme;
+    resumeData = { ...resumeData, theme: selectedTheme };
+  }
+
+  function updateFontFamily(fontFamily: string) {
+    templateCustomization.fontFamily = fontFamily;
+    resumeData = { ...resumeData, customization: templateCustomization };
+  }
+
+  function updateFontSize(fontSize: string) {
+    templateCustomization.fontSize = fontSize;
+    resumeData = { ...resumeData, customization: templateCustomization };
+  }
+
+  function updateLayout(layout: string) {
+    templateCustomization.layout = layout;
+    resumeData = { ...resumeData, customization: templateCustomization };
+  }
+
+  function updateContainerWidth(containerWidth: string) {
+    templateCustomization.containerWidth = containerWidth;
+    resumeData = { ...resumeData, customization: templateCustomization };
+  }
 </script>
 
 <svelte:head>
@@ -251,20 +364,247 @@
         Back to Dashboard
       </button>
       
-      <div class="flex items-center space-x-4">
-        <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-          <User class="w-6 h-6 text-white" />
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+            <User class="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+              Profile Editor
+            </h1>
+            <p class="text-gray-600 dark:text-gray-300">
+              Manage your professional information
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            Profile Editor
-          </h1>
-          <p class="text-gray-600 dark:text-gray-300">
-            Manage your professional information
-          </p>
+
+        <!-- Design Controls -->
+        <div class="flex items-center space-x-3">
+          <button
+            on:click={() => showDesignPanel = !showDesignPanel}
+            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 hover:shadow-md"
+          >
+            <Palette class="w-4 h-4 mr-2" />
+            {showDesignPanel ? 'Hide Design' : 'Show Design'}
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Design Panel -->
+    {#if showDesignPanel}
+      <div class="mb-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl">
+        <!-- Design Panel Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+              <Palette class="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                Design Customization
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Customize your profile appearance and layout
+              </p>
+            </div>
+          </div>
+          <button
+            on:click={() => showDesignPanel = false}
+            class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Design Panel Content -->
+        <div class="p-6">
+          {#if resumeData}
+            <!-- Template Selection -->
+            <div class="mb-8">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                </svg>
+                Template Selection
+              </h3>
+              <TemplateSelector
+                profileData={{
+                  name: resumeData?.name || 'Your Name',
+                  avatar: resumeData?.photo_url || '',
+                  about: resumeData?.summary || 'Your professional summary goes here...',
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  workExperience: (resumeData?.experience && Array.isArray(resumeData.experience)) 
+                    ? resumeData.experience.map(exp => ({
+                      title: exp.title || 'Job Title',
+                      company: exp.company || 'Company Name',
+                      type: 'Full-Time',
+                      period: exp.duration || 'Start - End',
+                      current: false,
+                      description: exp.description || ''
+                    }))
+                    : [{
+                      title: 'Your Job Title',
+                      company: 'Company Name',
+                      type: 'Full-Time',
+                      period: 'Start - End',
+                      current: false,
+                      description: ''
+                    }],
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  education: (resumeData?.education && Array.isArray(resumeData.education))
+                    ? resumeData.education.map(edu => ({
+                      institution: edu.institution || 'University Name',
+                      degree: edu.degree || 'Your Degree',
+                      period: edu.year || 'Start - End'
+                    }))
+                    : [{
+                      institution: 'University Name',
+                      degree: 'Your Degree',
+                      period: 'Start - End'
+                    }],
+                  skills: (resumeData?.skills && Array.isArray(resumeData.skills)) 
+                    ? resumeData.skills 
+                    : ['Skill 1', 'Skill 2', 'Skill 3'],
+                  projects: [],
+                  certifications: (resumeData?.certifications && Array.isArray(resumeData.certifications)) 
+                    ? resumeData.certifications 
+                    : [],
+                  languages: (resumeData?.languages && Array.isArray(resumeData.languages)) 
+                    ? resumeData.languages 
+                    : [],
+                  awards: (resumeData?.awards && Array.isArray(resumeData.awards)) 
+                    ? resumeData.awards 
+                    : [],
+                  links: (resumeData?.links && Array.isArray(resumeData.links)) 
+                    ? resumeData.links 
+                    : [],
+                  contact: {
+                    email: resumeData?.email || '',
+                    phone: resumeData?.phone || '',
+                    location: resumeData?.location || ''
+                  }
+                }}
+                customizable={true}
+                selectedTemplate={selectedTemplate}
+                selectedTheme={selectedTheme}
+                customization={templateCustomization}
+                on:templateChange={handleTemplateChange}
+                on:themeChange={handleThemeChange}
+                on:customizationChange={handleCustomizationChange}
+              />
+            </div>
+
+            <!-- Quick Customization Options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Color Scheme -->
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"></path>
+                  </svg>
+                  Color Scheme
+                </h4>
+                <div class="grid grid-cols-3 gap-2">
+                                     {#each ['blue', 'green', 'purple', 'red', 'orange', 'pink'] as color}
+                     <button
+                       on:click={() => updateTheme(color)}
+                       class="w-full h-8 rounded-lg border-2 transition-all {selectedTheme === color ? 'border-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600'}"
+                       style="background-color: {color === 'blue' ? '#3B82F6' : color === 'green' ? '#10B981' : color === 'purple' ? '#8B5CF6' : color === 'red' ? '#EF4444' : color === 'orange' ? '#F59E0B' : '#EC4899'}"
+                     ></button>
+                   {/each}
+                </div>
+              </div>
+
+              <!-- Font Settings -->
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                  </svg>
+                  Typography
+                </h4>
+                <div class="space-y-2">
+                  <select
+                    bind:value={templateCustomization.fontFamily}
+                    on:change={() => updateFontFamily(templateCustomization.fontFamily)}
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="inter">Inter</option>
+                    <option value="roboto">Roboto</option>
+                    <option value="opensans">Open Sans</option>
+                    <option value="poppins">Poppins</option>
+                  </select>
+                  <select
+                    bind:value={templateCustomization.fontSize}
+                    on:change={() => updateFontSize(templateCustomization.fontSize)}
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Layout Options -->
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                  </svg>
+                  Layout
+                </h4>
+                <div class="space-y-2">
+                  <select
+                    bind:value={templateCustomization.layout}
+                    on:change={() => updateLayout(templateCustomization.layout)}
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="compact">Compact</option>
+                    <option value="spacious">Spacious</option>
+                  </select>
+                  <select
+                    bind:value={templateCustomization.containerWidth}
+                    on:change={() => updateContainerWidth(templateCustomization.containerWidth)}
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="narrow">Narrow</option>
+                    <option value="standard">Standard</option>
+                    <option value="wide">Wide</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Apply Changes Button -->
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  Changes are applied automatically to your preview
+                </p>
+                <button
+                  on:click={() => {
+                    // Save current design settings
+                    handleSaveProfile({ detail: { resumeData: resumeData } });
+                  }}
+                  class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  Save Design
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
     <!-- Content -->
     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 shadow-xl">
@@ -274,7 +614,7 @@
           <span class="ml-3 text-gray-600 dark:text-gray-300">Loading profile...</span>
         </div>
       {:else if resumeData}
-        <!-- Profile Editor with built-in preview functionality -->
+        <!-- Profile Editor without design tab -->
         <ProfileEditor 
           {resumeData}
           uploading={saving}

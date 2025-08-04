@@ -147,15 +147,7 @@
 			required: false,
 			completion: () => (resumeData.links?.length || 0) > 0
 		},
-		{ 
-			id: 'design', 
-			label: 'Design', 
-			icon: PaletteIcon,
-			description: 'Template and visual customization',
-			color: 'indigo',
-			required: false,
-			completion: () => true
-		}
+
 	] as const;
 
 	// Social media options with enhanced metadata
@@ -207,6 +199,7 @@
 	// Initialize component with enhanced error handling
 	onMount(() => {
 		try {
+			console.log('ProfileEditor onMount - initializing component');
 			// Initialize resumeData if empty
 			if (!resumeData) {
 				resumeData = getDefaultResumeData();
@@ -215,14 +208,17 @@
 			// Initialize template settings from resumeData if available
 			if (resumeData.template) {
 				selectedTemplate = resumeData.template;
+				console.log('Setting selectedTemplate from resumeData:', selectedTemplate);
 			}
 			if (resumeData.theme) {
 				selectedTheme = resumeData.theme;
+				console.log('Setting selectedTheme from resumeData:', selectedTheme);
 			}
 			if (resumeData.customization) {
 				templateCustomization = { ...templateCustomization, ...resumeData.customization };
 			}
 
+			console.log('ProfileEditor initialized with template:', selectedTemplate, 'theme:', selectedTheme);
 					// Focus management
 		focusFirstElement();
 		} catch (error) {
@@ -263,6 +259,11 @@
 		if (!resumeData.projects) resumeData.projects = [];
 		if (!resumeData.awards) resumeData.awards = [];
 		if (!resumeData.links) resumeData.links = [];
+	}
+
+	// Debug: Track when design tab is active
+	$: if (activeTab === 'design') {
+		console.log('Design tab is now active, selectedTemplate:', selectedTemplate, 'selectedTheme:', selectedTheme);
 	}
 
 	// Enhanced helper functions with better error handling
@@ -2298,78 +2299,25 @@
 						{/if}
 					</div>
 
-				{:else if activeTab === 'skills'}
-					<!-- Skills Tab -->
+				{:else if activeTab === 'links'}
+					<!-- Social Links Tab -->
 					<div>
 						<div class="flex items-center justify-between mb-6">
-							<div class="flex items-center">
-								<Plus class="w-6 h-6 text-orange-600 mr-3" aria-hidden="true" />
-								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
-							</div>
-							<button
-								on:click={addSkill}
-								class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
-							>
-								<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
-								Add Skill
-							</button>
-						</div>
-
-						{#if resumeData.skills && resumeData.skills.length > 0}
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								{#each resumeData.skills as skill, index}
-									<div class="flex items-center space-x-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-										<span class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-											{index + 1}
-										</span>
-										<input
-											type="text"
-											bind:value={resumeData.skills[index]}
-											class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-											placeholder="Enter skill name"
-										/>
-										<button
-											on:click={() => removeSkill(index)}
-											class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
-										>
-											<Trash2 class="w-4 h-4" aria-hidden="true" />
-										</button>
-									</div>
-								{/each}
-							</div>
-						{:else}
-							<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-								<Plus class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-								<p class="text-gray-500 dark:text-gray-400 mb-4">No skills added yet</p>
-								<button
-									on:click={addSkill}
-									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
-								>
-									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
-									Add Your First Skill
-								</button>
-							</div>
-			{/if}
-		</div>
-
-		{:else if activeTab === 'links'}
-					<!-- Social Links Tab -->
-					<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
 								<Link2 class="w-6 h-6 text-blue-600 mr-3" aria-hidden="true" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Showcase Project</h4>
 							</div>
 							<div class="flex flex-wrap gap-2">
 								{#each socialMediaOptions as option}
-						<button
-							on:click={() => addSocialMediaLink(option.name)}
-							class="inline-flex items-center px-3 py-2 text-white rounded-lg transition-colors text-sm"
-							style="background-color: {option.color};"
-						>
-							<svelte:component this={option.icon} class="w-4 h-4 mr-2" />
-							{option.name}
-						</button>
-					{/each}
+									<button
+										on:click={() => addSocialMediaLink(option.name)}
+										class="inline-flex items-center px-3 py-2 text-white rounded-lg transition-colors text-sm"
+										style="background-color: {option.color};"
+									>
+										<svelte:component this={option.icon} class="w-4 h-4 mr-2" />
+										{option.name}
+									</button>
+								{/each}
 							</div>
 						</div>
 
@@ -2391,179 +2339,49 @@
 												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
-											<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-												<div>
-													<label for="link-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-														Type
-													</label>
-													<input
-														id="link-type-{index}"
-														type="text"
-														bind:value={link.type}
-														class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-														placeholder="LinkedIn"
-													/>
-												</div>
-												<div class="md:col-span-2">
-													<label for="link-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-														URL
-													</label>
-													<input
-														id="link-url-{index}"
-														type="url"
-														bind:value={link.url}
-														class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-														placeholder="https://linkedin.com/in/yourprofile"
-													/>
-												</div>
+										<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+											<div>
+												<label for="link-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													Type
+												</label>
+												<input
+													id="link-type-{index}"
+													type="text"
+													bind:value={link.type}
+													class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+													placeholder="LinkedIn"
+												/>
+											</div>
+											<div class="md:col-span-2">
+												<label for="link-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													URL
+												</label>
+												<input
+													id="link-url-{index}"
+													type="url"
+													bind:value={link.url}
+													class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+													placeholder="https://linkedin.com/in/yourprofile"
+												/>
 											</div>
 										</div>
-									{/each}
-								</div>
-							{:else}
-								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-									<ChevronRight class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-									<p class="text-gray-500 dark:text-gray-400 mb-4">No professional links added yet</p>
-									<button
-										on:click={addLink}
-										class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-									>
-										<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
-										Add Your First Link
-									</button>
-								</div>
-							{/if}
-
-		{:else if activeTab === 'design'}
-					<!-- Design Tab -->
-					<div class="space-y-6">
-						<div class="flex items-center mb-6">
-							<Edit3 class="w-6 h-6 text-indigo-600 mr-3" aria-hidden="true" />
-							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Template & Design</h4>
-						</div>
-
-						<div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-lg border border-indigo-200 dark:border-indigo-700">
-							<div class="flex items-center justify-between mb-4">
-								<h5 class="text-lg font-semibold text-gray-900 dark:text-white">Template Customization</h5>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<ChevronRight class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No professional links added yet</p>
 								<button
-									on:click={() => showAdvancedCustomization = !showAdvancedCustomization}
-									class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium px-3 py-1 bg-white dark:bg-gray-700 rounded-lg border border-indigo-200 dark:border-indigo-600 transition-colors"
+									on:click={addLink}
+									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
 								>
-									{showAdvancedCustomization ? 'Hide' : 'Show'} Advanced Options
+									<Plus class="w-4 h-4 mr-2" aria-hidden="true" />
+									Add Your First Link
 								</button>
 							</div>
-
-							<TemplateSelector
-								profileData={{
-									name: resumeData?.name || 'Your Name',
-									avatar: profilePhotoUrl || resumeData?.photo_url || '',
-									about: resumeData?.summary || 'Your professional summary goes here...',
-									workExperience: resumeData?.experience?.map(exp => ({
-										title: exp.title || 'Job Title',
-										company: exp.company || 'Company Name',
-										type: 'Full-Time',
-										period: exp.duration || 'Start - End',
-										current: false,
-										description: exp.description || ''
-									})) || [{
-										title: 'Your Job Title',
-										company: 'Company Name',
-										type: 'Full-Time',
-										period: 'Start - End',
-										current: false,
-										description: ''
-									}],
-									education: resumeData?.education?.map(edu => ({
-										institution: edu.institution || 'University Name',
-										degree: edu.degree || 'Your Degree',
-										period: edu.year || 'Start - End'
-									})) || [{
-										institution: 'University Name',
-										degree: 'Your Degree',
-										period: 'Start - End'
-									}],
-									skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
-							projects: [],
-							certifications: resumeData?.certifications || [],
-							languages: resumeData?.languages || [],
-							awards: resumeData?.awards || [],
-							links: resumeData?.links || [],
-							contact: {
-								email: resumeData?.email || '',
-								phone: resumeData?.phone || '',
-								location: resumeData?.location || ''
-							}
-								}}
-								customizable={true}
-								{selectedTemplate}
-								{selectedTheme}
-								customization={templateCustomization}
-								on:templateChange={handleTemplateChange}
-								on:themeChange={handleThemeChange}
-								on:customizationChange={handleCustomizationChange}
-							/>
-
-							{#if showAdvancedCustomization}
-						<div class="mt-6 pt-6 border-t border-indigo-200 dark:border-indigo-700">
-							<TemplateCustomizer
-								{selectedTemplate}
-								customization={templateCustomization}
-								on:update={handleCustomizationChange}
-							/>
-						</div>
-					{/if}
-
-					<!-- Apply Buttons -->
-					<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-						<div class="flex flex-wrap gap-3">
-							<button
-								on:click={applyTemplate}
-								disabled={applyingTemplate}
-								class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-							>
-								{#if applyingTemplate}
-									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-									Applying...
-								{:else}
-									<Eye class="w-4 h-4 mr-2" />
-									Apply Template
-								{/if}
-							</button>
-							<button
-								on:click={applyTheme}
-								disabled={applyingTheme}
-								class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-							>
-								{#if applyingTheme}
-									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-									Applying...
-								{:else}
-									<PaletteIcon class="w-4 h-4 mr-2" />
-									Apply Theme
-								{/if}
-							</button>
-							{#if showAdvancedCustomization}
-								<button
-									on:click={applyCustomization}
-									disabled={applyingCustomization}
-									class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-								>
-									{#if applyingCustomization}
-										<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-										Applying...
-									{:else}
-										<Settings class="w-4 h-4 mr-2" />
-										Apply Customization
-									{/if}
-								</button>
-							{/if}
-						</div>
-						<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-							Click apply buttons to see changes reflected in your profile preview
-						</p>
+						{/if}
 					</div>
-				</div>
-			</div>
 				{/if}
 			</div>
 		</div>

@@ -168,7 +168,7 @@
 			Experience
 		</h2>
 		<div class="space-y-8">
-			{#each profileData.workExperience as experience, index}
+									{#each (profileData.workExperience || []) as experience, index}
 				<div class="flex">
 					<div class="w-32 flex-shrink-0">
 						<p class="text-sm text-gray-700 dark:text-gray-300 font-sans">

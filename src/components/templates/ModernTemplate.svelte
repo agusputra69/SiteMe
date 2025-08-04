@@ -170,7 +170,7 @@
 						Work Experience
 					</h2>
 					<div class="space-y-6">
-						{#each profileData.workExperience as experience, index}
+						{#each (profileData.workExperience || []) as experience, index}
 							<div class="relative pl-8 border-l-4 border-blue-100 dark:border-blue-500">
 								<div class="absolute -left-2 top-0 w-4 h-4 bg-blue-600 rounded-full" aria-hidden="true"></div>
 								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -233,7 +233,7 @@
 							Skills
 						</h2>
 						<div class="flex flex-wrap gap-2">
-							{#each profileData.skills as skill}
+							{#each (profileData.skills || []) as skill}
 								<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-100 rounded-full text-sm font-medium border border-blue-200 dark:border-blue-700">
 									{skill}
 								</span>
@@ -248,7 +248,7 @@
 						Education
 					</h2>
 					<div class="space-y-4">
-						{#each profileData.education as edu, index}
+													{#each (profileData.education || []) as edu, index}
 							<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
 								<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
 									{#if customizable}
@@ -298,7 +298,7 @@
 							Certifications
 						</h2>
 						<div class="space-y-4">
-							{#each profileData.certifications as cert}
+							{#each (profileData.certifications || []) as cert}
 								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
 									<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
 										{cert.name}
@@ -329,7 +329,7 @@
 							Languages
 						</h2>
 						<div class="space-y-3">
-							{#each profileData.languages as lang}
+							{#each (profileData.languages || []) as lang}
 								<div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
 									<span class="font-medium text-gray-900 dark:text-gray-100">{lang.language}</span>
 									<span class="text-sm text-blue-600 dark:text-blue-400 font-medium">{lang.proficiency}</span>
@@ -346,7 +346,7 @@
 							Projects
 						</h2>
 						<div class="space-y-4">
-							{#each profileData.projects as project}
+							{#each (profileData.projects || []) as project}
 								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
 									<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
 										{project.title || project.name}
@@ -377,7 +377,7 @@
 							Awards
 						</h2>
 						<div class="space-y-4">
-							{#each profileData.awards as award}
+							{#each (profileData.awards || []) as award}
 								<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
 									<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
 										{award.title}
@@ -408,7 +408,7 @@
 							Links
 						</h2>
 						<div class="space-y-3">
-							{#each profileData.links as link}
+							{#each (profileData.links || []) as link}
 								<a 
 									href={link.url} 
 									target="_blank" 

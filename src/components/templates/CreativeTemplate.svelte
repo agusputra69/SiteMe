@@ -191,7 +191,7 @@
 					</div>
 					
 					<div class="space-y-8">
-						{#each profileData.workExperience as experience, index}
+						{#each (profileData.workExperience || []) as experience, index}
 							<div class="relative">
 								<!-- Timeline dot -->
 								<div class="absolute -left-4 top-6 w-4 h-4 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full border-4 border-white dark:border-gray-800 shadow-lg" aria-hidden="true"></div>
@@ -259,7 +259,7 @@
 							</h2>
 						</div>
 						<div class="flex flex-wrap gap-3">
-							{#each profileData.skills as skill, index}
+							{#each (profileData.skills || []) as skill, index}
 								<span class="px-4 py-2 bg-gradient-to-r from-purple-600/20 to-pink-500/20 text-purple-800 dark:text-purple-200 rounded-full text-sm font-medium border border-purple-600/30 hover:scale-105 transition-transform duration-200">
 									{skill}
 								</span>
