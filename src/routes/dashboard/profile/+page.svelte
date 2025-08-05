@@ -42,7 +42,7 @@
     accentColor: '#3B82F6',
     textColor: '#1F2937',
     backgroundColor: '#FFFFFF',
-    sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+    sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact', 'projects', 'certifications', 'languages', 'awards', 'links'],
     lineHeight: 'normal',
     letterSpacing: 'normal',
     headingFont: 'inter',
@@ -51,6 +51,37 @@
     horizontalPadding: 'normal'
   };
   let showDesignPanel = false;
+
+  // Computed variables for type safety
+  $: workExperienceData = (resumeData?.experience && Array.isArray(resumeData.experience)) 
+    ? resumeData.experience.map((exp: Experience) => ({
+      title: exp.title || 'Job Title',
+      company: exp.company || 'Company Name',
+      type: 'Full-Time',
+      period: exp.duration || 'Start - End',
+      current: false,
+      description: exp.description || ''
+    }))
+    : [{
+      title: 'Your Job Title',
+      company: 'Company Name',
+      type: 'Full-Time',
+      period: 'Start - End',
+      current: false,
+      description: ''
+    }];
+
+  $: educationData = (resumeData?.education && Array.isArray(resumeData.education))
+    ? resumeData.education.map((edu: Education) => ({
+      institution: edu.institution || 'University Name',
+      degree: edu.degree || 'Your Degree',
+      period: edu.year || 'Start - End'
+    }))
+    : [{
+      institution: 'University Name',
+      degree: 'Your Degree',
+      period: 'Start - End'
+    }];
 
   onMount(async () => {
     // Check authentication
@@ -139,26 +170,41 @@
       
       let photoUrl = eventData.resumeData.photo_url || profile?.photo_url;
       
+      // Handle image upload if a new photo is provided
       if (eventData.profilePhoto) {
-        photoUrl = await handleProfilePhotoUpload(eventData.profilePhoto);
+        try {
+          console.log('Uploading new profile photo...');
+          photoUrl = await handleProfilePhotoUpload(eventData.profilePhoto);
+          console.log('Photo uploaded successfully:', photoUrl);
+        } catch (uploadError) {
+          console.error('Error uploading photo:', uploadError);
+          toasts.error('Failed to upload photo. Profile saved without photo.');
+          // Continue with save even if photo upload fails
+        }
       }
 
-      const updatedResumeData = {
-        ...eventData.resumeData,
-        photo_url: photoUrl,
+      // Clean and structure the resume data to ensure it's valid for JSONB storage
+      const cleanResumeData = {
+        ...resumeData, // Start with existing data
+        ...eventData.resumeData, // Overwrite with new data
+        photo_url: photoUrl, // Ensure the photo URL is updated
         template: selectedTemplate,
         theme: selectedTheme,
         customization: templateCustomization
       };
 
-      console.log('Updated resume data:', updatedResumeData);
+      console.log('Cleaned resume data:', cleanResumeData);
 
       // Store resume data in the 'data' JSONB column
-      const { error } = await updateProfile(user.id, {
-        data: updatedResumeData,
-        full_name: updatedResumeData.name,
+      const updateData = {
+        data: cleanResumeData,
+        full_name: cleanResumeData.name,
         username: profile?.username
-      });
+      };
+      
+      console.log('Data being sent to updateProfile:', updateData);
+      
+      const { error } = await updateProfile(user.id, updateData);
       
       if (error) {
         console.error('Supabase update error:', error);
@@ -166,8 +212,8 @@
       }
 
       // Update local state
-      resumeData = updatedResumeData;
-      profile = { ...profile, data: updatedResumeData, full_name: updatedResumeData.name };
+      resumeData = cleanResumeData;
+      profile = { ...profile, data: cleanResumeData, full_name: cleanResumeData.name };
       
       console.log('Save completed successfully');
       toasts.success('Profile updated successfully!');
@@ -192,16 +238,29 @@
     const { template, theme, customization } = event.detail;
     
     try {
-      // Update the profile data to include template settings
-      const updatedData = {
-        ...resumeData,
+      // Clean and structure the data to ensure it's valid for JSONB storage
+      const cleanData = {
+        name: resumeData.name,
+        email: resumeData.email,
+        phone: resumeData.phone,
+        location: resumeData.location,
+        summary: resumeData.summary,
+        experience: resumeData.experience || [],
+        education: resumeData.education || [],
+        skills: resumeData.skills || [],
+        projects: resumeData.projects || [],
+        certifications: resumeData.certifications || [],
+        languages: resumeData.languages || [],
+        links: resumeData.links || [],
+        awards: resumeData.awards || [],
+        photo_url: resumeData.photo_url,
         template: template,
         theme: theme,
         customization: customization
       };
 
       const { error } = await updateProfile(user.id, {
-        data: updatedData,
+        data: cleanData,
         full_name: resumeData.name,
         username: profile?.username
       });
@@ -209,8 +268,8 @@
       if (error) throw error;
 
       // Update local state
-      resumeData = updatedData;
-      profile = { ...profile, data: updatedData };
+      resumeData = cleanData;
+      profile = { ...profile, data: cleanData };
       
       toasts.success('Template applied successfully!');
     } catch (error) {
@@ -224,16 +283,29 @@
     const { template, theme, customization } = event.detail;
     
     try {
-      // Update the profile data to include theme settings
-      const updatedData = {
-        ...resumeData,
+      // Clean and structure the data to ensure it's valid for JSONB storage
+      const cleanData = {
+        name: resumeData.name,
+        email: resumeData.email,
+        phone: resumeData.phone,
+        location: resumeData.location,
+        summary: resumeData.summary,
+        experience: resumeData.experience || [],
+        education: resumeData.education || [],
+        skills: resumeData.skills || [],
+        projects: resumeData.projects || [],
+        certifications: resumeData.certifications || [],
+        languages: resumeData.languages || [],
+        links: resumeData.links || [],
+        awards: resumeData.awards || [],
+        photo_url: resumeData.photo_url,
         template: template,
         theme: theme,
         customization: customization
       };
 
       const { error } = await updateProfile(user.id, {
-        data: updatedData,
+        data: cleanData,
         full_name: resumeData.name,
         username: profile?.username
       });
@@ -241,8 +313,8 @@
       if (error) throw error;
 
       // Update local state
-      resumeData = updatedData;
-      profile = { ...profile, data: updatedData };
+      resumeData = cleanData;
+      profile = { ...profile, data: cleanData };
       
       toasts.success('Theme applied successfully!');
     } catch (error) {
@@ -256,14 +328,29 @@
     const customization = event.detail;
     
     try {
-      // Update the profile data to include customization settings
-      const updatedData = {
-        ...resumeData,
+      // Clean and structure the data to ensure it's valid for JSONB storage
+      const cleanData = {
+        name: resumeData.name,
+        email: resumeData.email,
+        phone: resumeData.phone,
+        location: resumeData.location,
+        summary: resumeData.summary,
+        experience: resumeData.experience || [],
+        education: resumeData.education || [],
+        skills: resumeData.skills || [],
+        projects: resumeData.projects || [],
+        certifications: resumeData.certifications || [],
+        languages: resumeData.languages || [],
+        links: resumeData.links || [],
+        awards: resumeData.awards || [],
+        photo_url: resumeData.photo_url,
+        template: resumeData.template,
+        theme: resumeData.theme,
         customization: customization
       };
 
       const { error } = await updateProfile(user.id, {
-        data: updatedData,
+        data: cleanData,
         full_name: resumeData.name,
         username: profile?.username
       });
@@ -271,8 +358,8 @@
       if (error) throw error;
 
       // Update local state
-      resumeData = updatedData;
-      profile = { ...profile, data: updatedData };
+      resumeData = cleanData;
+      profile = { ...profile, data: cleanData };
       
       toasts.success('Customization applied successfully!');
     } catch (error) {
@@ -436,36 +523,8 @@
                   name: resumeData?.name || 'Your Name',
                   avatar: resumeData?.photo_url || '',
                   about: resumeData?.summary || 'Your professional summary goes here...',
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  workExperience: (resumeData?.experience && Array.isArray(resumeData.experience)) 
-                    ? resumeData.experience.map(exp => ({
-                      title: exp.title || 'Job Title',
-                      company: exp.company || 'Company Name',
-                      type: 'Full-Time',
-                      period: exp.duration || 'Start - End',
-                      current: false,
-                      description: exp.description || ''
-                    }))
-                    : [{
-                      title: 'Your Job Title',
-                      company: 'Company Name',
-                      type: 'Full-Time',
-                      period: 'Start - End',
-                      current: false,
-                      description: ''
-                    }],
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  education: (resumeData?.education && Array.isArray(resumeData.education))
-                    ? resumeData.education.map(edu => ({
-                      institution: edu.institution || 'University Name',
-                      degree: edu.degree || 'Your Degree',
-                      period: edu.year || 'Start - End'
-                    }))
-                    : [{
-                      institution: 'University Name',
-                      degree: 'Your Degree',
-                      period: 'Start - End'
-                    }],
+                  workExperience: workExperienceData,
+                  education: educationData,
                   skills: (resumeData?.skills && Array.isArray(resumeData.skills)) 
                     ? resumeData.skills 
                     : ['Skill 1', 'Skill 2', 'Skill 3'],
@@ -581,23 +640,38 @@
               </div>
             </div>
 
-            <!-- Apply Changes Button -->
+            <!-- Single Save Button -->
             <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between">
                 <p class="text-sm text-gray-600 dark:text-gray-400">
-                  Changes are applied automatically to your preview
+                  Save all your changes including content and design settings
                 </p>
                 <button
                   on:click={() => {
-                    // Save current design settings
-                    handleSaveProfile({ detail: { resumeData: resumeData } });
+                    // Create complete data object for saving
+                    const completeData = {
+                      resumeData: {
+                        ...resumeData,
+                        template: selectedTemplate,
+                        theme: selectedTheme,
+                        customization: templateCustomization
+                      },
+                      profilePhoto: null // Will be handled by ProfileEditor if needed
+                    };
+                    handleSaveProfile({ detail: completeData });
                   }}
-                  class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                  disabled={saving}
+                  class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
                 >
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Save Design
+                  {#if saving}
+                    <div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    Saving...
+                  {:else}
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Save All Changes
+                  {/if}
                 </button>
               </div>
             </div>

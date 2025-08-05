@@ -82,6 +82,21 @@ export interface ResumeData {
   };
 }
 
+export function createFallbackResumeData(text: string): ResumeData {
+  return {
+    name: 'New Candidate',
+    summary: text.substring(0, 500) + '...',
+    experience: [],
+    education: [],
+    skills: [],
+    certifications: [],
+    languages: [],
+    projects: [],
+    awards: [],
+    links: []
+  };
+}
+
 export async function extractResumeData(text: string): Promise<ResumeData> {
   if (!TOGETHER_API_KEY) {
     throw new Error('Together.ai API key is not configured');
@@ -203,15 +218,12 @@ Return only the JSON object, no additional text or explanations.`;
     const data = await response.json();
     console.log('API Response:', data);
     
-    // Handle different response formats
+    // Handle the standard chat completion response format
     let extractedText = '';
-    if (data.output?.choices?.[0]?.text) {
-      extractedText = data.output.choices[0].text;
-    } else if (data.output) {
-      extractedText = data.output;
-    } else if (data.choices?.[0]?.text) {
-      extractedText = data.choices[0].text;
+    if (data.choices?.[0]?.message?.content) {
+      extractedText = data.choices[0].message.content;
     } else {
+      console.error('Unexpected API response format:', data);
       throw new Error('Unexpected API response format');
     }
     

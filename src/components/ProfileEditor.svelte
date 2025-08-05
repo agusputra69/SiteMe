@@ -352,7 +352,11 @@
 				}
 			} else if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
 				event.preventDefault();
-				saveDraft();
+				// Dispatch save event to parent component
+				dispatch('save', { 
+					resumeData: resumeData, 
+					profilePhoto: profilePhotoFile
+				});
 			} else if (event.key === 'p' && (event.ctrlKey || event.metaKey)) {
 				event.preventDefault();
 				togglePreview();
@@ -837,6 +841,13 @@
 		}
 	}
 
+	// Reset save success state after a delay
+	$: if (saveSuccess) {
+		setTimeout(() => {
+			saveSuccess = false;
+		}, 3000);
+	}
+
 	// Removed force save to prevent data loss issues
 
 	function togglePublishStatus() {
@@ -1302,22 +1313,36 @@
 							Live Preview
 						</button>
 					{/if}
+
+					<!-- Save Button -->
+					<button
+						on:click={saveDraft}
+						class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+						disabled={uploading}
+						aria-label="Save profile as draft"
+						aria-busy={uploading}
+					>
+						{#if uploading}
+							<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+							Saving...
+						{:else if saveSuccess}
+							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
+							Saved!
+						{:else}
+							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
+							Save Draft
+						{/if}
+					</button>
 				</div>
 
-				<!-- Enhanced Info Message -->
+				<!-- Info Message Only -->
 				<div class="flex items-center space-x-2">
 					<div class="text-white/80 text-sm">
 						<span class="flex items-center">
-							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
-							{uploading ? 'Saving...' : 'Use Ctrl+S to save manually'}
+							<Info class="w-4 h-4 mr-2" aria-hidden="true" />
+							Use Ctrl+S to save manually
 						</span>
 					</div>
-					{#if uploading}
-						<div class="flex items-center text-white/80 text-sm">
-							<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-							Saving...
-						</div>
-					{/if}
 				</div>
 			</div>
 		</div>
@@ -1481,13 +1506,19 @@
 								{/if}
 								<div class="flex flex-col space-y-2">
 									<label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
-										<Camera class="w-4 h-4 mr-2" />
-										Upload Photo
+										{#if uploading}
+											<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+											Uploading...
+										{:else}
+											<Camera class="w-4 h-4 mr-2" />
+											Upload Photo
+										{/if}
 										<input
 											type="file"
 											accept="image/*"
 											on:change={handleProfilePhotoUpload}
 											class="hidden"
+											disabled={uploading}
 										/>
 									</label>
 									<p class="text-xs text-gray-500 dark:text-gray-400">

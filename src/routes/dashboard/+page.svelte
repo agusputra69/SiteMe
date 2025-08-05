@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { supabase, getProfile, updateProfile, handleAuthError, getValidSession } from '$lib/supabase';
+  import { supabase, getProfile, updateProfile, handleAuthError, getValidSession, uploadResume } from '$lib/supabase';
   import { extractTextFromPDF, validatePDFFile, isPDFLikelyResume, detectPDFIssues } from '$lib/pdf';
   import { extractTextFromPDFSimple, validatePDFFileSimple } from '$lib/pdf-simple';
   import { extractResumeData, type ResumeData } from '$lib/ai';
+  import { type Site } from '$lib/types';
   import { extractBasicResumeData, convertToResumeData } from '$lib/pdf-processor';
   import { goto } from '$app/navigation';
 
@@ -47,7 +48,8 @@
   let showOnboarding = false;
   let showTutorial = true;
   let tutorialContext: 'dashboard' | 'upload' | 'edit' | 'preview' = 'dashboard';
-  let showDeleteConfirm = false;
+  let showDeleteSiteConfirm = false;
+  let showDeleteProfileConfirm = false;
   // Removed showProfileEditor - now redirects to editor page
   let showPDFError = false;
   let pdfError = '';
@@ -65,12 +67,14 @@
   let rateLimitRetryAfter = 60;
   let rateLimitMessage = '';
   let useAIProcessing = true; // Toggle for AI vs basic processing
-  let sites: Array<{id: string, name: string, status: 'draft' | 'published', updated_at: string, template: string, is_primary: boolean, data: any}> = [];
-  let siteToDelete: any = null;
+  let sites: Site[] = [];
+  let siteToDelete: Site | null = null;
   let showProcessingModelSelector = false;
   let pendingFile: File | null = null;
   let showAddSiteModal = false;
   let openDropdownId: string | null = null;
+  let uploadedResumeUrl: string | null = null;
+  let uploadedResumePath: string | null = null;
 
   onMount(() => {
     // Close dropdown when clicking outside
@@ -215,7 +219,7 @@
 
   async function duplicateSite(siteId: string) {
     try {
-      const originalSite = sites.find((site: any) => site.id === siteId);
+      const originalSite = sites.find((site) => site.id === siteId);
       if (originalSite) {
         const { data: newSite, error } = await supabase
           .from('sites')
@@ -260,7 +264,7 @@
 
       toasts.success('Site deleted successfully!');
       await loadSites(); // Refresh the list
-      showDeleteConfirm = false;
+      showDeleteSiteConfirm = false;
       siteToDelete = null;
     } catch (error) {
       console.error('Error deleting site:', error);
@@ -268,9 +272,9 @@
     }
   }
 
-  function handleDeleteClick(site: any) {
+  function handleDeleteClick(site: Site) {
     siteToDelete = site;
-    showDeleteConfirm = true;
+    showDeleteSiteConfirm = true;
   }
 
   function handleDeleteSite() {
@@ -350,6 +354,20 @@
       // Check if PDF.js is available
       if (typeof window !== 'undefined' && !(window as any).pdfjsLib) {
         console.warn('PDF.js library not found in window object');
+      }
+      
+      // Upload PDF file to Supabase storage
+      console.log('Uploading PDF to Supabase storage...');
+      try {
+        const uploadResult = await uploadResume(file);
+        uploadedResumeUrl = uploadResult.url;
+        uploadedResumePath = uploadResult.path;
+        console.log('PDF uploaded successfully:', uploadResult);
+        toasts.success('Resume PDF uploaded successfully');
+      } catch (uploadError) {
+        console.error('Failed to upload PDF:', uploadError);
+        toasts.warning('Failed to upload PDF file, but processing will continue');
+        // Continue processing even if upload fails
       }
       
       // Update progress for extraction step
@@ -458,17 +476,31 @@
             throw new Error('AI processing timeout. Please try again.');
           }
           
-          // If AI fails and we're using AI processing, try basic processing as fallback
+          // Enhanced fallback mechanism for AI processing failures
           if (useAIProcessing) {
-            console.log('AI processing failed, trying basic processing as fallback...');
+            console.log('AI processing failed, trying enhanced fallback mechanisms...');
+            
+            // First try: Basic processing with PDF extraction
             try {
+              console.log('Attempting basic processing fallback...');
               const basicData = extractBasicResumeData(text);
               extractedData = convertToResumeData(basicData);
               processingUsedFallback = true;
               toasts.warning('AI processing failed. Using basic processing instead. Results may be limited.');
             } catch (basicError) {
-              console.error('Basic processing fallback also failed:', basicError);
-              throw aiError; // Throw the original AI error
+              console.error('Basic processing fallback failed:', basicError);
+              
+              // Second try: Simple fallback with minimal extraction
+              try {
+                console.log('Attempting simple fallback mechanism...');
+                const { createFallbackResumeData } = await import('$lib/ai');
+                extractedData = createFallbackResumeData(text);
+                processingUsedFallback = true;
+                toasts.warning('Using minimal data extraction. Please review and edit the extracted information.');
+              } catch (fallbackError) {
+                console.error('All fallback mechanisms failed:', fallbackError);
+                throw new Error('Failed to process resume: ' + (aiError instanceof Error ? aiError.message : 'Unknown AI error'));
+              }
             }
           } else {
             throw aiError;
@@ -500,6 +532,9 @@
       processingStep = 'saving';
       processingProgress = 80;
       
+      // Show more detailed progress for save operation
+      toasts.info('Saving extracted data to database...');
+      
       console.log('Starting database save...');
       
       // Check if user is available
@@ -511,29 +546,135 @@
       console.log('Data to save:', extractedData);
       
       try {
-        // Save to database with timeout
-        const savePromise = updateProfile(user.id, {
-          data: extractedData,
-          full_name: extractedData.name
-        });
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database save timeout')), 30000)
-        );
-        
-        const { error } = await Promise.race([savePromise, timeoutPromise]) as any;
+        // Clean and structure the extracted data to ensure it's valid for JSONB storage
+        const cleanExtractedData = {
+          name: extractedData.name,
+          email: extractedData.email,
+          phone: extractedData.phone,
+          location: extractedData.location,
+          summary: extractedData.summary,
+          experience: extractedData.experience || [],
+          education: extractedData.education || [],
+          skills: extractedData.skills || [],
+          projects: extractedData.projects || [],
+          certifications: extractedData.certifications || [],
+          languages: extractedData.languages || [],
+          links: extractedData.links || [],
+          awards: extractedData.awards || [],
+          // Add default template/theme/customization to prevent ProfileEditor save errors
+          template: extractedData.template || 'modern',
+          theme: extractedData.theme || 'blue',
+          customization: extractedData.customization || {
+            theme: 'blue',
+            fontFamily: 'inter',
+            fontSize: 'medium',
+            layout: 'standard',
+            spacing: 'normal',
+            borderRadius: 'medium',
+            shadow: 'medium',
+            accentColor: '#3b82f6',
+            textColor: '#1f2937',
+            backgroundColor: '#ffffff',
+            sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+            lineHeight: 'normal',
+            letterSpacing: 'normal',
+            headingFont: 'sans',
+            containerWidth: 'standard',
+            verticalSpacing: 'normal',
+            horizontalPadding: 'normal'
+          }
+        };
 
-        if (error) {
-          console.error('Database error:', error);
-          throw new Error('Failed to save profile data: ' + error.message);
+        console.log('Cleaned extracted data for database save:', cleanExtractedData);
+
+        // Optimize data size before saving
+        const dataSize = JSON.stringify(cleanExtractedData).length;
+        console.log('Data size:', dataSize, 'bytes');
+        
+        // If data is too large, implement chunking strategy
+        if (dataSize > 500000) { // 500KB threshold
+          console.log('Large data detected, implementing chunking strategy...');
+          // Split large arrays into smaller chunks
+          if (cleanExtractedData.experience?.length > 10) {
+            cleanExtractedData.experience = cleanExtractedData.experience.slice(0, 10);
+          }
+          if (cleanExtractedData.education?.length > 5) {
+            cleanExtractedData.education = cleanExtractedData.education.slice(0, 5);
+          }
+          if (cleanExtractedData.projects?.length > 8) {
+            cleanExtractedData.projects = cleanExtractedData.projects.slice(0, 8);
+          }
+          if (cleanExtractedData.skills?.length > 50) {
+            cleanExtractedData.skills = cleanExtractedData.skills.slice(0, 50);
+          }
+        }
+        
+        // Enhanced retry mechanism with exponential backoff
+        const maxAttempts = 3;
+        const baseTimeout = 30000; // 30 seconds base timeout
+        let saveAttempts = 0;
+        let lastError = null;
+        
+        console.log('Starting optimized database save...');
+        
+        while (saveAttempts < maxAttempts) {
+          try {
+            saveAttempts++;
+            const currentTimeout = baseTimeout * saveAttempts; // Progressive timeout
+            console.log(`Database save attempt ${saveAttempts}/${maxAttempts} with ${currentTimeout/1000}s timeout...`);
+            
+            // Create fresh promise for each attempt
+            const savePromise = updateProfile(user.id, {
+              data: cleanExtractedData,
+              full_name: cleanExtractedData.name
+            });
+            
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error(`Database save timeout after ${currentTimeout/1000} seconds`)), currentTimeout)
+            );
+            
+            const result = await Promise.race([savePromise, timeoutPromise]) as any;
+
+            if (result?.error) {
+              console.error(`Database error (attempt ${saveAttempts}):`, result.error);
+              lastError = result.error;
+              
+              if (saveAttempts < maxAttempts) {
+                const backoffDelay = Math.min(1000 * Math.pow(2, saveAttempts - 1), 8000); // Exponential backoff, max 8s
+                console.log(`Retrying in ${backoffDelay/1000} seconds...`);
+                toasts.warning(`Save attempt ${saveAttempts} failed. Retrying in ${backoffDelay/1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                continue;
+              } else {
+                throw new Error('Failed to save profile data after multiple attempts: ' + result.error.message);
+              }
+            }
+            
+            console.log('Database save successful on attempt', saveAttempts);
+            toasts.success('Data saved successfully!');
+            break; // Success, exit retry loop
+            
+          } catch (retryError) {
+            console.error(`Save attempt ${saveAttempts} failed:`, retryError);
+            lastError = retryError;
+            
+            if (saveAttempts >= maxAttempts) {
+              throw retryError;
+            }
+            
+            // Exponential backoff for connection errors
+            const backoffDelay = Math.min(1000 * Math.pow(2, saveAttempts - 1), 8000);
+            console.log(`Connection error, waiting ${backoffDelay/1000}s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          }
         }
         
         console.log('Database save successful, updating local state');
         console.log('Before assignment - resumeData:', resumeData);
         
         // Update local state
-        resumeData = extractedData;
-        profile = { ...profile, data: extractedData, full_name: extractedData.name };
+        resumeData = cleanExtractedData;
+        profile = { ...profile, data: cleanExtractedData, full_name: cleanExtractedData.name };
         
         console.log('After assignment - resumeData:', resumeData);
         console.log('Updated profile:', profile);
@@ -614,6 +755,7 @@
       uploading = false;
       processing = false;
     }
+
   }
 
   async function handleLogout() {
@@ -838,11 +980,11 @@
     }
     
     // Show confirmation dialog
-    showDeleteConfirm = true;
+    showDeleteProfileConfirm = true;
   }
 
   async function confirmDeleteData() {
-    showDeleteConfirm = false;
+    showDeleteProfileConfirm = false;
 
     loading = true;
     console.log('Starting deletion process...');
@@ -1087,7 +1229,7 @@
                             <button
                               on:click={() => {
                                 siteToDelete = site;
-                                showDeleteConfirm = true;
+                                showDeleteSiteConfirm = true;
                                 openDropdownId = null;
                               }}
                               class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
@@ -1263,7 +1405,7 @@
 
 <!-- Delete Site Confirmation Dialog -->
 <ConfirmDialog
-  isOpen={showDeleteConfirm && siteToDelete}
+  isOpen={showDeleteSiteConfirm}
   title="Delete Site"
   message="Are you sure you want to delete '{siteToDelete?.name}'? This action will permanently remove the site and all its data. This cannot be undone."
   confirmText="Delete Site"
@@ -1271,21 +1413,21 @@
   type="danger"
   on:confirm={handleDeleteSite}
   on:cancel={() => {
-    showDeleteConfirm = false;
+    showDeleteSiteConfirm = false;
     siteToDelete = null;
   }}
 />
 
 <!-- Delete Profile Confirmation Dialog -->
 <ConfirmDialog
-  isOpen={showDeleteConfirm && !siteToDelete}
+  isOpen={showDeleteProfileConfirm}
   title="Delete All Profile Data"
   message="⚠️ WARNING: This will permanently delete ALL your profile data including personal information, work experience, education, skills, and all uploaded content. This action cannot be undone."
   confirmText="Delete Everything"
   cancelText="Cancel"
   type="danger"
   on:confirm={confirmDeleteData}
-  on:cancel={() => showDeleteConfirm = false}
+  on:cancel={() => showDeleteProfileConfirm = false}
 />
 
 <!-- PDF Error Handler -->
@@ -1331,18 +1473,4 @@
       fileName={pendingFile?.name || ''}
       on:select={handleModelSelection}
       on:close={handleModelSelectorClose}
-    />
-
-    <!-- Delete Confirmation Dialog -->
-    <ConfirmDialog
-      isOpen={showDeleteConfirm}
-      title="Delete Site"
-      message="Are you sure you want to delete '{siteToDelete?.name}'? This action cannot be undone."
-      confirmText="Delete"
-      type="danger"
-      on:confirm={() => deleteSite(siteToDelete?.id)}
-      on:cancel={() => {
-        showDeleteConfirm = false;
-        siteToDelete = null;
-      }}
     />

@@ -79,12 +79,41 @@ export interface Theme {
 	text: string;
 	textSecondary: string;
 }
-
 export interface Template {
-	id: string;
-	name: string;
-	description: string;
-	category: string;
-	themes: Theme[];
-	features: string[];
-}
+		id: string;
+		name: string;
+		description: string;
+		category: string;
+		themes: Theme[];
+		features: string[];
+	}
+
+	export interface ResumeData {
+		name: string;
+		email: string;
+		phone: string;
+		location: string;
+		summary: string;
+		experience: WorkExperience[];
+		education: Education[];
+		certifications: Certification[];
+		languages: Language[];
+		projects: Project[];
+		awards: Award[];
+		skills: string[];
+		links: Link[];
+		template?: string;
+		theme?: string;
+		customization?: any;
+	}
+
+	export interface Site {
+		id: string;
+		name: string;
+		status: 'draft' | 'published';
+		user_id: string;
+		data: ResumeData;
+		template: string;
+		updated_at: string;
+		is_primary: boolean;
+	}

@@ -63,28 +63,122 @@ export async function getProfile(userId: string) {
   return { data, error };
 }
 
-export async function updateProfile(userId: string, updates: Partial<Tables<'profiles'>>) {
+export async function updateProfile(userId: string, updates: { [key: string]: any }) {
   try {
-    // Ensure data is properly structured for JSONB storage
-    const cleanUpdates = {
-      id: userId,
-      ...updates
-    };
+    console.log('Starting optimized profile update for user:', userId);
     
-    // If data exists, ensure it's a valid object
-    if (cleanUpdates.data && typeof cleanUpdates.data === 'object') {
-      cleanUpdates.data = JSON.parse(JSON.stringify(cleanUpdates.data));
+    const profileTableColumns = ['id', 'username', 'full_name', 'data', 'created_at'];
+    const cleanUpdates: { [key: string]: any } = { id: userId };
+    const dataObject: { [key: string]: any } = { ...(updates.data || {}) };
+
+    for (const key in updates) {
+      if (key === 'data') continue;
+      
+      if (profileTableColumns.includes(key)) {
+        cleanUpdates[key] = updates[key];
+      } else {
+        dataObject[key] = updates[key];
+      }
+    }
+
+    if (Object.keys(dataObject).length > 0) {
+      cleanUpdates.data = dataObject;
     }
     
+    // Optimize data before saving
+    if (cleanUpdates.data && typeof cleanUpdates.data === 'object') {
+      // Deep clone to avoid reference issues
+      cleanUpdates.data = JSON.parse(JSON.stringify(cleanUpdates.data));
+      
+      // Log data size for debugging
+      const dataSize = JSON.stringify(cleanUpdates.data).length;
+      console.log('Data size to save:', dataSize, 'bytes');
+      
+      // Optimize large data
+      if (dataSize > 500000) { // 500KB threshold
+        console.log('Optimizing large data payload...');
+        
+        // Truncate long text fields
+        if (cleanUpdates.data.summary && cleanUpdates.data.summary.length > 2000) {
+          cleanUpdates.data.summary = cleanUpdates.data.summary.substring(0, 2000) + '...';
+        }
+        
+        // Limit array sizes
+        if (cleanUpdates.data.experience && cleanUpdates.data.experience.length > 15) {
+          cleanUpdates.data.experience = cleanUpdates.data.experience.slice(0, 15);
+        }
+        
+        if (cleanUpdates.data.education && cleanUpdates.data.education.length > 10) {
+          cleanUpdates.data.education = cleanUpdates.data.education.slice(0, 10);
+        }
+        
+        if (cleanUpdates.data.projects && cleanUpdates.data.projects.length > 10) {
+          cleanUpdates.data.projects = cleanUpdates.data.projects.slice(0, 10);
+        }
+        
+        if (cleanUpdates.data.skills && cleanUpdates.data.skills.length > 100) {
+          cleanUpdates.data.skills = cleanUpdates.data.skills.slice(0, 100);
+        }
+        
+        // Truncate long descriptions in arrays
+        ['experience', 'education', 'projects', 'certifications'].forEach(field => {
+          if (cleanUpdates.data[field] && Array.isArray(cleanUpdates.data[field])) {
+            cleanUpdates.data[field] = cleanUpdates.data[field].map((item: any) => {
+              if (item.description && item.description.length > 1000) {
+                return { ...item, description: item.description.substring(0, 1000) + '...' };
+              }
+              return item;
+            });
+          }
+        });
+        
+        const optimizedSize = JSON.stringify(cleanUpdates.data).length;
+        console.log('Optimized data size:', optimizedSize, 'bytes (reduced by', dataSize - optimizedSize, 'bytes)');
+      }
+    }
+    
+    console.log('Executing optimized database upsert...');
+    
+    // Use more efficient upsert with specific conflict resolution
     const { data, error } = await supabase
       .from('profiles')
-      .upsert(cleanUpdates)
-      .select()
+      .upsert(cleanUpdates, {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      })
+      .select('id, username, full_name, created_at')
       .single();
     
-    return { data, error };
+    if (error) {
+      console.error('Supabase upsert error:', error);
+      
+      // Handle specific error types
+      if (error.message?.includes('timeout') || error.message?.includes('connection')) {
+        throw new Error('Database connection timeout. Please check your internet connection and try again.');
+      }
+      
+      if (error.message?.includes('too large') || error.message?.includes('payload')) {
+        throw new Error('Data payload too large. Please reduce the amount of information and try again.');
+      }
+      
+      return { data: null, error };
+    }
+    
+    console.log('Profile update successful');
+    return { data, error: null };
   } catch (err) {
     console.error('Profile update error:', err);
+    
+    // Enhanced error handling
+    if (err instanceof Error) {
+      if (err.message.includes('fetch')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      if (err.message.includes('timeout')) {
+        throw new Error('Request timeout. Please try again with a stable internet connection.');
+      }
+    }
+    
     return { data: null, error: err };
   }
 }
@@ -97,6 +191,120 @@ export async function getProfileByUsername(username: string) {
     .single();
   
   return { data, error };
+}
+
+// Upload resume PDF to Supabase storage
+export async function uploadResume(file: File): Promise<{ url: string; path: string }> {
+  try {
+    // Get current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+    
+    console.log('Starting resume upload for user:', user.id);
+    console.log('File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+    
+    // Validate file
+    if (!file.type.includes('pdf')) {
+      throw new Error('Only PDF files are allowed');
+    }
+    
+    // Check file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('File size must be less than 5MB');
+    }
+    
+    // Generate unique filename with user ID as folder
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+    
+    console.log('Uploading to path:', filePath);
+    
+    // Upload file to Supabase storage
+    const { data, error } = await supabase.storage
+      .from('resumes')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+    
+    if (error) {
+      console.error('Upload error:', error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+    
+    console.log('Upload successful:', data);
+    
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('resumes')
+      .getPublicUrl(filePath);
+    
+    return {
+      url: urlData.publicUrl,
+      path: filePath
+    };
+  } catch (err) {
+    console.error('Error uploading resume:', err);
+    throw err;
+  }
+}
+
+// Get uploaded resume URL
+export async function getResumeUrl(filePath: string): Promise<string | null> {
+  try {
+    const { data } = supabase.storage
+      .from('resumes')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  } catch (err) {
+    console.error('Error getting resume URL:', err);
+    return null;
+  }
+}
+
+// List user's uploaded resumes
+export async function listUserResumes(userId: string): Promise<{ data?: any[]; error?: any }> {
+  try {
+    const { data, error } = await supabase.storage
+      .from('resumes')
+      .list(`resumes`, {
+        limit: 100,
+        offset: 0
+      });
+    
+    if (error) {
+      return { error };
+    }
+    
+    // Filter files that belong to this user
+    const userFiles = data?.filter(file => file.name.startsWith(userId)) || [];
+    
+    return { data: userFiles };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
+// Delete resume from storage
+export async function deleteResume(filePath: string): Promise<{ error?: any }> {
+  try {
+    const { error } = await supabase.storage
+      .from('resumes')
+      .remove([filePath]);
+    
+    return { error };
+  } catch (err) {
+    return { error: err };
+  }
 }
 
 // Helper function to handle auth errors and clear corrupted sessions

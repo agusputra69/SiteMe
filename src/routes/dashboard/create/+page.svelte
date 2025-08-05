@@ -182,11 +182,29 @@
             return;
           }
           
-          // Fallback to basic processing
-          console.warn('AI processing failed, falling back to basic extraction:', error);
-          processingUsedFallback = true;
-          const basicData = extractBasicResumeData(extractedText);
-          resumeData = convertToResumeData(basicData);
+          // Enhanced fallback mechanism for AI processing failures
+          console.warn('AI processing failed, trying enhanced fallback mechanisms:', error);
+          
+          // First try: Basic processing with PDF extraction
+          try {
+            console.log('Attempting basic processing fallback...');
+            processingUsedFallback = true;
+            const basicData = extractBasicResumeData(extractedText);
+            resumeData = convertToResumeData(basicData);
+          } catch (basicError) {
+            console.error('Basic processing fallback failed:', basicError);
+            
+            // Second try: Simple fallback with minimal extraction
+            try {
+              console.log('Attempting simple fallback mechanism...');
+              const { createFallbackResumeData } = await import('$lib/ai');
+              resumeData = createFallbackResumeData(extractedText);
+              processingUsedFallback = true;
+            } catch (fallbackError) {
+              console.error('All fallback mechanisms failed:', fallbackError);
+              throw new Error('Failed to process resume: ' + (error.message || 'Unknown AI error'));
+            }
+          }
         }
       } else {
         const basicData = extractBasicResumeData(extractedText);

@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/private';
 
 // Get API key from environment variables
 const API_KEY = env.TOGETHER_API_KEY || env.VITE_TOGETHER_API_KEY;
-const TOGETHER_BASE_URL = 'https://api.together.xyz';
+const TOGETHER_BASE_URL = 'https://api.together.xyz/v1';
 
 // Rate limiting state
 const rateLimitState = {
@@ -77,7 +77,7 @@ export const POST: RequestHandler = async ({ request }) => {
     updateRateLimit();
     
     // Forward the request to Together.ai API
-    const response = await fetch(`${TOGETHER_BASE_URL}/inference`, {
+    const response = await fetch(`${TOGETHER_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
