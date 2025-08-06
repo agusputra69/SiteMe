@@ -112,22 +112,22 @@ TOGETHER_MODEL=qwen:7b-chat  # or llama-3-8b-chat
 ```ts
 // src/lib/ai.ts
 export async function extractResumeData(text: string) {
-  const prompt = `Extract structured data from the following resume:\n...`;
-  const res = await fetch("https://api.together.xyz/inference", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${TOGETHER_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: TOGETHER_MODEL,
-      prompt: prompt + text,
-      max_tokens: 1000,
-      temperature: 0.2
-    })
-  });
-  const json = await res.json();
-  return JSON.parse(json.output);
+	const prompt = `Extract structured data from the following resume:\n...`;
+	const res = await fetch('https://api.together.xyz/inference', {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${TOGETHER_API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			model: TOGETHER_MODEL,
+			prompt: prompt + text,
+			max_tokens: 1000,
+			temperature: 0.2
+		})
+	});
+	const json = await res.json();
+	return JSON.parse(json.output);
 }
 ```
 
@@ -147,15 +147,15 @@ Example:
 import * as pdfjsLib from 'pdfjs-dist';
 
 export async function extractTextFromPDF(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(' ') + '\n';
-  }
-  return text;
+	const arrayBuffer = await file.arrayBuffer();
+	const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+	let text = '';
+	for (let i = 1; i <= pdf.numPages; i++) {
+		const page = await pdf.getPage(i);
+		const content = await page.getTextContent();
+		text += content.items.map((item) => item.str).join(' ') + '\n';
+	}
+	return text;
 }
 ```
 
@@ -180,9 +180,7 @@ TOGETHER_MODEL=
 
 ## 🧭 Roadmap (Optional)
 
--
-
----
+- ***
 
 ## 🖼️ UI Reference – Competitor Example (self.so)
 
@@ -203,4 +201,3 @@ Inspiration for UI can also be taken from:
 - [https://framer.com](https://framer.com) (for animations & layout)
 
 You can adapt clean layouts using Tailwind utility classes + component slots in Svelte for dynamic content rendering.
-

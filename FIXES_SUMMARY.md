@@ -11,11 +11,13 @@ This document outlines the fixes implemented to resolve the critical errors in t
 **Root Cause**: The RLS policies were using `storage.foldername(name)[1]` which doesn't work with the file path structure being used (`resumes/filename.pdf`).
 
 **Fix Applied**:
+
 - Updated RLS policies in `setup-database.sql` to use `split_part(name, '/', 1)` instead of `storage.foldername(name)[1]`
 - Modified `uploadResume()` function in `src/lib/supabase.ts` to use user ID as folder structure: `{user_id}/{filename}.pdf`
 - This ensures the file path matches the RLS policy expectations
 
 **Files Modified**:
+
 - `setup-database.sql`: Updated storage policies
 - `src/lib/supabase.ts`: Fixed file path structure
 
@@ -26,12 +28,14 @@ This document outlines the fixes implemented to resolve the critical errors in t
 **Root Cause**: Together.ai was returning responses with `<think>` tags and explanatory text instead of pure JSON.
 
 **Fix Applied**:
+
 - Enhanced the AI prompt in `src/lib/ai.ts` to explicitly demand JSON-only responses
 - Improved response cleaning logic to better handle `<think>` tags and non-JSON content
 - Added more robust JSON extraction that looks for the first `{` and last `}`
 - Added better error handling when no JSON structure is found
 
 **Files Modified**:
+
 - `src/lib/ai.ts`: Enhanced prompt and response parsing
 
 ### 3. Database Schema Issues
@@ -41,16 +45,19 @@ This document outlines the fixes implemented to resolve the critical errors in t
 **Root Cause**: The `sites` table was not created in the database.
 
 **Fix Applied**:
+
 - Added the complete `sites` table schema to `setup-database.sql`
 - Included all necessary RLS policies for the sites table
 - The table now supports multiple sites per user with proper constraints
 
 **Files Modified**:
+
 - `setup-database.sql`: Added sites table and policies
 
 ## Technical Details
 
 ### Storage Policy Fix
+
 ```sql
 -- Before (broken)
 create policy "Users can upload their own resumes" on storage.objects
@@ -62,15 +69,17 @@ create policy "Users can upload their own resumes" on storage.objects
 ```
 
 ### File Path Structure
+
 ```javascript
 // Before
 const filePath = `resumes/${fileName}`; // resumes/uuid-timestamp.pdf
 
-// After  
+// After
 const filePath = `${user.id}/${fileName}`; // uuid/timestamp.pdf
 ```
 
 ### AI Prompt Enhancement
+
 ```javascript
 // Added explicit instructions
 const prompt = `CRITICAL: You must respond with ONLY valid JSON. Do not include any thinking, explanations, or additional text.
@@ -78,7 +87,7 @@ const prompt = `CRITICAL: You must respond with ONLY valid JSON. Do not include 
 Rules:
 - Do NOT include any thinking tags, explanations, or additional text
 - Respond with ONLY the JSON object
-...`
+...`;
 ```
 
 ## Testing Instructions

@@ -10,14 +10,17 @@
 
 	// Error categories and solutions
 	type ErrorCategory = 'password' | 'scanned' | 'corrupted' | 'empty' | 'large' | 'timeout';
-	
-	const errorCategories: Record<ErrorCategory, {
-		icon: any;
-		title: string;
-		description: string;
-		solutions: string[];
-	}> = {
-		'password': {
+
+	const errorCategories: Record<
+		ErrorCategory,
+		{
+			icon: any;
+			title: string;
+			description: string;
+			solutions: string[];
+		}
+	> = {
+		password: {
 			icon: Lock,
 			title: 'Password Protected PDF',
 			description: 'The PDF is password-protected and cannot be processed.',
@@ -27,7 +30,7 @@
 				'Try a different PDF file without password protection'
 			]
 		},
-		'scanned': {
+		scanned: {
 			icon: Image,
 			title: 'Scanned or Image-based PDF',
 			description: 'The PDF appears to be scanned or contains only images.',
@@ -37,7 +40,7 @@
 				'Create a new PDF from a text document'
 			]
 		},
-		'corrupted': {
+		corrupted: {
 			icon: AlertTriangle,
 			title: 'Corrupted PDF File',
 			description: 'The PDF file appears to be corrupted or damaged.',
@@ -47,7 +50,7 @@
 				'Use a different PDF file'
 			]
 		},
-		'empty': {
+		empty: {
 			icon: FileText,
 			title: 'Empty or Invalid PDF',
 			description: 'The PDF file is empty or contains no readable text.',
@@ -57,7 +60,7 @@
 				'Try a different PDF file'
 			]
 		},
-		'large': {
+		large: {
 			icon: Download,
 			title: 'File Too Large',
 			description: 'The PDF file exceeds the maximum allowed size.',
@@ -67,7 +70,7 @@
 				'Convert to a smaller format'
 			]
 		},
-		'timeout': {
+		timeout: {
 			icon: RefreshCw,
 			title: 'Processing Timeout',
 			description: 'The PDF took too long to process.',
@@ -81,14 +84,14 @@
 
 	function getErrorCategory(errorMessage: string): ErrorCategory {
 		const lowerError = errorMessage.toLowerCase();
-		
+
 		if (lowerError.includes('password')) return 'password';
 		if (lowerError.includes('scanned') || lowerError.includes('image')) return 'scanned';
 		if (lowerError.includes('corrupted') || lowerError.includes('damaged')) return 'corrupted';
 		if (lowerError.includes('empty') || lowerError.includes('no text')) return 'empty';
 		if (lowerError.includes('large') || lowerError.includes('size')) return 'large';
 		if (lowerError.includes('timeout')) return 'timeout';
-		
+
 		return 'empty'; // Default category
 	}
 
@@ -106,7 +109,9 @@
 
 {#if show}
 	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-		<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+		<div
+			class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+		>
 			<!-- Header -->
 			<div class="p-6 border-b border-gray-200 dark:border-gray-700">
 				<div class="flex items-center space-x-3">
@@ -139,13 +144,13 @@
 
 			<!-- Solutions -->
 			<div class="p-6">
-				<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">
-					Suggested Solutions:
-				</h4>
+				<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Suggested Solutions:</h4>
 				<ul class="space-y-2">
 					{#each categoryInfo.solutions as solution, index}
 						<li class="flex items-start space-x-2">
-							<span class="flex-shrink-0 w-5 h-5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
+							<span
+								class="flex-shrink-0 w-5 h-5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium"
+							>
 								{index + 1}
 							</span>
 							<p class="text-sm text-gray-600 dark:text-gray-300">
@@ -175,4 +180,4 @@
 			</div>
 		</div>
 	</div>
-{/if} 
+{/if}

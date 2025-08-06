@@ -1,6 +1,16 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { Palette, Type, Layout, Download, Eye, RotateCcw, GripVertical, Move, Sliders } from 'lucide-svelte';
+	import { createEventDispatcher, onDestroy } from 'svelte';
+	import {
+		Palette,
+		Type,
+		Layout,
+		Download,
+		Eye,
+		RotateCcw,
+		GripVertical,
+		Move,
+		Sliders
+	} from 'lucide-svelte';
 
 	const dispatch = createEventDispatcher();
 
@@ -50,6 +60,8 @@
 	}
 
 	// Announce changes to screen readers
+	let announcementTimeout: ReturnType<typeof setTimeout> | null = null;
+
 	function announceChange(message: string) {
 		const announcement = document.createElement('div');
 		announcement.setAttribute('aria-live', 'polite');
@@ -57,10 +69,19 @@
 		announcement.className = 'sr-only';
 		announcement.textContent = message;
 		document.body.appendChild(announcement);
-		setTimeout(() => {
-			document.body.removeChild(announcement);
+		announcementTimeout = setTimeout(() => {
+			if (document.body.contains(announcement)) {
+				document.body.removeChild(announcement);
+			}
+			announcementTimeout = null;
 		}, 1000);
 	}
+
+	onDestroy(() => {
+		if (announcementTimeout) {
+			clearTimeout(announcementTimeout);
+		}
+	});
 
 	const themes = [
 		{ name: 'blue', color: '#3B82F6', label: 'Professional Blue' },
@@ -75,10 +96,25 @@
 
 	const fontFamilies = [
 		{ value: 'inter', label: 'Inter (Modern)', class: 'font-sans', preview: 'Modern & Clean' },
-		{ value: 'serif', label: 'Times (Classic)', class: 'font-serif', preview: 'Traditional & Elegant' },
+		{
+			value: 'serif',
+			label: 'Times (Classic)',
+			class: 'font-serif',
+			preview: 'Traditional & Elegant'
+		},
 		{ value: 'mono', label: 'Mono (Technical)', class: 'font-mono', preview: 'Code & Technical' },
-		{ value: 'poppins', label: 'Poppins (Friendly)', class: 'font-sans', preview: 'Rounded & Approachable' },
-		{ value: 'playfair', label: 'Playfair (Luxury)', class: 'font-serif', preview: 'Sophisticated & Bold' },
+		{
+			value: 'poppins',
+			label: 'Poppins (Friendly)',
+			class: 'font-sans',
+			preview: 'Rounded & Approachable'
+		},
+		{
+			value: 'playfair',
+			label: 'Playfair (Luxury)',
+			class: 'font-serif',
+			preview: 'Sophisticated & Bold'
+		},
 		{ value: 'roboto', label: 'Roboto (Google)', class: 'font-sans', preview: 'Neutral & Readable' }
 	];
 
@@ -198,7 +234,7 @@
 		}
 		customization = { ...customization, [key]: value };
 		dispatch('update', customization);
-		
+
 		// Announce changes to screen readers
 		announceChange(`${key} updated to ${value}`);
 	}
@@ -233,7 +269,11 @@
 		if (event.dataTransfer) {
 			event.dataTransfer.effectAllowed = 'move';
 		}
-		announceChange(`Started dragging ${sectionLabels[customization.sectionOrder[index]] || customization.sectionOrder[index]} section`);
+		announceChange(
+			`Started dragging ${
+				sectionLabels[customization.sectionOrder[index]] || customization.sectionOrder[index]
+			} section`
+		);
 	}
 
 	function handleDragOver(event: DragEvent, index: number) {
@@ -252,7 +292,9 @@
 			const draggedItem = newOrder.splice(draggedIndex, 1)[0];
 			newOrder.splice(dropIndex, 0, draggedItem);
 			updateCustomization('sectionOrder', newOrder);
-			announceChange(`${sectionLabels[draggedItem] || draggedItem} section moved to position ${dropIndex + 1}`);
+			announceChange(
+				`${sectionLabels[draggedItem] || draggedItem} section moved to position ${dropIndex + 1}`
+			);
 		}
 		draggedIndex = -1;
 		dragOverIndex = -1;
@@ -281,8 +323,14 @@
 	}
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6" role="main" aria-label="Template Customizer">
-	<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+<div
+	class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6"
+	role="main"
+	aria-label="Template Customizer"
+>
+	<div
+		class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0"
+	>
 		<h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="customizer-title">
 			Customize Template
 		</h3>
@@ -315,9 +363,13 @@
 	</div>
 
 	<!-- Tab Navigation -->
-	<div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6" role="tablist" aria-labelledby="customizer-title">
+	<div
+		class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6"
+		role="tablist"
+		aria-labelledby="customizer-title"
+	>
 		<button
-			on:click={() => activeTab = 'colors'}
+			on:click={() => (activeTab = 'colors')}
 			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
 			class:border-blue-500={activeTab === 'colors'}
 			class:text-blue-600={activeTab === 'colors'}
@@ -333,7 +385,7 @@
 			<span class="sm:hidden">Colors</span>
 		</button>
 		<button
-			on:click={() => activeTab = 'typography'}
+			on:click={() => (activeTab = 'typography')}
 			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
 			class:border-blue-500={activeTab === 'typography'}
 			class:text-blue-600={activeTab === 'typography'}
@@ -349,7 +401,7 @@
 			<span class="sm:hidden">Type</span>
 		</button>
 		<button
-			on:click={() => activeTab = 'layout'}
+			on:click={() => (activeTab = 'layout')}
 			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
 			class:border-blue-500={activeTab === 'layout'}
 			class:text-blue-600={activeTab === 'layout'}
@@ -365,7 +417,7 @@
 			<span class="sm:hidden">Layout</span>
 		</button>
 		<button
-			on:click={() => activeTab = 'sections'}
+			on:click={() => (activeTab = 'sections')}
 			class="flex items-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
 			class:border-blue-500={activeTab === 'sections'}
 			class:text-blue-600={activeTab === 'sections'}
@@ -393,11 +445,14 @@
 						{#each themes as theme}
 							<button
 								on:click={() => updateCustomization('theme', theme.name)}
-								class="relative p-3 rounded-lg border-2 transition-all {customization.theme === theme.name ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="relative p-3 rounded-lg border-2 transition-all {customization.theme ===
+								theme.name
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Select {theme.label} theme"
 								aria-pressed={customization.theme === theme.name}
 							>
-								<div class="w-full h-8 rounded-md mb-2" style="background: {theme.color}"></div>
+								<div class="w-full h-8 rounded-md mb-2" style="background: {theme.color}" />
 								<span class="text-xs font-medium text-gray-900 dark:text-white">{theme.label}</span>
 							</button>
 						{/each}
@@ -407,7 +462,10 @@
 				<!-- Color Customization -->
 				<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 					<div>
-						<label for="accent-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+						<label
+							for="accent-color"
+							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+						>
 							Accent Color
 						</label>
 						<input
@@ -420,7 +478,10 @@
 						/>
 					</div>
 					<div>
-						<label for="text-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+						<label
+							for="text-color"
+							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+						>
 							Text Color
 						</label>
 						<input
@@ -433,23 +494,31 @@
 						/>
 					</div>
 					<div>
-						<label for="bg-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+						<label
+							for="bg-color"
+							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+						>
 							Background Color
 						</label>
 						<input
 							id="bg-color"
 							type="color"
 							bind:value={customization.backgroundColor}
-							on:change={() => updateCustomization('backgroundColor', customization.backgroundColor)}
+							on:change={() =>
+								updateCustomization('backgroundColor', customization.backgroundColor)}
 							class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
 							aria-label="Choose background color"
 						/>
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'typography'}
-			<div role="tabpanel" id="tabpanel-typography" aria-labelledby="tab-typography" class="space-y-6">
+			<div
+				role="tabpanel"
+				id="tabpanel-typography"
+				aria-labelledby="tab-typography"
+				class="space-y-6"
+			>
 				<!-- Font Family -->
 				<div>
 					<h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Font Family</h4>
@@ -457,11 +526,16 @@
 						{#each fontFamilies as font}
 							<button
 								on:click={() => updateCustomization('fontFamily', font.value)}
-								class="text-left p-3 rounded-lg border-2 transition-all {customization.fontFamily === font.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="text-left p-3 rounded-lg border-2 transition-all {customization.fontFamily ===
+								font.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set font family to {font.label}"
 								aria-pressed={customization.fontFamily === font.value}
 							>
-								<div class="font-medium text-gray-900 dark:text-white mb-1 {font.class}">{font.label}</div>
+								<div class="font-medium text-gray-900 dark:text-white mb-1 {font.class}">
+									{font.label}
+								</div>
 								<div class="text-xs text-gray-500 dark:text-gray-400">{font.preview}</div>
 							</button>
 						{/each}
@@ -475,7 +549,10 @@
 						{#each headingFonts as font}
 							<button
 								on:click={() => updateCustomization('headingFont', font.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.headingFont === font.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.headingFont ===
+								font.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set heading font to {font.label}"
 								aria-pressed={customization.headingFont === font.value}
 							>
@@ -492,7 +569,9 @@
 						{#each fontSizes as size}
 							<button
 								on:click={() => updateCustomization('fontSize', size.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.fontSize === size.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.fontSize === size.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set font size to {size.label}"
 								aria-pressed={customization.fontSize === size.value}
 							>
@@ -509,11 +588,15 @@
 						{#each lineHeightOptions as option}
 							<button
 								on:click={() => updateCustomization('lineHeight', option.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.lineHeight === option.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.lineHeight ===
+								option.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set line height to {option.label}"
 								aria-pressed={customization.lineHeight === option.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span
+								>
 							</button>
 						{/each}
 					</div>
@@ -526,17 +609,20 @@
 						{#each letterSpacingOptions as option}
 							<button
 								on:click={() => updateCustomization('letterSpacing', option.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.letterSpacing === option.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.letterSpacing ===
+								option.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set letter spacing to {option.label}"
 								aria-pressed={customization.letterSpacing === option.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span
+								>
 							</button>
 						{/each}
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'layout'}
 			<div role="tabpanel" id="tabpanel-layout" aria-labelledby="tab-layout" class="space-y-6">
 				<!-- Layout Type -->
@@ -546,7 +632,10 @@
 						{#each layouts as layout}
 							<button
 								on:click={() => updateCustomization('layout', layout.value)}
-								class="text-left p-3 rounded-lg border-2 transition-all {customization.layout === layout.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="text-left p-3 rounded-lg border-2 transition-all {customization.layout ===
+								layout.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set layout to {layout.label}"
 								aria-pressed={customization.layout === layout.value}
 							>
@@ -564,11 +653,15 @@
 						{#each containerWidthOptions as option}
 							<button
 								on:click={() => updateCustomization('containerWidth', option.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.containerWidth === option.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.containerWidth ===
+								option.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set container width to {option.label}"
 								aria-pressed={customization.containerWidth === option.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{option.label}</span
+								>
 							</button>
 						{/each}
 					</div>
@@ -581,11 +674,16 @@
 						{#each verticalSpacingOptions as spacing}
 							<button
 								on:click={() => updateCustomization('verticalSpacing', spacing.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.verticalSpacing === spacing.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.verticalSpacing ===
+								spacing.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set vertical spacing to {spacing.label}"
 								aria-pressed={customization.verticalSpacing === spacing.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{spacing.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white"
+									>{spacing.label}</span
+								>
 							</button>
 						{/each}
 					</div>
@@ -598,11 +696,16 @@
 						{#each horizontalPaddingOptions as padding}
 							<button
 								on:click={() => updateCustomization('horizontalPadding', padding.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.horizontalPadding === padding.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.horizontalPadding ===
+								padding.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set horizontal padding to {padding.label}"
 								aria-pressed={customization.horizontalPadding === padding.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{padding.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white"
+									>{padding.label}</span
+								>
 							</button>
 						{/each}
 					</div>
@@ -615,11 +718,16 @@
 						{#each spacingOptions as spacing}
 							<button
 								on:click={() => updateCustomization('spacing', spacing.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.spacing === spacing.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.spacing ===
+								spacing.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set spacing to {spacing.label}"
 								aria-pressed={customization.spacing === spacing.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{spacing.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white"
+									>{spacing.label}</span
+								>
 							</button>
 						{/each}
 					</div>
@@ -632,11 +740,15 @@
 						{#each borderRadiusOptions as radius}
 							<button
 								on:click={() => updateCustomization('borderRadius', radius.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.borderRadius === radius.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.borderRadius ===
+								radius.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set border radius to {radius.label}"
 								aria-pressed={customization.borderRadius === radius.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{radius.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{radius.label}</span
+								>
 							</button>
 						{/each}
 					</div>
@@ -649,17 +761,19 @@
 						{#each shadowOptions as shadow}
 							<button
 								on:click={() => updateCustomization('shadow', shadow.value)}
-								class="p-3 rounded-lg border-2 transition-all {customization.shadow === shadow.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								class="p-3 rounded-lg border-2 transition-all {customization.shadow === shadow.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
 								aria-label="Set shadow to {shadow.label}"
 								aria-pressed={customization.shadow === shadow.value}
 							>
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{shadow.label}</span>
+								<span class="text-sm font-medium text-gray-900 dark:text-white">{shadow.label}</span
+								>
 							</button>
 						{/each}
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'sections'}
 			<div role="tabpanel" id="tabpanel-sections" aria-labelledby="tab-sections" class="space-y-6">
 				<div>
@@ -670,7 +784,12 @@
 					<div class="space-y-2">
 						{#each customization.sectionOrder as section, index}
 							<div
-								class="flex items-center p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg cursor-move {draggedIndex === index ? 'opacity-50' : ''} {dragOverIndex === index ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}"
+								class="flex items-center p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg cursor-move {draggedIndex ===
+								index
+									? 'opacity-50'
+									: ''} {dragOverIndex === index
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: ''}"
 								draggable="true"
 								on:dragstart={(e) => handleDragStart(e, index)}
 								on:dragover={(e) => handleDragOver(e, index)}

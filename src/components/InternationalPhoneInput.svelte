@@ -62,7 +62,7 @@
 	// Auto-detect country from input
 	function detectCountry(phone: string): void {
 		const digits = phone.replace(/\D/g, '');
-		
+
 		// Try to match country code
 		for (const country of countries) {
 			const countryCode = country.code.replace('+', '');
@@ -76,16 +76,16 @@
 	function formatPhoneNumber(input: string): string {
 		const digits = input.replace(/\D/g, '');
 		const countryCode = selectedCountry.code.replace('+', '');
-		
+
 		// Remove country code from digits for formatting
 		let localDigits = digits;
 		if (digits.startsWith(countryCode)) {
 			localDigits = digits.substring(countryCode.length);
 		}
-		
+
 		// Format based on selected country
 		let formatted = selectedCountry.code + ' ';
-		
+
 		if (selectedCountry.code === '+1') {
 			// US/Canada format
 			if (localDigits.length <= 3) {
@@ -93,13 +93,16 @@
 			} else if (localDigits.length <= 6) {
 				formatted += `(${localDigits.slice(0, 3)}) ${localDigits.slice(3)}`;
 			} else {
-				formatted += `(${localDigits.slice(0, 3)}) ${localDigits.slice(3, 6)}-${localDigits.slice(6, 10)}`;
+				formatted += `(${localDigits.slice(0, 3)}) ${localDigits.slice(3, 6)}-${localDigits.slice(
+					6,
+					10
+				)}`;
 			}
 		} else {
 			// Generic international format
 			formatted += localDigits;
 		}
-		
+
 		return formatted;
 	}
 
@@ -107,10 +110,10 @@
 		const target = event.target as HTMLInputElement;
 		const input = target.value;
 		inputValue = input;
-		
+
 		// Auto-detect country if user types a different country code
 		detectCountry(input);
-		
+
 		const formatted = formatPhoneNumber(input);
 		value = formatted;
 		dispatch('input', { value: formatted });
@@ -119,7 +122,7 @@
 	function selectCountry(country: any) {
 		selectedCountry = country;
 		showCountryDropdown = false;
-		
+
 		// Reformat current input with new country
 		if (inputValue) {
 			const formatted = formatPhoneNumber(inputValue);
@@ -131,13 +134,13 @@
 	function validatePhone(phone: string): boolean {
 		const digits = phone.replace(/\D/g, '');
 		const countryCode = selectedCountry.code.replace('+', '');
-		
+
 		// Remove country code for validation
 		let localDigits = digits;
 		if (digits.startsWith(countryCode)) {
 			localDigits = digits.substring(countryCode.length);
 		}
-		
+
 		// Basic validation - at least 7 digits for local number
 		return localDigits.length >= 7;
 	}
@@ -149,22 +152,24 @@
 	<label for={id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 		{label}
 	</label>
-	
+
 	<div class="relative">
 		<!-- Country Selector -->
 		<div class="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
 			<button
 				type="button"
-				on:click={() => showCountryDropdown = !showCountryDropdown}
+				on:click={() => (showCountryDropdown = !showCountryDropdown)}
 				class="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
 			>
 				<span class="text-sm">{selectedCountry.flag}</span>
 				<span class="text-xs">{selectedCountry.code}</span>
 				<ChevronDown class="w-3 h-3" />
 			</button>
-			
+
 			{#if showCountryDropdown}
-				<div class="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto z-20">
+				<div
+					class="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto z-20"
+				>
 					{#each countries as country}
 						<button
 							type="button"
@@ -179,25 +184,28 @@
 				</div>
 			{/if}
 		</div>
-		
+
 		<!-- Phone Input -->
 		<input
 			{id}
 			type="tel"
 			bind:value={inputValue}
 			on:input={handleInput}
-			class="w-full pl-20 pr-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {isValid ? 'border-gray-300 dark:border-gray-600' : 'border-red-500 focus:ring-red-500'}"
-			placeholder={placeholder}
+			class="w-full pl-20 pr-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {isValid
+				? 'border-gray-300 dark:border-gray-600'
+				: 'border-red-500 focus:ring-red-500'}"
+			{placeholder}
 		/>
 	</div>
-	
+
 	{#if value && !isValid}
 		<p class="text-red-600 text-sm">Please enter a valid phone number for {selectedCountry.name}</p>
 	{/if}
-	
+
 	<div class="text-xs text-gray-500 dark:text-gray-400">
-		Format: {selectedCountry.code} {selectedCountry.format}
+		Format: {selectedCountry.code}
+		{selectedCountry.format}
 	</div>
 </div>
 
-<svelte:window on:click={() => showCountryDropdown = false} /> 
+<svelte:window on:click={() => (showCountryDropdown = false)} />

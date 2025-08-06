@@ -25,22 +25,26 @@ Transform your resume into a beautiful personal website with AI. Upload your PDF
 ## 📦 Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd siteme
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp env.example .env
    ```
-   
+
    Fill in your environment variables:
+
    ```env
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -49,6 +53,7 @@ Transform your resume into a beautiful personal website with AI. Upload your PDF
    ```
 
 4. **Set up Supabase**
+
    - Create a new project at [supabase.com](https://supabase.com)
    - Enable Auth (email/password and GitHub OAuth)
    - Create a storage bucket named `resumes`
@@ -65,6 +70,7 @@ Transform your resume into a beautiful personal website with AI. Upload your PDF
    ```
 
 5. **Set up Together.ai**
+
    - Sign up at [together.ai](https://together.ai)
    - Get your API key
    - Add it to your environment variables
@@ -77,6 +83,7 @@ Transform your resume into a beautiful personal website with AI. Upload your PDF
 ## 🗄️ Database Schema
 
 ### Profiles Table
+
 ```sql
 create table profiles (
   id uuid primary key references auth.users(id),
@@ -88,35 +95,36 @@ create table profiles (
 ```
 
 The `data` field contains the extracted resume information:
+
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "phone": "+1234567890",
-  "location": "San Francisco, CA",
-  "summary": "Experienced software engineer...",
-  "experience": [
-    {
-      "title": "Senior Software Engineer",
-      "company": "Tech Corp",
-      "duration": "2020-2023",
-      "description": "Led development of..."
-    }
-  ],
-  "education": [
-    {
-      "degree": "Bachelor of Science",
-      "institution": "University of Technology",
-      "year": "2020"
-    }
-  ],
-  "skills": ["JavaScript", "React", "Node.js"],
-  "links": [
-    {
-      "type": "LinkedIn",
-      "url": "https://linkedin.com/in/johndoe"
-    }
-  ]
+	"name": "John Doe",
+	"email": "john@example.com",
+	"phone": "+1234567890",
+	"location": "San Francisco, CA",
+	"summary": "Experienced software engineer...",
+	"experience": [
+		{
+			"title": "Senior Software Engineer",
+			"company": "Tech Corp",
+			"duration": "2020-2023",
+			"description": "Led development of..."
+		}
+	],
+	"education": [
+		{
+			"degree": "Bachelor of Science",
+			"institution": "University of Technology",
+			"year": "2020"
+		}
+	],
+	"skills": ["JavaScript", "React", "Node.js"],
+	"links": [
+		{
+			"type": "LinkedIn",
+			"url": "https://linkedin.com/in/johndoe"
+		}
+	]
 }
 ```
 
@@ -171,13 +179,17 @@ VITE_TOGETHER_MODEL=qwen:7b-chat
 ## 🎨 Customization
 
 ### Styling
+
 The app uses TailwindCSS for styling. You can customize:
+
 - Colors in `tailwind.config.js`
 - Dark mode in `src/app.css`
 - Component styles in individual Svelte files
 
 ### AI Model
+
 You can change the AI model in your environment variables:
+
 - `qwen:7b-chat` (default)
 - `llama-3-8b-chat`
 - Other Together.ai models
@@ -230,10 +242,11 @@ This project is licensed under the MIT License.
 ## 📞 Support
 
 If you have any questions or need help:
+
 - Open an issue on GitHub
 - Check the documentation
 - Contact the development team
 
 ---
 
-**SiteMe** - Let your resume build your online brand ✨ 
+**SiteMe** - Let your resume build your online brand ✨

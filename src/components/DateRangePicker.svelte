@@ -17,8 +17,18 @@
 	let selectedMonth = currentDate.getMonth();
 
 	const months = [
-		'January', 'February', 'March', 'April', 'May', 'June',
-		'July', 'August', 'September', 'October', 'November', 'December'
+		'January',
+		'February',
+		'March',
+		'April',
+		'May',
+		'June',
+		'July',
+		'August',
+		'September',
+		'October',
+		'November',
+		'December'
 	];
 
 	function formatDate(date: string): string {
@@ -71,17 +81,17 @@
 		const firstDay = new Date(year, month, 1);
 		const lastDay = new Date(year, month + 1, 0);
 		const days = [];
-		
+
 		// Add empty cells for days before the first day of the month
 		for (let i = 0; i < firstDay.getDay(); i++) {
 			days.push(null);
 		}
-		
+
 		// Add days of the month
 		for (let i = 1; i <= lastDay.getDate(); i++) {
 			days.push(new Date(year, month, i));
 		}
-		
+
 		return days;
 	}
 
@@ -92,43 +102,48 @@
 	<label for={id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 		{label}
 	</label>
-	
+
 	<div class="flex items-center space-x-3">
 		<!-- Start Date -->
 		<div class="relative flex-1">
 			<button
 				type="button"
-				on:click={() => showStartPicker = !showStartPicker}
+				on:click={() => (showStartPicker = !showStartPicker)}
 				class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
 			>
-				<span class="{startDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}">
+				<span
+					class={startDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}
+				>
 					{startDate ? formatDate(startDate) : 'Start Date'}
 				</span>
 				<Calendar class="w-4 h-4 text-gray-400" />
 			</button>
-			
+
 			{#if showStartPicker}
-				<div class="absolute z-10 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+				<div
+					class="absolute z-10 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4"
+				>
 					<div class="flex items-center justify-between mb-3">
 						<button
 							type="button"
-							on:click={() => selectedMonth = selectedMonth === 0 ? 11 : selectedMonth - 1}
+							on:click={() => (selectedMonth = selectedMonth === 0 ? 11 : selectedMonth - 1)}
 							class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
 						>
 							‹
 						</button>
 						<span class="font-medium text-gray-900 dark:text-white">
-							{months[selectedMonth]} {selectedYear}
+							{months[selectedMonth]}
+							{selectedYear}
 						</span>
 						<button
 							type="button"
-							on:click={() => selectedMonth = selectedMonth === 11 ? 0 : selectedMonth + 1}
+							on:click={() => (selectedMonth = selectedMonth === 11 ? 0 : selectedMonth + 1)}
 							class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
 						>
 							›
 						</button>
 					</div>
-					
+
 					<div class="grid grid-cols-7 gap-1 text-xs">
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">S</div>
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">M</div>
@@ -137,61 +152,69 @@
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">T</div>
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">F</div>
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">S</div>
-						
+
 						{#each calendarDays as day}
 							{#if day}
 								<button
 									type="button"
 									on:click={() => setDate(day)}
-									class="p-1 text-center hover:bg-blue-100 dark:hover:bg-blue-900 rounded {day.toDateString() === new Date(startDate).toDateString() ? 'bg-blue-500 text-white' : 'text-gray-900 dark:text-white'}"
+									class="p-1 text-center hover:bg-blue-100 dark:hover:bg-blue-900 rounded {day.toDateString() ===
+									new Date(startDate).toDateString()
+										? 'bg-blue-500 text-white'
+										: 'text-gray-900 dark:text-white'}"
 								>
 									{day.getDate()}
 								</button>
 							{:else}
-								<div class="p-1"></div>
+								<div class="p-1" />
 							{/if}
 						{/each}
 					</div>
 				</div>
 			{/if}
 		</div>
-		
+
 		<!-- End Date -->
 		<div class="relative flex-1">
 			<button
 				type="button"
-				on:click={() => showEndPicker = !showEndPicker}
+				on:click={() => (showEndPicker = !showEndPicker)}
 				disabled={isCurrent}
 				class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
 			>
-				<span class="{endDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}">
-					{isCurrent ? 'Present' : (endDate ? formatDate(endDate) : 'End Date')}
+				<span
+					class={endDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}
+				>
+					{isCurrent ? 'Present' : endDate ? formatDate(endDate) : 'End Date'}
 				</span>
 				<Calendar class="w-4 h-4 text-gray-400" />
 			</button>
-			
+
 			{#if showEndPicker && !isCurrent}
-				<div class="absolute z-10 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+				<div
+					class="absolute z-10 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4"
+				>
 					<div class="flex items-center justify-between mb-3">
 						<button
 							type="button"
-							on:click={() => selectedMonth = selectedMonth === 0 ? 11 : selectedMonth - 1}
+							on:click={() => (selectedMonth = selectedMonth === 0 ? 11 : selectedMonth - 1)}
 							class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
 						>
 							‹
 						</button>
 						<span class="font-medium text-gray-900 dark:text-white">
-							{months[selectedMonth]} {selectedYear}
+							{months[selectedMonth]}
+							{selectedYear}
 						</span>
 						<button
 							type="button"
-							on:click={() => selectedMonth = selectedMonth === 11 ? 0 : selectedMonth + 1}
+							on:click={() => (selectedMonth = selectedMonth === 11 ? 0 : selectedMonth + 1)}
 							class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
 						>
 							›
 						</button>
 					</div>
-					
+
 					<div class="grid grid-cols-7 gap-1 text-xs">
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">S</div>
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">M</div>
@@ -200,25 +223,28 @@
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">T</div>
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">F</div>
 						<div class="text-center text-gray-500 dark:text-gray-400 p-1">S</div>
-						
+
 						{#each calendarDays as day}
 							{#if day}
 								<button
 									type="button"
 									on:click={() => setDate(day)}
-									class="p-1 text-center hover:bg-blue-100 dark:hover:bg-blue-900 rounded {day.toDateString() === new Date(endDate).toDateString() ? 'bg-blue-500 text-white' : 'text-gray-900 dark:text-white'}"
+									class="p-1 text-center hover:bg-blue-100 dark:hover:bg-blue-900 rounded {day.toDateString() ===
+									new Date(endDate).toDateString()
+										? 'bg-blue-500 text-white'
+										: 'text-gray-900 dark:text-white'}"
 								>
 									{day.getDate()}
 								</button>
 							{:else}
-								<div class="p-1"></div>
+								<div class="p-1" />
 							{/if}
 						{/each}
 					</div>
 				</div>
 			{/if}
 		</div>
-		
+
 		<!-- Current Position Toggle -->
 		<label class="flex items-center space-x-2">
 			<input
@@ -228,7 +254,7 @@
 			/>
 			<span class="text-sm text-gray-700 dark:text-gray-300">Current</span>
 		</label>
-		
+
 		<!-- Clear Button -->
 		<button
 			type="button"
@@ -239,11 +265,17 @@
 			<X class="w-4 h-4" />
 		</button>
 	</div>
-	
+
 	<!-- Display Duration -->
 	{#if startDate || endDate || isCurrent}
-		<div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
-			Duration: {startDate ? formatDate(startDate) : 'Start Date'} - {isCurrent ? 'Present' : (endDate ? formatDate(endDate) : 'End Date')}
+		<div
+			class="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg"
+		>
+			Duration: {startDate ? formatDate(startDate) : 'Start Date'} - {isCurrent
+				? 'Present'
+				: endDate
+				? formatDate(endDate)
+				: 'End Date'}
 		</div>
 	{/if}
-</div> 
+</div>

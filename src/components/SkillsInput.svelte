@@ -14,20 +14,72 @@
 
 	// Common skills suggestions
 	const skillSuggestions = [
-		'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
-		'React', 'Vue.js', 'Angular', 'Svelte', 'Node.js', 'Express', 'Django', 'Flask', 'Laravel',
-		'HTML', 'CSS', 'Sass', 'Less', 'Tailwind CSS', 'Bootstrap', 'Material-UI',
-		'Git', 'GitHub', 'GitLab', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'Google Cloud',
-		'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Elasticsearch', 'GraphQL', 'REST API',
-		'Agile', 'Scrum', 'Kanban', 'JIRA', 'Confluence', 'Figma', 'Adobe Creative Suite',
-		'Machine Learning', 'Data Science', 'Statistics', 'R', 'TensorFlow', 'PyTorch',
-		'Project Management', 'Leadership', 'Communication', 'Problem Solving', 'Team Collaboration'
+		'JavaScript',
+		'TypeScript',
+		'Python',
+		'Java',
+		'C++',
+		'C#',
+		'PHP',
+		'Ruby',
+		'Go',
+		'Rust',
+		'React',
+		'Vue.js',
+		'Angular',
+		'Svelte',
+		'Node.js',
+		'Express',
+		'Django',
+		'Flask',
+		'Laravel',
+		'HTML',
+		'CSS',
+		'Sass',
+		'Less',
+		'Tailwind CSS',
+		'Bootstrap',
+		'Material-UI',
+		'Git',
+		'GitHub',
+		'GitLab',
+		'Docker',
+		'Kubernetes',
+		'AWS',
+		'Azure',
+		'Google Cloud',
+		'MySQL',
+		'PostgreSQL',
+		'MongoDB',
+		'Redis',
+		'Elasticsearch',
+		'GraphQL',
+		'REST API',
+		'Agile',
+		'Scrum',
+		'Kanban',
+		'JIRA',
+		'Confluence',
+		'Figma',
+		'Adobe Creative Suite',
+		'Machine Learning',
+		'Data Science',
+		'Statistics',
+		'R',
+		'TensorFlow',
+		'PyTorch',
+		'Project Management',
+		'Leadership',
+		'Communication',
+		'Problem Solving',
+		'Team Collaboration'
 	];
 
-	$: filteredSuggestions = skillSuggestions.filter(skill => 
-		skill.toLowerCase().includes(inputValue.toLowerCase()) && 
-		!skills.includes(skill)
-	).slice(0, 5);
+	$: filteredSuggestions = skillSuggestions
+		.filter(
+			(skill) => skill.toLowerCase().includes(inputValue.toLowerCase()) && !skills.includes(skill)
+		)
+		.slice(0, 5);
 
 	function addSkill(skill: string) {
 		const trimmedSkill = skill.trim();
@@ -91,12 +143,14 @@
 	<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 		{label}
 	</label>
-	
+
 	<!-- Skills Tags -->
 	{#if skills.length > 0}
 		<div class="flex flex-wrap gap-2 mb-3">
 			{#each skills as skill, index}
-				<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
+				<span
+					class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700"
+				>
 					{skill}
 					<button
 						type="button"
@@ -110,7 +164,7 @@
 			{/each}
 		</div>
 	{/if}
-	
+
 	<!-- Input Field -->
 	<div class="relative">
 		<div class="relative">
@@ -121,18 +175,23 @@
 				on:input={handleInput}
 				on:keydown={handleKeydown}
 				class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-				placeholder={placeholder}
+				{placeholder}
 			/>
 		</div>
-		
+
 		<!-- Suggestions Dropdown -->
 		{#if showSuggestions && filteredSuggestions.length > 0}
-			<div class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+			<div
+				class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+			>
 				{#each filteredSuggestions as suggestion, index}
 					<button
 						type="button"
 						on:click={() => handleSuggestionClick(suggestion)}
-						class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {index === selectedIndex ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'text-gray-900 dark:text-white'}"
+						class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {index ===
+						selectedIndex
+							? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+							: 'text-gray-900 dark:text-white'}"
 					>
 						{suggestion}
 					</button>
@@ -140,9 +199,9 @@
 			</div>
 		{/if}
 	</div>
-	
+
 	<!-- Help Text -->
 	<div class="text-xs text-gray-500 dark:text-gray-400">
 		Press Enter to add a skill • Use arrow keys to navigate suggestions • Click to remove skills
 	</div>
-</div> 
+</div>

@@ -39,13 +39,13 @@
 	let locationInput = '';
 	let contractInput = '';
 
-	$: filteredLocations = commonLocations.filter(loc => 
-		loc.toLowerCase().includes(locationInput.toLowerCase())
-	).slice(0, 5);
+	$: filteredLocations = commonLocations
+		.filter((loc) => loc.toLowerCase().includes(locationInput.toLowerCase()))
+		.slice(0, 5);
 
-	$: filteredContractTypes = contractTypes.filter(type => 
-		type.toLowerCase().includes(contractInput.toLowerCase())
-	).slice(0, 5);
+	$: filteredContractTypes = contractTypes
+		.filter((type) => type.toLowerCase().includes(contractInput.toLowerCase()))
+		.slice(0, 5);
 
 	function handleLocationInput(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -92,7 +92,7 @@
 	<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 		{label}
 	</label>
-	
+
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 		<!-- Work Location -->
 		<div class="relative">
@@ -106,9 +106,11 @@
 					placeholder="Work location (e.g., Remote, New York, NY)"
 				/>
 			</div>
-			
+
 			{#if showLocationSuggestions && filteredLocations.length > 0}
-				<div class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+				<div
+					class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+				>
 					{#each filteredLocations as suggestion}
 						<button
 							type="button"
@@ -121,11 +123,13 @@
 				</div>
 			{/if}
 		</div>
-		
+
 		<!-- Contract Type -->
 		<div class="relative">
 			<div class="relative">
-				<Briefcase class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<Briefcase
+					class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+				/>
 				<input
 					type="text"
 					bind:value={contractInput}
@@ -134,9 +138,11 @@
 					placeholder="Contract type (e.g., Full-time, Remote)"
 				/>
 			</div>
-			
+
 			{#if showContractSuggestions && filteredContractTypes.length > 0}
-				<div class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+				<div
+					class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+				>
 					{#each filteredContractTypes as suggestion}
 						<button
 							type="button"
@@ -150,9 +156,9 @@
 			{/if}
 		</div>
 	</div>
-	
+
 	<!-- Help Text -->
 	<div class="text-xs text-gray-500 dark:text-gray-400">
 		Common locations and contract types are suggested as you type
 	</div>
-</div> 
+</div>

@@ -14,14 +14,16 @@
 				{
 					id: 'upload-resume',
 					title: 'Upload Your Resume',
-					description: 'Click the upload button to select your PDF resume. Our AI will automatically extract your information.',
+					description:
+						'Click the upload button to select your PDF resume. Our AI will automatically extract your information.',
 					icon: '📄',
 					completed: false
 				},
 				{
 					id: 'review-data',
 					title: 'Review Extracted Data',
-					description: 'Check the automatically extracted information and make any necessary corrections.',
+					description:
+						'Check the automatically extracted information and make any necessary corrections.',
 					icon: '✏️',
 					completed: false
 				},
@@ -42,7 +44,8 @@
 				{
 					id: 'publish-share',
 					title: 'Publish & Share',
-					description: 'Save your profile and get a shareable URL to showcase your professional brand.',
+					description:
+						'Save your profile and get a shareable URL to showcase your professional brand.',
 					icon: '🚀',
 					completed: false
 				}
@@ -54,7 +57,8 @@
 				{
 					id: 'file-format',
 					title: 'Supported Formats',
-					description: 'Upload PDF files only. Make sure your resume is text-based, not a scanned image.',
+					description:
+						'Upload PDF files only. Make sure your resume is text-based, not a scanned image.',
 					icon: '📋',
 					completed: false
 				},
@@ -68,7 +72,8 @@
 				{
 					id: 'content-quality',
 					title: 'Content Quality',
-					description: 'Well-structured resumes with clear sections work best with our AI extraction.',
+					description:
+						'Well-structured resumes with clear sections work best with our AI extraction.',
 					icon: '⭐',
 					completed: false
 				}
@@ -80,21 +85,24 @@
 				{
 					id: 'section-organization',
 					title: 'Organize Sections',
-					description: 'Use the add/remove buttons to customize which sections appear on your profile.',
+					description:
+						'Use the add/remove buttons to customize which sections appear on your profile.',
 					icon: '📝',
 					completed: false
 				},
 				{
 					id: 'rich-descriptions',
 					title: 'Rich Descriptions',
-					description: 'Use action verbs and quantifiable achievements in your experience descriptions.',
+					description:
+						'Use action verbs and quantifiable achievements in your experience descriptions.',
 					icon: '💪',
 					completed: false
 				},
 				{
 					id: 'profile-photo',
 					title: 'Profile Photo',
-					description: 'Upload a professional headshot to make your profile more personal and engaging.',
+					description:
+						'Upload a professional headshot to make your profile more personal and engaging.',
 					icon: '📸',
 					completed: false
 				}
@@ -113,7 +121,8 @@
 				{
 					id: 'template-switching',
 					title: 'Template Options',
-					description: 'Try different templates to find the style that best represents your professional brand.',
+					description:
+						'Try different templates to find the style that best represents your professional brand.',
 					icon: '🎨',
 					completed: false
 				},
@@ -175,7 +184,7 @@
 </script>
 
 <!-- Tutorial Toggle Button -->
-<button 
+<button
 	on:click={toggleTutorial}
 	class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-40 group"
 	class:bg-green-600={completedTips.size === currentTutorial?.tips.length}
@@ -187,23 +196,29 @@
 	{:else}
 		<HelpCircle class="w-6 h-6" />
 	{/if}
-	
+
 	<!-- Tooltip -->
-	<div class="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+	<div
+		class="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap"
+	>
 		{completedTips.size === currentTutorial?.tips.length ? 'Tutorial Complete!' : 'Need Help?'}
 	</div>
 </button>
 
 <!-- Tutorial Panel -->
 {#if isVisible && currentTutorial}
-	<div class="fixed bottom-20 right-6 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 z-40 max-h-96 overflow-hidden">
+	<div
+		class="fixed bottom-20 right-6 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 z-40 max-h-96 overflow-hidden"
+	>
 		<!-- Header -->
-		<div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
+		<div
+			class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600"
+		>
 			<div class="flex items-center space-x-2">
 				<Lightbulb class="w-5 h-5 text-yellow-500" />
 				<h3 class="font-semibold text-gray-900 dark:text-white">{currentTutorial.title}</h3>
 			</div>
-			<button 
+			<button
 				on:click={closeTutorial}
 				class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
 				aria-label="Close tutorial"
@@ -219,10 +234,10 @@
 				<span>{completedTips.size}/{currentTutorial.tips.length}</span>
 			</div>
 			<div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-				<div 
+				<div
 					class="bg-blue-600 h-2 rounded-full transition-all duration-300"
 					style="width: {(completedTips.size / currentTutorial.tips.length) * 100}%"
-				></div>
+				/>
 			</div>
 		</div>
 
@@ -233,11 +248,15 @@
 					<div class="flex items-start space-x-3">
 						<div class="flex-shrink-0">
 							{#if completedTips.has(tip.id)}
-								<div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+								<div
+									class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center"
+								>
 									<CheckCircle class="w-5 h-5 text-green-600 dark:text-green-400" />
 								</div>
 							{:else}
-								<div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-lg">
+								<div
+									class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-lg"
+								>
 									{tip.icon}
 								</div>
 							{/if}
@@ -250,7 +269,7 @@
 								{tip.description}
 							</p>
 							{#if !completedTips.has(tip.id)}
-								<button 
+								<button
 									on:click={() => markTipCompleted(tip.id)}
 									class="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-2 transition-colors"
 								>
@@ -266,10 +285,14 @@
 
 		<!-- Footer -->
 		{#if completedTips.size === currentTutorial.tips.length}
-			<div class="p-4 bg-green-50 dark:bg-green-900/20 border-t border-green-200 dark:border-green-800">
+			<div
+				class="p-4 bg-green-50 dark:bg-green-900/20 border-t border-green-200 dark:border-green-800"
+			>
 				<div class="flex items-center space-x-2 text-green-700 dark:text-green-400">
 					<CheckCircle class="w-5 h-5" />
-					<span class="text-sm font-medium">Great job! You've completed all tips for this section.</span>
+					<span class="text-sm font-medium"
+						>Great job! You've completed all tips for this section.</span
+					>
 				</div>
 			</div>
 		{/if}

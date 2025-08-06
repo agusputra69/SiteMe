@@ -1,109 +1,117 @@
 // AI integration with Together.ai API (inspired by self.so)
 const TOGETHER_API_KEY = import.meta.env.VITE_TOGETHER_API_KEY;
 const TOGETHER_MODEL = import.meta.env.VITE_TOGETHER_MODEL || 'meta-llama/Llama-2-70b-chat-hf';
+const REQUEST_TIMEOUT = 30000; // 30 seconds timeout
 
 export interface ResumeData {
-  name: string;
-  email?: string;
-  phone?: string;
-  location?: string;
-  summary?: string;
-  photo_url?: string;
-  experience: Array<{
-    title: string;
-    company: string;
-    duration: string;
-    description: string;
-    startDate?: string;
-    endDate?: string;
-    isCurrent?: boolean;
-    location?: string;
-    contractType?: string;
-  }>;
-  education: Array<{
-    degree: string;
-    institution: string;
-    year: string;
-    startDate?: string;
-    endDate?: string;
-    isCurrent?: boolean;
-  }>;
-  skills: string[];
-  certifications: Array<{
-    name: string;
-    issuer: string;
-    date: string;
-    description?: string;
-    credentialId?: string;
-  }>;
-  languages: Array<{
-    language: string;
-    proficiency: string; // e.g., "Native", "Fluent", "Intermediate", "Basic"
-  }>;
-  projects: Array<{
-    name: string;
-    description: string;
-    technologies: string[];
-    url?: string;
-    duration?: string;
-    image?: string;
-  }>;
-  awards: Array<{
-    title: string;
-    organization: string;
-    date: string;
-    description?: string;
-  }>;
-  links?: Array<{
-    type: string;
-    url: string;
-  }>;
-  // Template and theme settings
-  template?: string;
-  theme?: string;
-  customization?: {
-    theme: string;
-    fontFamily: string;
-    fontSize: string;
-    layout: string;
-    spacing: string;
-    borderRadius: string;
-    shadow: string;
-    accentColor: string;
-    textColor: string;
-    backgroundColor: string;
-    sectionOrder: string[];
-    lineHeight: string;
-    letterSpacing: string;
-    headingFont: string;
-    containerWidth: string;
-    verticalSpacing: string;
-    horizontalPadding: string;
-  };
+	name: string;
+	email?: string;
+	phone?: string;
+	location?: string;
+	summary?: string;
+	photo_url?: string;
+	experience: Array<{
+		title: string;
+		company: string;
+		type: string;
+		period: string;
+		current: boolean;
+		description?: string;
+	}>;
+	education: Array<{
+		degree: string;
+		institution: string;
+		period: string;
+	}>;
+	skills: string[];
+	certifications: Array<{
+		name: string;
+		issuer: string;
+		date: string;
+		description?: string;
+		credentialId?: string;
+	}>;
+	languages: Array<{
+		language: string;
+		proficiency: string; // e.g., "Native", "Fluent", "Intermediate", "Basic"
+	}>;
+	projects: Array<{
+		title: string;
+		description: string;
+		technologies?: string[];
+		liveUrl?: string;
+		githubUrl?: string;
+		name?: string;
+		url?: string;
+		duration?: string;
+		image?: string;
+	}>;
+	awards: Array<{
+		title: string;
+		organization: string;
+		date: string;
+		description?: string;
+	}>;
+	links?: Array<{
+		type: string;
+		url: string;
+	}>;
+	// Template and theme settings
+	template?: string;
+	theme?: string;
+	customization?: {
+		theme: string;
+		fontFamily: string;
+		fontSize: string;
+		layout: string;
+		spacing: string;
+		borderRadius: string;
+		shadow: string;
+		accentColor: string;
+		textColor: string;
+		backgroundColor: string;
+		sectionOrder: string[];
+		lineHeight: string;
+		letterSpacing: string;
+		headingFont: string;
+		containerWidth: string;
+		verticalSpacing: string;
+		horizontalPadding: string;
+	};
 }
 
 export function createFallbackResumeData(text: string): ResumeData {
-  return {
-    name: 'New Candidate',
-    summary: text.substring(0, 500) + '...',
-    experience: [],
-    education: [],
-    skills: [],
-    certifications: [],
-    languages: [],
-    projects: [],
-    awards: [],
-    links: []
-  };
+	return {
+		name: 'New Candidate',
+		summary: text.substring(0, 500) + '...',
+		experience: [],
+		education: [],
+		skills: [],
+		certifications: [],
+		languages: [],
+		projects: [],
+		awards: [],
+		links: []
+	};
 }
 
-export async function extractResumeData(text: string): Promise<ResumeData> {
-  if (!TOGETHER_API_KEY) {
-    throw new Error('Together.ai API key is not configured');
-  }
+export async function extractResumeData(text: string, signal?: AbortSignal): Promise<ResumeData> {
+	if (!TOGETHER_API_KEY) {
+		throw new Error('Together.ai API key is not configured');
+	}
 
-  // Enhanced prompt to extract additional sections
-  const prompt = `You are a professional resume parser. Extract structured data from the following resume and return it as valid JSON.
+	// Create timeout controller if no signal provided
+	const controller = new AbortController();
+	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+	
+	if (!signal) {
+		timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+	}
+	
+	const requestSignal = signal || controller.signal;
+
+	// Enhanced prompt to extract additional sections
+	const prompt = `You are a professional resume parser. Extract structured data from the following resume and return it as valid JSON.
 
 Please extract the following information and format it as a JSON object:
 {
@@ -116,7 +124,9 @@ Please extract the following information and format it as a JSON object:
     {
       "title": "Job title",
       "company": "Company name",
-      "duration": "Duration (e.g., '2020-2023' or 'Jan 2020 - Present')",
+      "type": "Employment type (e.g., 'Full-time', 'Part-time', 'Contract')",
+      "period": "Duration (e.g., '2020-2023' or 'Jan 2020 - Present')",
+      "current": false,
       "description": "Job description and achievements"
     }
   ],
@@ -124,7 +134,7 @@ Please extract the following information and format it as a JSON object:
     {
       "degree": "Degree name",
       "institution": "University/Institution name",
-      "year": "Year or duration"
+      "period": "Year or duration"
     }
   ],
   "skills": ["Skill 1", "Skill 2", "Skill 3"],
@@ -145,11 +155,11 @@ Please extract the following information and format it as a JSON object:
   ],
   "projects": [
     {
-      "name": "Project name",
+      "title": "Project name",
       "description": "Project description",
       "technologies": ["Tech 1", "Tech 2"],
-      "url": "Project URL (optional)",
-      "duration": "Duration (optional)"
+      "liveUrl": "Live project URL (optional)",
+      "githubUrl": "GitHub repository URL (optional)"
     }
   ],
   "awards": [
@@ -182,103 +192,112 @@ ${text}
 
 Return only the JSON object, no additional text or explanations.`;
 
-      try {
-      console.log('Sending request to Together.ai via proxy...');
-      const response = await fetch("/api/together", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: TOGETHER_MODEL,
-          prompt: prompt,
-          max_tokens: 3000,
-          temperature: 0.1,
-          top_p: 0.9,
-          top_k: 50,
-          repetition_penalty: 1.1
-        })
-      });
+	try {
+		const response = await fetch('/api/together', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				model: TOGETHER_MODEL,
+				prompt: prompt,
+				max_tokens: 3000,
+				temperature: 0.1,
+				top_p: 0.9,
+				top_k: 50,
+				repetition_penalty: 1.1
+			}),
+			signal: requestSignal
+		});
 
-    console.log('Response status:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      console.error('API Error Response:', errorData);
-      
-      // Handle rate limiting specifically
-      if (response.status === 429) {
-        const retryAfter = errorData.retryAfter || 60000;
-        throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(retryAfter / 1000)} seconds before trying again.`);
-      }
-      
-      throw new Error(`API request failed: ${response.status} - ${errorData.error || errorData.message || 'Unknown error'}`);
-    }
 
-    const data = await response.json();
-    console.log('API Response:', data);
-    
-    // Handle the standard chat completion response format
-    let extractedText = '';
-    if (data.choices?.[0]?.message?.content) {
-      extractedText = data.choices[0].message.content;
-    } else {
-      console.error('Unexpected API response format:', data);
-      throw new Error('Unexpected API response format');
-    }
-    
-    console.log('Extracted text:', extractedText);
-    
-    // Clean the response to extract only the JSON part
-    let cleanedText = extractedText.trim();
-    
-    // Remove thinking tags if present
-    cleanedText = cleanedText.replace(/<\/think><think>[\s\S]*?<\/think>/g, '');
-    cleanedText = cleanedText.replace(/<think>[\s\S]*?<\/think>/g, '');
-    cleanedText = cleanedText.replace(/<\/think>/g, '');
-    cleanedText = cleanedText.replace(/<think>/g, '');
-    
-    // Remove markdown code blocks if present
-    if (cleanedText.includes('```')) {
-      // Find the first { and last }
-      const firstBrace = cleanedText.indexOf('{');
-      const lastBrace = cleanedText.lastIndexOf('}');
-      
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
-      }
-    } else {
-      // If no code blocks, try to extract JSON directly
-      const firstBrace = cleanedText.indexOf('{');
-      const lastBrace = cleanedText.lastIndexOf('}');
-      
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
-      }
-    }
-    
-    // Final cleanup - remove any remaining non-JSON text
-    cleanedText = cleanedText.trim();
-    
-    // Try to parse the JSON response
-    try {
-      const parsed = JSON.parse(cleanedText);
-      return parsed as ResumeData;
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      console.error('Raw response:', extractedText);
-      console.error('Cleaned response:', cleanedText);
-      throw new Error('Failed to parse resume data - invalid JSON response');
-    }
-  } catch (error) {
-    console.error('AI extraction error:', error);
-    if (error instanceof Error) {
-      // Check if it's a rate limit error
-      if (error.message.includes('Rate limit exceeded')) {
-        throw new Error(`AI service is currently busy. ${error.message}`);
-      }
-      throw new Error(`Failed to extract resume data: ${error.message}`);
-    }
-    throw new Error('Failed to extract resume data');
-  }
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+
+			// Handle rate limiting specifically
+			if (response.status === 429) {
+				const retryAfter = errorData.retryAfter || 60000;
+				throw new Error(
+					`Rate limit exceeded. Please wait ${Math.ceil(
+						retryAfter / 1000
+					)} seconds before trying again.`
+				);
+			}
+
+			throw new Error(
+				`API request failed: ${response.status} - ${
+					errorData.error || errorData.message || 'Unknown error'
+				}`
+			);
+		}
+
+		const data = await response.json();
+
+		// Handle the standard chat completion response format
+		let extractedText = '';
+		if (data.choices?.[0]?.message?.content) {
+			extractedText = data.choices[0].message.content;
+		} else {
+			throw new Error('Unexpected API response format');
+		}
+
+
+
+		// Clean the response to extract only the JSON part
+		let cleanedText = extractedText.trim();
+
+		// Remove thinking tags if present
+		cleanedText = cleanedText.replace(/<\/think><think>[\s\S]*?<\/think>/g, '');
+		cleanedText = cleanedText.replace(/<think>[\s\S]*?<\/think>/g, '');
+		cleanedText = cleanedText.replace(/<\/think>/g, '');
+		cleanedText = cleanedText.replace(/<think>/g, '');
+
+		// Remove markdown code blocks if present
+		if (cleanedText.includes('```')) {
+			// Find the first { and last }
+			const firstBrace = cleanedText.indexOf('{');
+			const lastBrace = cleanedText.lastIndexOf('}');
+
+			if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+				cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+			}
+		} else {
+			// If no code blocks, try to extract JSON directly
+			const firstBrace = cleanedText.indexOf('{');
+			const lastBrace = cleanedText.lastIndexOf('}');
+
+			if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+				cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+			}
+		}
+
+		// Final cleanup - remove any remaining non-JSON text
+		cleanedText = cleanedText.trim();
+
+		// Try to parse the JSON response
+		try {
+			const parsed = JSON.parse(cleanedText);
+			return parsed as ResumeData;
+		} catch (parseError) {
+			throw new Error('Failed to parse resume data - invalid JSON response');
+		}
+	} catch (error) {
+		if (error instanceof Error) {
+			// Handle abort/timeout errors
+			if (error.name === 'AbortError') {
+				throw new Error('Request timed out. Please try again.');
+			}
+			// Check if it's a rate limit error
+			if (error.message.includes('Rate limit exceeded')) {
+				throw new Error(`AI service is currently busy. ${error.message}`);
+			}
+			throw new Error(`Failed to extract resume data: ${error.message}`);
+		}
+		throw new Error('Failed to extract resume data');
+	} finally {
+		if (timeoutId !== null) {
+			clearTimeout(timeoutId);
+		}
+	}
 }

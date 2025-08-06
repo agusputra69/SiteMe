@@ -17,6 +17,7 @@ There's a **schema mismatch** between the database and the application code:
 - **Setup Scripts**: The setup scripts create a column named `name`
 
 This mismatch likely occurred because:
+
 1. An older version of the database was created with `site_name`
 2. The setup scripts were updated to use `name` instead
 3. The existing database wasn't migrated to match the new schema

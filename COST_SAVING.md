@@ -5,15 +5,17 @@
 SiteMe now offers two processing modes to help reduce costs:
 
 ### 🤖 AI Processing (Default)
+
 - **Cost**: Uses Together.ai API credits
 - **Accuracy**: High - AI-powered extraction
-- **Features**: 
+- **Features**:
   - Extracts all sections (experience, education, skills, certifications, etc.)
   - Handles complex resume formats
   - Better understanding of context
   - More accurate data extraction
 
 ### 💰 Basic Processing (Cost-Free)
+
 - **Cost**: Free - no API calls
 - **Accuracy**: Limited - pattern-based extraction
 - **Features**:
@@ -33,6 +35,7 @@ SiteMe now offers two processing modes to help reduce costs:
 ### When to Use Each Mode
 
 #### Use AI Processing When:
+
 - You want the most accurate results
 - Your resume has complex formatting
 - You need all sections extracted (certifications, languages, projects, awards)
@@ -40,6 +43,7 @@ SiteMe now offers two processing modes to help reduce costs:
 - Accuracy is more important than cost
 
 #### Use Basic Processing When:
+
 - You want to save on API costs
 - Your resume has standard formatting
 - You're willing to do manual editing
@@ -48,19 +52,20 @@ SiteMe now offers two processing modes to help reduce costs:
 
 ## Cost Comparison
 
-| Feature | AI Processing | Basic Processing |
-|---------|---------------|------------------|
-| **Cost per upload** | ~$0.01-0.05 | Free |
-| **Accuracy** | 90-95% | 60-70% |
-| **Sections extracted** | All | Basic + Certifications, Languages, Projects, Awards |
-| **Manual editing needed** | Minimal | Moderate |
-| **Rate limits** | Yes (6 requests/min) | None |
+| Feature                   | AI Processing        | Basic Processing                                    |
+| ------------------------- | -------------------- | --------------------------------------------------- |
+| **Cost per upload**       | ~$0.01-0.05          | Free                                                |
+| **Accuracy**              | 90-95%               | 60-70%                                              |
+| **Sections extracted**    | All                  | Basic + Certifications, Languages, Projects, Awards |
+| **Manual editing needed** | Minimal              | Moderate                                            |
+| **Rate limits**           | Yes (6 requests/min) | None                                                |
 
 ## Implementation Details
 
 ### Basic Processing Algorithm
 
 The basic processing uses pattern matching to extract:
+
 - **Name**: First prominent line
 - **Email**: Regex pattern matching
 - **Phone**: Regex pattern matching
@@ -77,6 +82,7 @@ The basic processing uses pattern matching to extract:
 ### Fallback Mechanism
 
 If AI processing fails due to:
+
 - Rate limiting
 - API errors
 - Timeouts
@@ -98,4 +104,4 @@ The system automatically switches to basic processing and notifies the user.
 - Hybrid processing (AI for complex sections, basic for simple ones)
 - User preference storage
 - Processing quality metrics
-- Batch processing options 
+- Batch processing options

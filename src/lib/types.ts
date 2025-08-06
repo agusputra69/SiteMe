@@ -80,40 +80,101 @@ export interface Theme {
 	textSecondary: string;
 }
 export interface Template {
-		id: string;
-		name: string;
-		description: string;
-		category: string;
-		themes: Theme[];
-		features: string[];
-	}
+	id: string;
+	name: string;
+	description: string;
+	category: string;
+	themes: Theme[];
+	features: string[];
+}
 
-	export interface ResumeData {
-		name: string;
-		email: string;
-		phone: string;
-		location: string;
-		summary: string;
-		experience: WorkExperience[];
-		education: Education[];
-		certifications: Certification[];
-		languages: Language[];
-		projects: Project[];
-		awards: Award[];
-		skills: string[];
-		links: Link[];
-		template?: string;
-		theme?: string;
-		customization?: any;
-	}
+export interface Customization {
+	fontFamily?: string;
+	fontSize?: string;
+	lineHeight?: number;
+	margins?: {
+		top?: number;
+		bottom?: number;
+		left?: number;
+		right?: number;
+	};
+	colors?: {
+		primary?: string;
+		secondary?: string;
+		accent?: string;
+		text?: string;
+	};
+	layout?: {
+		columns?: number;
+		spacing?: number;
+	};
+}
 
-	export interface Site {
-		id: string;
-		name: string;
-		status: 'draft' | 'published';
-		user_id: string;
-		data: ResumeData;
-		template: string;
-		updated_at: string;
-		is_primary: boolean;
-	}
+export interface TemplateCustomization {
+	theme?: string;
+	fontFamily?: string;
+	fontSize?: string;
+	layout?: string;
+	spacing?: string;
+	borderRadius?: string;
+	shadow?: string;
+	accentColor?: string;
+	textColor?: string;
+	backgroundColor?: string;
+	sectionOrder?: string[];
+	lineHeight?: string | number;
+	letterSpacing?: string;
+	headingFont?: string;
+	containerWidth?: string;
+	verticalSpacing?: string;
+	horizontalPadding?: string;
+}
+
+export interface ResumeData {
+	name: string;
+	email: string;
+	phone: string;
+	location: string;
+	summary: string;
+	experience: WorkExperience[];
+	education: Education[];
+	certifications: Certification[];
+	languages: Language[];
+	projects: Project[];
+	awards: Award[];
+	skills: string[];
+	links: Link[];
+	template?: string;
+	theme?: string;
+	customization?: Customization;
+	photo_url?: string;
+}
+
+export interface Profile {
+	id: string;
+	user_id: string;
+	username?: string;
+	full_name?: string;
+	data: ResumeData;
+	template: string;
+	theme: string;
+	customization: Customization;
+	updated_at: string;
+	created_at: string;
+	photo_url?: string;
+	site_url?: string;
+	site_title?: string;
+	site_description?: string;
+	is_public: boolean;
+}
+
+export interface Site {
+	id: string;
+	name: string;
+	status: 'draft' | 'published';
+	user_id: string;
+	data: ResumeData;
+	template: string;
+	updated_at: string;
+	is_primary: boolean;
+}

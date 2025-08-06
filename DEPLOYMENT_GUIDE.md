@@ -32,12 +32,14 @@ build/
 1. **Copy the entire `build/` folder to your server**
 
 2. **Install Node.js dependencies on your server:**
+
    ```bash
    npm install --production
    ```
 
 3. **Set up environment variables:**
    Create a `.env` file with your Supabase credentials:
+
    ```
    PUBLIC_SUPABASE_URL=your_supabase_url
    PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -45,12 +47,14 @@ build/
    ```
 
 4. **Start the server:**
+
    ```bash
    cd build
    node index.js
    ```
-   
+
    Or use PM2 for production:
+
    ```bash
    pm2 start build/index.js --name "siteme"
    ```
@@ -58,6 +62,7 @@ build/
 ### Option 3: Platform Deployment
 
 This build is compatible with:
+
 - **Heroku**: Deploy the entire project folder
 - **Railway**: Deploy the entire project folder
 - **DigitalOcean App Platform**: Deploy the entire project folder
@@ -93,7 +98,7 @@ Before deploying, make sure you've run the database setup script in your Supabas
 
 If you encounter issues:
 
-1. **Check Node.js version**: Ensure you're using Node.js 18+ 
+1. **Check Node.js version**: Ensure you're using Node.js 18+
 2. **Verify environment variables**: All required variables must be set
 3. **Database connection**: Ensure Supabase is properly configured
 4. **Port conflicts**: Change the PORT environment variable if needed

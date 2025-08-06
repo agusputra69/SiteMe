@@ -1,7 +1,74 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User, ChevronRight, Globe, Palette, Settings, Award, Code, Trophy, Github, Twitter, Linkedin, Link2, Image, ExternalLink, CheckCircle, AlertCircle, Info, Zap, Star, Briefcase, GraduationCap, Languages, FolderOpen, Medal, Camera, Palette as PaletteIcon, Sparkles, Layout, Monitor, Smartphone, Tablet, EyeOff, Copy, Share2, QrCode, Globe as GlobeIcon, Settings as SettingsIcon, Palette as PaletteIcon2, Type, Image as ImageIcon, Layers, Grid, Columns, Rows, Square, Circle, Triangle, Hexagon, Star as StarIcon, Heart, Zap as ZapIcon, Flame, Droplets, Cloud, Sun, Moon, Sparkles as SparklesIcon } from 'lucide-svelte';
+	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+	import {
+		Plus,
+		Trash2,
+		Upload,
+		Save,
+		Eye,
+		Edit3,
+		Download,
+		FileText,
+		User,
+		ChevronRight,
+		Globe,
+		Palette,
+		Settings,
+		Award,
+		Code,
+		Trophy,
+		Github,
+		Twitter,
+		Linkedin,
+		Link2,
+		Image,
+		ExternalLink,
+		CheckCircle,
+		AlertCircle,
+		Info,
+		Zap,
+		Star,
+		Briefcase,
+		GraduationCap,
+		Languages,
+		FolderOpen,
+		Medal,
+		Camera,
+		Palette as PaletteIcon,
+		Sparkles,
+		Layout,
+		Monitor,
+		Smartphone,
+		Tablet,
+		EyeOff,
+		Copy,
+		Share2,
+		QrCode,
+		Globe as GlobeIcon,
+		Settings as SettingsIcon,
+		Palette as PaletteIcon2,
+		Type,
+		Image as ImageIcon,
+		Layers,
+		Grid,
+		Columns,
+		Rows,
+		Square,
+		Circle,
+		Triangle,
+		Hexagon,
+		Star as StarIcon,
+		Heart,
+		Zap as ZapIcon,
+		Flame,
+		Droplets,
+		Cloud,
+		Sun,
+		Moon,
+		Sparkles as SparklesIcon
+	} from 'lucide-svelte';
 	import type { ResumeData } from '$lib/ai';
+	import type { TemplateCustomization, Customization } from '$lib/types';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
 
@@ -18,7 +85,7 @@
 	// State management
 	let selectedTemplate = 'modern';
 	let selectedTheme = 'blue';
-	let templateCustomization = {
+	let templateCustomization: TemplateCustomization = {
 		theme: 'blue',
 		fontFamily: 'inter',
 		fontSize: 'medium',
@@ -55,41 +122,41 @@
 
 	// Enhanced tab configuration for site building
 	const tabs = [
-		{ 
-			id: 'templates', 
-			label: 'Templates', 
+		{
+			id: 'templates',
+			label: 'Templates',
 			icon: Layout,
 			description: 'Choose from professional templates',
 			color: 'blue',
 			required: true
 		},
-		{ 
-			id: 'customization', 
-			label: 'Customization', 
+		{
+			id: 'customization',
+			label: 'Customization',
 			icon: PaletteIcon2,
 			description: 'Customize colors, fonts, and layout',
 			color: 'purple',
 			required: false
 		},
-		{ 
-			id: 'layout', 
-			label: 'Layout', 
+		{
+			id: 'layout',
+			label: 'Layout',
 			icon: Grid,
 			description: 'Configure page layout and sections',
 			color: 'green',
 			required: false
 		},
-		{ 
-			id: 'preview', 
-			label: 'Preview', 
+		{
+			id: 'preview',
+			label: 'Preview',
 			icon: Eye,
 			description: 'Preview your website',
 			color: 'orange',
 			required: false
 		},
-		{ 
-			id: 'publish', 
-			label: 'Publish', 
+		{
+			id: 'publish',
+			label: 'Publish',
 			icon: GlobeIcon,
 			description: 'Publish and share your website',
 			color: 'indigo',
@@ -173,10 +240,20 @@
 
 	// Layout options
 	const layoutOptions = [
-		{ id: 'standard', name: 'Standard', icon: Columns, description: 'Traditional single-column layout' },
+		{
+			id: 'standard',
+			name: 'Standard',
+			icon: Columns,
+			description: 'Traditional single-column layout'
+		},
 		{ id: 'modern', name: 'Modern', icon: Grid, description: 'Grid-based modern layout' },
 		{ id: 'minimal', name: 'Minimal', icon: Square, description: 'Clean and minimal design' },
-		{ id: 'creative', name: 'Creative', icon: SparklesIcon, description: 'Artistic and creative layout' }
+		{
+			id: 'creative',
+			name: 'Creative',
+			icon: SparklesIcon,
+			description: 'Artistic and creative layout'
+		}
 	];
 
 	// Initialize component
@@ -189,17 +266,33 @@
 			selectedTheme = resumeData.theme;
 		}
 		if (resumeData.customization) {
-			templateCustomization = { ...templateCustomization, ...resumeData.customization };
+			templateCustomization = { ...templateCustomization, ...convertFromCustomization(resumeData.customization) };
 		}
 
 		// Focus management
 		focusFirstElement();
 	});
 
-	// Listen for save success from parent
+	// Cleanup on component destroy
+	onDestroy(() => {
+		// Clear any pending timeouts
+		if (saveSuccessTimeout) {
+			clearTimeout(saveSuccessTimeout);
+		}
+		
+		// Remove event listeners
+		if (clickOutsideAdded) {
+			document.removeEventListener('click', handleClickOutside);
+		}
+	});
+
+	// Listen for save success from parent with cleanup
+	let saveSuccessTimeout: ReturnType<typeof setTimeout> | null = null;
 	$: if (saveSuccess) {
-		setTimeout(() => {
+		if (saveSuccessTimeout) clearTimeout(saveSuccessTimeout);
+		saveSuccessTimeout = setTimeout(() => {
 			saveSuccess = false;
+			saveSuccessTimeout = null;
 		}, 3000);
 	}
 
@@ -220,13 +313,16 @@
 		}
 	}
 
-	// Add click outside listener
-	$: if (showQuickActions) {
-		setTimeout(() => {
+	// Add click outside listener with proper cleanup
+	let clickOutsideAdded = false;
+	$: if (showQuickActions && !clickOutsideAdded) {
+		requestAnimationFrame(() => {
 			document.addEventListener('click', handleClickOutside);
-		}, 0);
-	} else {
+			clickOutsideAdded = true;
+		});
+	} else if (!showQuickActions && clickOutsideAdded) {
 		document.removeEventListener('click', handleClickOutside);
+		clickOutsideAdded = false;
 	}
 
 	// Focus management
@@ -237,25 +333,73 @@
 		}
 	}
 
+	// Convert TemplateCustomization to Customization
+	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
+		return {
+			fontFamily: templateCustom.fontFamily,
+			fontSize: templateCustom.fontSize,
+			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight,
+			margins: {
+				top: 16,
+				bottom: 16,
+				left: 16,
+				right: 16
+			},
+			colors: {
+				primary: templateCustom.accentColor,
+				secondary: templateCustom.textColor,
+				accent: templateCustom.backgroundColor,
+				text: templateCustom.textColor
+			},
+			layout: {
+				columns: templateCustom.layout === 'two-column' ? 2 : 1,
+				spacing: 16
+			}
+		};
+	}
+
+	// Convert Customization to TemplateCustomization
+	function convertFromCustomization(customization: Customization): TemplateCustomization {
+		return {
+			theme: 'blue',
+			fontFamily: customization.fontFamily,
+			fontSize: customization.fontSize,
+			layout: typeof customization.layout === 'object' ? (customization.layout.columns === 2 ? 'two-column' : 'standard') : customization.layout,
+			spacing: 'normal',
+			borderRadius: 'medium',
+			shadow: 'medium',
+			accentColor: customization.colors?.primary || '#3B82F6',
+			textColor: customization.colors?.text || '#1F2937',
+			backgroundColor: customization.colors?.accent || '#FFFFFF',
+			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+			lineHeight: customization.lineHeight.toString(),
+			letterSpacing: 'normal',
+			headingFont: customization.fontFamily,
+			containerWidth: 'standard',
+			verticalSpacing: 'normal',
+			horizontalPadding: 'normal'
+		};
+	}
+
 	function saveSite() {
-		dispatch('save', { 
+		dispatch('save', {
 			resumeData: {
 				...resumeData,
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			}
 		});
 	}
 
 	function publishSite() {
 		profileStatus = 'published';
-		dispatch('publish', { 
+		dispatch('publish', {
 			resumeData: {
 				...resumeData,
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			}
 		});
 	}
@@ -275,38 +419,41 @@
 
 	function applyTheme() {
 		applyingTheme = true;
-		setTimeout(() => {
-			dispatch('themeApply', { 
+		// Use requestAnimationFrame for better performance
+		requestAnimationFrame(() => {
+			dispatch('themeApply', {
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			});
 			applyingTheme = false;
-		}, 500);
+		});
 	}
 
 	function applyTemplate() {
 		applyingTemplate = true;
-		setTimeout(() => {
-			dispatch('templateApply', { 
+		// Use requestAnimationFrame for better performance
+		requestAnimationFrame(() => {
+			dispatch('templateApply', {
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			});
 			applyingTemplate = false;
-		}, 500);
+		});
 	}
 
 	function applyCustomization() {
 		applyingCustomization = true;
-		setTimeout(() => {
-			dispatch('customizationApply', { 
+		// Use requestAnimationFrame for better performance
+		requestAnimationFrame(() => {
+			dispatch('customizationApply', {
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			});
 			applyingCustomization = false;
-		}, 500);
+		});
 	}
 
 	function handleTemplateChange(event: CustomEvent) {
@@ -316,11 +463,11 @@
 			templateCustomization = { ...templateCustomization, ...event.detail.customization };
 		}
 		// Update resumeData with new template settings for immediate preview
-		resumeData = { 
-			...resumeData, 
-			template: selectedTemplate, 
-			theme: selectedTheme, 
-			customization: templateCustomization 
+		resumeData = {
+			...resumeData,
+			template: selectedTemplate,
+			theme: selectedTheme,
+			customization: convertToCustomization(templateCustomization)
 		};
 	}
 
@@ -330,31 +477,31 @@
 			templateCustomization = { ...templateCustomization, ...event.detail.customization };
 		}
 		// Update resumeData with new theme settings for immediate preview
-		resumeData = { 
-			...resumeData, 
-			template: selectedTemplate, 
-			theme: selectedTheme, 
-			customization: templateCustomization 
+		resumeData = {
+			...resumeData,
+			template: selectedTemplate,
+			theme: selectedTheme,
+			customization: convertToCustomization(templateCustomization)
 		};
 	}
 
 	function handleCustomizationChange(event: CustomEvent) {
 		templateCustomization = { ...templateCustomization, ...event.detail };
 		// Update resumeData with new customization settings for immediate preview
-		resumeData = { 
-			...resumeData, 
-			customization: templateCustomization 
+		resumeData = {
+			...resumeData,
+			customization: convertToCustomization(templateCustomization)
 		};
 	}
 
 	// Export site function
 	function exportSite() {
-		dispatch('export', { 
+		dispatch('export', {
 			resumeData: {
 				...resumeData,
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			}
 		});
 	}
@@ -371,11 +518,11 @@
 			} else {
 				navigator.clipboard.writeText(url);
 				// Show success message
-				dispatch('toast', { 
-					type: 'success', 
-					message: 'Site URL copied to clipboard!' 
+				dispatch('toast', {
+					type: 'success',
+					message: 'Site URL copied to clipboard!'
 				});
 			}
 		}
 	}
-</script> 
+</script>

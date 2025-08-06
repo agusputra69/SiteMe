@@ -28,9 +28,10 @@
 		},
 		processing: {
 			title: processingMode === 'ai' ? 'AI Processing' : 'Basic Processing',
-			description: processingMode === 'ai' 
-				? 'Analyzing your resume with AI to extract structured data...'
-				: 'Extracting basic information from your resume...',
+			description:
+				processingMode === 'ai'
+					? 'Analyzing your resume with AI to extract structured data...'
+					: 'Extracting basic information from your resume...',
 			icon: Loader,
 			color: processingMode === 'ai' ? 'purple' : 'green'
 		},
@@ -57,8 +58,13 @@
 			<div class="p-6 border-b border-gray-200 dark:border-gray-700">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center space-x-3">
-						<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-							<svelte:component this={currentStepConfig.icon} class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+						<div
+							class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center"
+						>
+							<svelte:component
+								this={currentStepConfig.icon}
+								class="w-6 h-6 text-blue-600 dark:text-blue-400"
+							/>
 						</div>
 						<div>
 							<h3 class="text-lg font-bold text-gray-900 dark:text-white">
@@ -86,9 +92,7 @@
 						<p class="text-sm font-medium text-gray-900 dark:text-white truncate">
 							{fileName}
 						</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">
-							Processing in progress...
-						</p>
+						<p class="text-xs text-gray-500 dark:text-gray-400">Processing in progress...</p>
 					</div>
 				</div>
 			</div>
@@ -98,8 +102,13 @@
 				<!-- Current Step -->
 				<div class="mb-6">
 					<div class="flex items-center space-x-3 mb-2">
-						<div class="w-8 h-8 bg-{currentStepConfig.color}-100 dark:bg-{currentStepConfig.color}-900/30 rounded-full flex items-center justify-center">
-							<svelte:component this={currentStepConfig.icon} class="w-4 h-4 text-{currentStepConfig.color}-600 dark:text-{currentStepConfig.color}-400" />
+						<div
+							class="w-8 h-8 bg-{currentStepConfig.color}-100 dark:bg-{currentStepConfig.color}-900/30 rounded-full flex items-center justify-center"
+						>
+							<svelte:component
+								this={currentStepConfig.icon}
+								class="w-4 h-4 text-{currentStepConfig.color}-600 dark:text-{currentStepConfig.color}-400"
+							/>
 						</div>
 						<div class="flex-1">
 							<h4 class="text-sm font-semibold text-gray-900 dark:text-white">
@@ -110,13 +119,13 @@
 							</p>
 						</div>
 					</div>
-					
+
 					<!-- Progress Bar -->
 					<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-						<div 
+						<div
 							class="bg-{currentStepConfig.color}-600 h-2 rounded-full transition-all duration-300 ease-out"
 							style="width: {progressPercentage}%"
-						></div>
+						/>
 					</div>
 					<p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
 						{progressPercentage.toFixed(0)}% complete
@@ -127,20 +136,30 @@
 				<div class="space-y-3">
 					{#each Object.entries(steps) as [stepKey, stepConfig]}
 						{@const isActive = stepKey === currentStep}
-						{@const isCompleted = ['uploading', 'extracting', 'processing', 'saving'].indexOf(stepKey) < ['uploading', 'extracting', 'processing', 'saving'].indexOf(currentStep)}
-						
+						{@const isCompleted =
+							['uploading', 'extracting', 'processing', 'saving'].indexOf(stepKey) <
+							['uploading', 'extracting', 'processing', 'saving'].indexOf(currentStep)}
+
 						<div class="flex items-center space-x-3">
 							<div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
 								{#if isCompleted}
 									<CheckCircle class="w-5 h-5 text-green-600 dark:text-green-400" />
 								{:else if isActive}
-									<div class="w-5 h-5 border-2 border-{stepConfig.color}-600 dark:border-{stepConfig.color}-400 border-t-transparent rounded-full animate-spin"></div>
+									<div
+										class="w-5 h-5 border-2 border-{stepConfig.color}-600 dark:border-{stepConfig.color}-400 border-t-transparent rounded-full animate-spin"
+									/>
 								{:else}
-									<div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded-full"></div>
+									<div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded-full" />
 								{/if}
 							</div>
 							<div class="flex-1">
-								<p class="text-sm font-medium {isActive ? 'text-gray-900 dark:text-white' : isCompleted ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}">
+								<p
+									class="text-sm font-medium {isActive
+										? 'text-gray-900 dark:text-white'
+										: isCompleted
+										? 'text-green-600 dark:text-green-400'
+										: 'text-gray-500 dark:text-gray-400'}"
+								>
 									{stepConfig.title}
 								</p>
 								{#if isActive}
@@ -155,7 +174,9 @@
 
 				<!-- Fallback Warning -->
 				{#if usedFallback}
-					<div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+					<div
+						class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+					>
 						<div class="flex items-center space-x-2">
 							<AlertCircle class="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
 							<span class="text-xs font-medium text-yellow-800 dark:text-yellow-200">
@@ -163,14 +184,17 @@
 							</span>
 						</div>
 						<p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-							The primary PDF processing method failed, but we're still extracting your data using an alternative method.
+							The primary PDF processing method failed, but we're still extracting your data using
+							an alternative method.
 						</p>
 					</div>
 				{/if}
 
 				<!-- Error Display -->
 				{#if error}
-					<div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+					<div
+						class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+					>
 						<div class="flex items-center space-x-2">
 							<AlertCircle class="w-4 h-4 text-red-600 dark:text-red-400" />
 							<span class="text-xs font-medium text-red-800 dark:text-red-200">
@@ -200,4 +224,4 @@
 			</div>
 		</div>
 	</div>
-{/if} 
+{/if}

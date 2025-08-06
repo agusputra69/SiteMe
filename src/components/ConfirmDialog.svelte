@@ -51,7 +51,7 @@
 
 {#if isOpen}
 	<!-- Backdrop -->
-	<div 
+	<div
 		class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
 		on:click={handleBackdropClick}
 		on:keydown={(e) => e.key === 'Escape' && handleCancel()}
@@ -62,21 +62,28 @@
 		tabindex="-1"
 	>
 		<!-- Dialog -->
-		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+		<div
+			class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100"
+		>
 			<!-- Header -->
 			<div class="flex items-start p-6 pb-4">
-				<div class="w-12 h-12 {typeStyles.iconBg} rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+				<div
+					class="w-12 h-12 {typeStyles.iconBg} rounded-full flex items-center justify-center mr-4 flex-shrink-0"
+				>
 					<AlertTriangle class="w-6 h-6 {typeStyles.iconColor}" />
 				</div>
 				<div class="flex-1">
 					<h3 id="dialog-title" class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
 						{title}
 					</h3>
-					<p id="dialog-description" class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+					<p
+						id="dialog-description"
+						class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed"
+					>
 						{message}
 					</p>
 				</div>
-				<button 
+				<button
 					on:click={handleCancel}
 					class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors ml-2"
 					aria-label="Close dialog"
@@ -86,7 +93,9 @@
 			</div>
 
 			<!-- Actions -->
-			<div class="flex items-center justify-end space-x-3 p-6 pt-2 border-t border-gray-200 dark:border-gray-700">
+			<div
+				class="flex items-center justify-end space-x-3 p-6 pt-2 border-t border-gray-200 dark:border-gray-700"
+			>
 				<button
 					on:click={handleCancel}
 					disabled={loading}
@@ -100,7 +109,9 @@
 					class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {typeStyles.buttonBg} disabled:cursor-not-allowed rounded-lg transition-colors"
 				>
 					{#if loading}
-						<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+						<div
+							class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"
+						/>
 					{/if}
 					{confirmText}
 				</button>
