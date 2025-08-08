@@ -326,21 +326,17 @@ export async function getResumeUrl(filePath: string): Promise<string | null> {
 // List user's uploaded resumes
 export async function listUserResumes(userId: string): Promise<{ data?: any[]; error?: any }> {
 	try {
-		const { data, error } = await supabase.storage.from('resumes').list(`resumes`, {
-			limit: 100,
-			offset: 0
+		const { data, error } = await supabase.storage.from('resumes').list(userId, {
+			limit: 100
 		});
 
 		if (error) {
-			return { error };
+			return { data: null, error };
 		}
 
-		// Filter files that belong to this user
-		const userFiles = data?.filter((file) => file.name.startsWith(userId)) || [];
-
-		return { data: userFiles };
+		return { data, error: null };
 	} catch (err) {
-		return { error: err };
+		return { data: null, error: err };
 	}
 }
 
