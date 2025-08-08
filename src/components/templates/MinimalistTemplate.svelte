@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProfileData } from '$lib/types';
+	import type { ProfileData, TemplateCustomization } from '$lib/types';
 
 	export let profileData: ProfileData = {
 		name: 'Your Name',
@@ -25,7 +25,7 @@
 	};
 
 	export let customizable = false;
-	export let customization = {
+	export let customization: TemplateCustomization = {
 		theme: 'blue',
 		fontFamily: 'inter',
 		fontSize: 'medium',

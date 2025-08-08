@@ -12,10 +12,12 @@
 		Sliders
 	} from 'lucide-svelte';
 
+	import type { TemplateCustomization } from '$lib/types';
+
 	const dispatch = createEventDispatcher();
 
 	export let selectedTemplate = 'classic';
-	export let customization = {
+	export let customization: TemplateCustomization = {
 		theme: 'blue',
 		fontFamily: 'inter',
 		fontSize: 'medium',

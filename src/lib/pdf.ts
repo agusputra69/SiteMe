@@ -129,7 +129,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
 					timeoutId = setTimeout(() => reject(new Error('PDF loading timeout')), 30000);
 				})
 			])) as any;
-			
+
 			// Clear timeout if PDF loaded successfully
 			if (timeoutId !== null) {
 				clearTimeout(timeoutId);

@@ -51,7 +51,7 @@
 		try {
 			loading = true;
 			error = false;
-			
+
 			const { data, error: profileError } = await getProfileByUsername(username);
 
 			// Check if request was aborted

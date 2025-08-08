@@ -73,8 +73,9 @@ class ErrorHandler {
 	 */
 	handleNetworkError(error: any, context: ErrorContext = {}): ErrorDetails {
 		const isTimeout = error?.message?.includes('timeout') || error?.code === 'TIMEOUT';
-		const isConnectionError = error?.message?.includes('network') || error?.code === 'NETWORK_ERROR';
-		
+		const isConnectionError =
+			error?.message?.includes('network') || error?.code === 'NETWORK_ERROR';
+
 		let userMessage = context.userMessage;
 		if (!userMessage) {
 			if (isTimeout) {
@@ -110,7 +111,7 @@ class ErrorHandler {
 	handleFileError(error: any, context: ErrorContext = {}): ErrorDetails {
 		const isFileTooLarge = error?.message?.includes('size') || error?.code === 'FILE_TOO_LARGE';
 		const isInvalidFormat = error?.message?.includes('format') || error?.code === 'INVALID_FORMAT';
-		
+
 		let userMessage = context.userMessage;
 		if (!userMessage) {
 			if (isFileTooLarge) {
@@ -133,9 +134,10 @@ class ErrorHandler {
 	 * Handle database errors
 	 */
 	handleDbError(error: any, context: ErrorContext = {}): ErrorDetails {
-		const isConnectionError = error?.message?.includes('connection') || error?.code === 'CONNECTION_ERROR';
+		const isConnectionError =
+			error?.message?.includes('connection') || error?.code === 'CONNECTION_ERROR';
 		const isTimeoutError = error?.message?.includes('timeout') || error?.code === 'TIMEOUT';
-		
+
 		let userMessage = context.userMessage;
 		if (!userMessage) {
 			if (isConnectionError) {
@@ -171,7 +173,7 @@ class ErrorHandler {
 	private logError(errorDetails: ErrorDetails): void {
 		const logLevel = errorDetails.context.logLevel || 'error';
 		const logMessage = `[${errorDetails.context.component || 'Unknown'}] ${errorDetails.message}`;
-		
+
 		// Console logging for development
 		if (import.meta.env.DEV) {
 			switch (logLevel) {
@@ -238,23 +240,23 @@ class ErrorHandler {
 	createRetryHandler(originalFunction: Function, maxRetries = 3, delay = 1000) {
 		return async (...args: any[]) => {
 			let lastError: any;
-			
+
 			for (let attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
 					return await originalFunction(...args);
 				} catch (error) {
 					lastError = error;
-					
+
 					if (attempt < maxRetries) {
-					await new Promise(resolve => {
-						const timeoutId = setTimeout(resolve, delay * attempt);
-						// Store timeout ID for potential cleanup if needed
-						return timeoutId;
-					});
-				}
+						await new Promise((resolve) => {
+							const timeoutId = setTimeout(resolve, delay * attempt);
+							// Store timeout ID for potential cleanup if needed
+							return timeoutId;
+						});
+					}
 				}
 			}
-			
+
 			throw lastError;
 		};
 	}
@@ -264,9 +266,15 @@ class ErrorHandler {
 export const errorHandler = new ErrorHandler();
 
 // Convenience functions for common error types
-export const handleError = (error: any, context?: ErrorContext) => errorHandler.handle(error, context);
-export const handleAuthError = (error: any, context?: Omit<ErrorContext, 'redirectTo'>) => errorHandler.handleAuthError(error, context);
-export const handleNetworkError = (error: any, context?: ErrorContext) => errorHandler.handleNetworkError(error, context);
-export const handleValidationError = (error: any, context?: ErrorContext) => errorHandler.handleValidationError(error, context);
-export const handleFileError = (error: any, context?: ErrorContext) => errorHandler.handleFileError(error, context);
-export const handleDbError = (error: any, context?: ErrorContext) => errorHandler.handleDbError(error, context);
+export const handleError = (error: any, context?: ErrorContext) =>
+	errorHandler.handle(error, context);
+export const handleAuthError = (error: any, context?: Omit<ErrorContext, 'redirectTo'>) =>
+	errorHandler.handleAuthError(error, context);
+export const handleNetworkError = (error: any, context?: ErrorContext) =>
+	errorHandler.handleNetworkError(error, context);
+export const handleValidationError = (error: any, context?: ErrorContext) =>
+	errorHandler.handleValidationError(error, context);
+export const handleFileError = (error: any, context?: ErrorContext) =>
+	errorHandler.handleFileError(error, context);
+export const handleDbError = (error: any, context?: ErrorContext) =>
+	errorHandler.handleDbError(error, context);

@@ -31,41 +31,40 @@ export interface BasicResumeData {
 
 export function extractBasicResumeData(text: string): BasicResumeData {
 	try {
+		// Preprocess text for better parsing
+		const preprocessedText = preprocessText(text);
+		const lines = preprocessedText
+			.split('\n')
+			.map((line) => line.trim())
+			.filter((line) => line.length > 0);
 
-	// Preprocess text for better parsing
-	const preprocessedText = preprocessText(text);
-	const lines = preprocessedText
-		.split('\n')
-		.map((line) => line.trim())
-		.filter((line) => line.length > 0);
+		const result: BasicResumeData = {
+			name: '',
+			email: '',
+			phone: '',
+			location: '',
+			summary: '',
+			experience: [],
+			education: [],
+			skills: [],
+			certifications: [],
+			languages: [],
+			projects: [],
+			awards: [],
+			links: []
+		};
 
-	const result: BasicResumeData = {
-		name: '',
-		email: '',
-		phone: '',
-		location: '',
-		summary: '',
-		experience: [],
-		education: [],
-		skills: [],
-		certifications: [],
-		languages: [],
-		projects: [],
-		awards: [],
-		links: []
-	};
+		// Extract contact information first (more reliable)
+		extractContactInfo(lines, result);
 
-	// Extract contact information first (more reliable)
-	extractContactInfo(lines, result);
+		// Extract URLs and links
+		extractLinks(lines, result);
 
-	// Extract URLs and links
-	extractLinks(lines, result);
+		// Parse sections with improved logic
+		const sections = identifySections(lines);
+		parseSections(sections, result);
 
-	// Parse sections with improved logic
-	const sections = identifySections(lines);
-	parseSections(sections, result);
-
-	// Post-process and clean data
+		// Post-process and clean data
 		cleanAndValidateData(result);
 
 		return result;

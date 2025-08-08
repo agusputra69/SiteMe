@@ -103,11 +103,11 @@ export async function extractResumeData(text: string, signal?: AbortSignal): Pro
 	// Create timeout controller if no signal provided
 	const controller = new AbortController();
 	let timeoutId: ReturnType<typeof setTimeout> | null = null;
-	
+
 	if (!signal) {
 		timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 	}
-	
+
 	const requestSignal = signal || controller.signal;
 
 	// Enhanced prompt to extract additional sections
@@ -210,8 +210,6 @@ Return only the JSON object, no additional text or explanations.`;
 			signal: requestSignal
 		});
 
-
-
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
 
@@ -241,8 +239,6 @@ Return only the JSON object, no additional text or explanations.`;
 		} else {
 			throw new Error('Unexpected API response format');
 		}
-
-
 
 		// Clean the response to extract only the JSON part
 		let cleanedText = extractedText.trim();

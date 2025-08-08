@@ -1,7 +1,11 @@
 /** @type {import('eslint').Linter.Config} */
 const config = {
 	root: true,
-	extends: ['eslint:recommended', '@typescript-eslint/recommended', 'plugin:svelte/recommended'],
+	extends: [
+		'eslint:recommended',
+		'plugin:@typescript-eslint/recommended',
+		'plugin:svelte/recommended'
+	],
 	parser: '@typescript-eslint/parser',
 	plugins: ['@typescript-eslint'],
 	parserOptions: {

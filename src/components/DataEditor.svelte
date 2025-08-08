@@ -354,16 +354,16 @@
 	function addExperience() {
 		if (!resumeData.experience) resumeData.experience = [];
 		resumeData.experience = [
-				...resumeData.experience,
-				{
-					title: '',
-					company: '',
-					type: '',
-					period: '',
-					current: false,
-					description: ''
-				}
-			];
+			...resumeData.experience,
+			{
+				title: '',
+				company: '',
+				type: '',
+				period: '',
+				current: false,
+				description: ''
+			}
+		];
 		// Focus the first input of the new experience entry
 		requestAnimationFrame(() => {
 			const newInput = document.querySelector(
@@ -380,13 +380,13 @@
 	function addEducation() {
 		if (!resumeData.education) resumeData.education = [];
 		resumeData.education = [
-				...resumeData.education,
-				{
-					degree: '',
-					institution: '',
-					period: ''
-				}
-			];
+			...resumeData.education,
+			{
+				degree: '',
+				institution: '',
+				period: ''
+			}
+		];
 		// Focus the first input of the new education entry
 		requestAnimationFrame(() => {
 			const newInput = document.querySelector(
@@ -510,13 +510,13 @@
 	function addProject() {
 		if (!resumeData.projects) resumeData.projects = [];
 		resumeData.projects = [
-				...resumeData.projects,
-				{
-					title: '',
-					description: '',
-					technologies: []
-				}
-			];
+			...resumeData.projects,
+			{
+				title: '',
+				description: '',
+				technologies: []
+			}
+		];
 		// Focus the first input of the new project entry
 		requestAnimationFrame(() => {
 			const newInput = document.querySelector(

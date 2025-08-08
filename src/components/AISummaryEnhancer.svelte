@@ -174,12 +174,12 @@ IMPORTANT: Return ONLY the enhanced summary. Do NOT include any prefixes like "R
 		try {
 			await navigator.clipboard.writeText(enhancedText);
 			copied = true;
-			
+
 			// Clear any existing timeout
 			if (copyTimeout) {
 				clearTimeout(copyTimeout);
 			}
-			
+
 			copyTimeout = setTimeout(() => {
 				copied = false;
 				copyTimeout = null;

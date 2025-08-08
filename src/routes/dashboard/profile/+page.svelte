@@ -7,21 +7,21 @@
 	import { toasts } from '$lib/stores/toast';
 	import { ArrowLeft, User as UserIcon, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
 	import type { User } from '@supabase/supabase-js';
-	import type { Profile, ResumeData } from '$lib/types';
+	import type { Profile, ResumeData, TemplateCustomization, Customization } from '$lib/types';
 	import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
 
 	// Type definitions
 	interface Experience {
 		title?: string;
 		company?: string;
-		duration?: string;
+		period?: string;
 		description?: string;
 	}
 
 	interface Education {
 		institution?: string;
 		degree?: string;
-		year?: string;
+		period?: string;
 	}
 
 	let user: User | null = null;
@@ -34,7 +34,7 @@
 	// Template and design state
 	let selectedTemplate = 'modern';
 	let selectedTheme = 'blue';
-	let templateCustomization = {
+	let templateCustomization: TemplateCustomization = {
 		theme: 'blue',
 		fontFamily: 'inter',
 		fontSize: 'medium',
@@ -65,6 +65,30 @@
 		verticalSpacing: 'normal',
 		horizontalPadding: 'normal'
 	};
+
+	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
+		return {
+			fontFamily: templateCustom.fontFamily,
+			fontSize: templateCustom.fontSize,
+			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight,
+			margins: {
+				top: 16,
+				bottom: 16,
+				left: 16,
+				right: 16
+			},
+			colors: {
+				primary: templateCustom.accentColor,
+				secondary: templateCustom.textColor,
+				accent: templateCustom.backgroundColor,
+				text: templateCustom.textColor
+			},
+			layout: {
+				columns: templateCustom.layout === 'two-column' ? 2 : 1,
+				spacing: 16
+			}
+		};
+	}
 	let showDesignPanel = false;
 
 	// Computed variables for type safety
@@ -74,7 +98,7 @@
 					title: exp.title || 'Job Title',
 					company: exp.company || 'Company Name',
 					type: 'Full-Time',
-					period: exp.duration || 'Start - End',
+					period: exp.period || 'Start - End',
 					current: false,
 					description: exp.description || ''
 			  }))
@@ -94,7 +118,7 @@
 			? resumeData.education.map((edu: Education) => ({
 					institution: edu.institution || 'University Name',
 					degree: edu.degree || 'Your Degree',
-					period: edu.year || 'Start - End'
+					period: edu.period || 'Start - End'
 			  }))
 			: [
 					{
@@ -192,13 +216,13 @@
 
 			return data.publicUrl;
 		} catch (error) {
-				handleError(error, {
-					component: 'ProfilePage',
-					action: 'uploadPhoto',
-					userMessage: 'Failed to upload photo'
-				});
-				throw error;
-			}
+			handleError(error, {
+				component: 'ProfilePage',
+				action: 'uploadPhoto',
+				userMessage: 'Failed to upload photo'
+			});
+			throw error;
+		}
 	}
 
 	async function handleSaveProfile(event: CustomEvent) {
@@ -238,7 +262,7 @@
 				photo_url: photoUrl, // Ensure the photo URL is updated
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			};
 
 			// Resume data cleaned
@@ -310,7 +334,7 @@
 				photo_url: resumeData.photo_url,
 				template: template,
 				theme: theme,
-				customization: customization
+				customization: convertToCustomization(customization)
 			};
 
 			const { error } = await updateProfile(user.id, {
@@ -355,7 +379,7 @@
 				photo_url: resumeData.photo_url,
 				template: template,
 				theme: theme,
-				customization: customization
+				customization: convertToCustomization(customization)
 			};
 
 			const { error } = await updateProfile(user.id, {
@@ -400,7 +424,7 @@
 				photo_url: resumeData.photo_url,
 				template: resumeData.template,
 				theme: resumeData.theme,
-				customization: customization
+				customization: convertToCustomization(customization)
 			};
 
 			const { error } = await updateProfile(user.id, {
@@ -435,7 +459,7 @@
 				...resumeData,
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			};
 			console.log('Updated selectedTemplate:', selectedTemplate, 'selectedTheme:', selectedTheme);
 		} catch (error) {
@@ -454,7 +478,7 @@
 				...resumeData,
 				template: selectedTemplate,
 				theme: selectedTheme,
-				customization: templateCustomization
+				customization: convertToCustomization(templateCustomization)
 			};
 		} catch (error) {
 			console.error('Theme change error:', error);
@@ -465,7 +489,10 @@
 		try {
 			templateCustomization = { ...templateCustomization, ...event.detail };
 			// Update resumeData with new customization settings for immediate preview
-			resumeData = { ...resumeData, customization: templateCustomization };
+			resumeData = {
+				...resumeData,
+				customization: convertToCustomization(templateCustomization)
+			};
 		} catch (error) {
 			console.error('Customization change error:', error);
 		}
@@ -479,22 +506,34 @@
 
 	function updateFontFamily(fontFamily: string) {
 		templateCustomization.fontFamily = fontFamily;
-		resumeData = { ...resumeData, customization: templateCustomization };
+		resumeData = {
+			...resumeData,
+			customization: convertToCustomization(templateCustomization)
+		};
 	}
 
 	function updateFontSize(fontSize: string) {
 		templateCustomization.fontSize = fontSize;
-		resumeData = { ...resumeData, customization: templateCustomization };
+		resumeData = {
+			...resumeData,
+			customization: convertToCustomization(templateCustomization)
+		};
 	}
 
 	function updateLayout(layout: string) {
 		templateCustomization.layout = layout;
-		resumeData = { ...resumeData, customization: templateCustomization };
+		resumeData = {
+			...resumeData,
+			customization: convertToCustomization(templateCustomization)
+		};
 	}
 
 	function updateContainerWidth(containerWidth: string) {
 		templateCustomization.containerWidth = containerWidth;
-		resumeData = { ...resumeData, customization: templateCustomization };
+		resumeData = {
+			...resumeData,
+			customization: convertToCustomization(templateCustomization)
+		};
 	}
 </script>
 

@@ -9,7 +9,7 @@
 	import CreativePortfolioTemplate from '$lib/../components/templates/CreativePortfolioTemplate.svelte';
 	import TemplateCustomizer from '$lib/../components/TemplateCustomizer.svelte';
 	import { Settings, Palette, Eye } from 'lucide-svelte';
-	import type { ProfileData, Theme } from '$lib/types';
+	import type { ProfileData, Theme, TemplateCustomization } from '$lib/types';
 
 	const dispatch = createEventDispatcher();
 
@@ -17,7 +17,7 @@
 	export let customizable = false;
 	export let selectedTemplate = 'classic';
 	export let selectedTheme = 'blue';
-	export let customization = {
+	export let customization: TemplateCustomization = {
 		theme: 'blue',
 		fontFamily: 'inter',
 		fontSize: 'medium',

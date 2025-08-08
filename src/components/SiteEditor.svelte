@@ -67,8 +67,7 @@
 		Moon,
 		Sparkles as SparklesIcon
 	} from 'lucide-svelte';
-	import type { ResumeData } from '$lib/ai';
-	import type { TemplateCustomization, Customization } from '$lib/types';
+	import type { ResumeData, TemplateCustomization, Customization } from '$lib/types';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
 
@@ -266,7 +265,10 @@
 			selectedTheme = resumeData.theme;
 		}
 		if (resumeData.customization) {
-			templateCustomization = { ...templateCustomization, ...convertFromCustomization(resumeData.customization) };
+			templateCustomization = {
+				...templateCustomization,
+				...convertFromCustomization(resumeData.customization)
+			};
 		}
 
 		// Focus management
@@ -279,7 +281,7 @@
 		if (saveSuccessTimeout) {
 			clearTimeout(saveSuccessTimeout);
 		}
-		
+
 		// Remove event listeners
 		if (clickOutsideAdded) {
 			document.removeEventListener('click', handleClickOutside);
@@ -364,7 +366,12 @@
 			theme: 'blue',
 			fontFamily: customization.fontFamily,
 			fontSize: customization.fontSize,
-			layout: typeof customization.layout === 'object' ? (customization.layout.columns === 2 ? 'two-column' : 'standard') : customization.layout,
+			layout:
+				typeof customization.layout === 'object'
+					? customization.layout.columns === 2
+						? 'two-column'
+						: 'standard'
+					: customization.layout,
 			spacing: 'normal',
 			borderRadius: 'medium',
 			shadow: 'medium',
@@ -372,7 +379,7 @@
 			textColor: customization.colors?.text || '#1F2937',
 			backgroundColor: customization.colors?.accent || '#FFFFFF',
 			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
-			lineHeight: customization.lineHeight.toString(),
+			lineHeight: customization.lineHeight?.toString() || '1.5',
 			letterSpacing: 'normal',
 			headingFont: customization.fontFamily,
 			containerWidth: 'standard',

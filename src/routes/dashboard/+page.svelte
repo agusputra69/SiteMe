@@ -1,25 +1,31 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-import {
-	supabase,
-	getProfile,
-	updateProfile,
-	handleAuthError,
-	getValidSession,
-	uploadResume
-} from '$lib/supabase';
-import {
-	extractTextFromPDF,
-	validatePDFFile,
-	isPDFLikelyResume,
-	detectPDFIssues
-} from '$lib/pdf';
-import { extractTextFromPDFSimple, validatePDFFileSimple } from '$lib/pdf-simple';
-import { extractResumeData, type ResumeData } from '$lib/ai';
-import { type Site } from '$lib/types';
-import { extractBasicResumeData, convertToResumeData } from '$lib/pdf-processor';
-import { goto } from '$app/navigation';
-import { handleError, handleAuthError as handleAuthErr, handleNetworkError, handleFileError, handleDbError } from '$lib/error-handler';
+	import {
+		supabase,
+		getProfile,
+		updateProfile,
+		handleAuthError,
+		getValidSession,
+		uploadResume
+	} from '$lib/supabase';
+	import {
+		extractTextFromPDF,
+		validatePDFFile,
+		isPDFLikelyResume,
+		detectPDFIssues
+	} from '$lib/pdf';
+	import { extractTextFromPDFSimple, validatePDFFileSimple } from '$lib/pdf-simple';
+	import { extractResumeData, type ResumeData } from '$lib/ai';
+	import { type Site } from '$lib/types';
+	import { extractBasicResumeData, convertToResumeData } from '$lib/pdf-processor';
+	import { goto } from '$app/navigation';
+	import {
+		handleError,
+		handleAuthError as handleAuthErr,
+		handleNetworkError,
+		handleFileError,
+		handleDbError
+	} from '$lib/error-handler';
 
 	import OnboardingTour from '../../components/OnboardingTour.svelte';
 	import InteractiveTutorial from '../../components/InteractiveTutorial.svelte';
@@ -178,8 +184,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 		const { data, error } = await getProfile(user.id);
 		if (error) {
-			handleDbError(error, { 
-				component: 'Dashboard', 
+			handleDbError(error, {
+				component: 'Dashboard',
 				action: 'loadProfile',
 				userMessage: 'Failed to load profile data'
 			});
@@ -201,8 +207,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 					.single();
 
 				if (createError) {
-					handleDbError(createError, { 
-						component: 'Dashboard', 
+					handleDbError(createError, {
+						component: 'Dashboard',
 						action: 'createProfile',
 						userMessage: 'Failed to create profile'
 					});
@@ -211,8 +217,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 				profile = newProfile;
 			} catch (error) {
-				handleDbError(error, { 
-					component: 'Dashboard', 
+				handleDbError(error, {
+					component: 'Dashboard',
 					action: 'createProfile',
 					userMessage: 'Failed to create profile'
 				});
@@ -255,8 +261,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				.order('updated_at', { ascending: false });
 
 			if (error) {
-				handleDbError(error, { 
-					component: 'Dashboard', 
+				handleDbError(error, {
+					component: 'Dashboard',
 					action: 'loadSites',
 					userMessage: 'Failed to load sites'
 				});
@@ -265,8 +271,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 			sites = data || [];
 		} catch (error) {
-			handleDbError(error, { 
-				component: 'Dashboard', 
+			handleDbError(error, {
+				component: 'Dashboard',
 				action: 'loadSites',
 				userMessage: 'Failed to load sites'
 			});
@@ -294,8 +300,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				.eq('user_id', user.id);
 
 			if (error) {
-				handleDbError(error, { 
-					component: 'Dashboard', 
+				handleDbError(error, {
+					component: 'Dashboard',
 					action: 'publishSite',
 					userMessage: 'Failed to publish site'
 				});
@@ -305,8 +311,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 			toasts.success('Site published successfully!');
 			await loadSites(); // Refresh the list
 		} catch (error) {
-			handleDbError(error, { 
-				component: 'Dashboard', 
+			handleDbError(error, {
+				component: 'Dashboard',
 				action: 'publishSite',
 				userMessage: 'Failed to publish site'
 			});
@@ -330,8 +336,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 					.single();
 
 				if (error) {
-					handleDbError(error, { 
-						component: 'Dashboard', 
+					handleDbError(error, {
+						component: 'Dashboard',
 						action: 'duplicateSite',
 						userMessage: 'Failed to duplicate site'
 					});
@@ -342,8 +348,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				toasts.success('Site duplicated successfully!');
 			}
 		} catch (error) {
-			handleDbError(error, { 
-				component: 'Dashboard', 
+			handleDbError(error, {
+				component: 'Dashboard',
 				action: 'duplicateSite',
 				userMessage: 'Failed to duplicate site'
 			});
@@ -359,8 +365,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				.eq('user_id', user.id);
 
 			if (error) {
-				handleDbError(error, { 
-					component: 'Dashboard', 
+				handleDbError(error, {
+					component: 'Dashboard',
 					action: 'deleteSite',
 					userMessage: 'Failed to delete site'
 				});
@@ -372,8 +378,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 			showDeleteSiteConfirm = false;
 			siteToDelete = null;
 		} catch (error) {
-			handleDbError(error, { 
-				component: 'Dashboard', 
+			handleDbError(error, {
+				component: 'Dashboard',
 				action: 'deleteSite',
 				userMessage: 'Failed to delete site'
 			});
@@ -464,31 +470,31 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 		}, 120000); // 2 minutes timeout
 
 		try {
-				// Check if PDF.js is available
-				if (typeof window !== 'undefined' && !(window as any).pdfjsLib) {
-					handleError(new Error('PDF.js library not found'), {
-						component: 'Dashboard',
-						action: 'processFile',
-						logLevel: 'warn',
-						showToast: false
-					});
-				}
+			// Check if PDF.js is available
+			if (typeof window !== 'undefined' && !(window as any).pdfjsLib) {
+				handleError(new Error('PDF.js library not found'), {
+					component: 'Dashboard',
+					action: 'processFile',
+					logLevel: 'warn',
+					showToast: false
+				});
+			}
 
-				// Upload PDF file to Supabase storage
-				try {
-					const uploadResult = await uploadResume(file);
-					uploadedResumeUrl = uploadResult.url;
-					uploadedResumePath = uploadResult.path;
-					toasts.success('Resume PDF uploaded successfully');
-				} catch (uploadError) {
-					handleFileError(uploadError, {
-						component: 'Dashboard',
-						action: 'uploadResume',
-						userMessage: 'Failed to upload PDF file, but processing will continue',
-						logLevel: 'warn'
-					});
-					// Continue processing even if upload fails
-				}
+			// Upload PDF file to Supabase storage
+			try {
+				const uploadResult = await uploadResume(file);
+				uploadedResumeUrl = uploadResult.url;
+				uploadedResumePath = uploadResult.path;
+				toasts.success('Resume PDF uploaded successfully');
+			} catch (uploadError) {
+				handleFileError(uploadError, {
+					component: 'Dashboard',
+					action: 'uploadResume',
+					userMessage: 'Failed to upload PDF file, but processing will continue',
+					logLevel: 'warn'
+				});
+				// Continue processing even if upload fails
+			}
 
 			// Update progress for extraction step
 			processingStep = 'extracting';
@@ -567,36 +573,36 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 			if (useAIProcessing) {
 				// AI Processing
-			const abortController = new AbortController();
-			if (abortTimeout) {
-				clearTimeout(abortTimeout);
-			}
-			abortTimeout = setTimeout(() => {
-				abortController.abort();
-				abortTimeout = null;
-			}, 60000); // 60 seconds timeout
+				const abortController = new AbortController();
+				if (abortTimeout) {
+					clearTimeout(abortTimeout);
+				}
+				abortTimeout = setTimeout(() => {
+					abortController.abort();
+					abortTimeout = null;
+				}, 60000); // 60 seconds timeout
 
-			try {
-				extractedData = await extractResumeData(text, abortController.signal);
-				
-				// Clear timeout if processing completed successfully
-				if (abortTimeout) {
-					clearTimeout(abortTimeout);
-					abortTimeout = null;
-				}
-			} catch (aiError) {
-				// Clear timeout on error
-				if (abortTimeout) {
-					clearTimeout(abortTimeout);
-					abortTimeout = null;
-				}
-				
-				handleError(aiError, {
-					component: 'Dashboard',
-					action: 'aiProcessing',
-					logLevel: 'warn',
-					showToast: false
-				});
+				try {
+					extractedData = await extractResumeData(text, abortController.signal);
+
+					// Clear timeout if processing completed successfully
+					if (abortTimeout) {
+						clearTimeout(abortTimeout);
+						abortTimeout = null;
+					}
+				} catch (aiError) {
+					// Clear timeout on error
+					if (abortTimeout) {
+						clearTimeout(abortTimeout);
+						abortTimeout = null;
+					}
+
+					handleError(aiError, {
+						component: 'Dashboard',
+						action: 'aiProcessing',
+						logLevel: 'warn',
+						showToast: false
+					});
 
 					// Handle rate limiting specifically
 					if (aiError instanceof Error && aiError.message.includes('Rate limit exceeded')) {
@@ -683,7 +689,6 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				}
 			}
 
-
 			// Validate extracted data
 			if (!extractedData || !extractedData.name) {
 				const validationError = new Error(
@@ -692,7 +697,8 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				handleFileError(validationError, {
 					component: 'Dashboard',
 					action: 'validateExtractedData',
-					userMessage: 'Could not extract meaningful data from the resume. Please check the file format.'
+					userMessage:
+						'Could not extract meaningful data from the resume. Please check the file format.'
 				});
 				throw validationError;
 			}
@@ -704,20 +710,15 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 			// Show more detailed progress for save operation
 			toasts.info('Saving extracted data to database...');
 
-
-
 			// Check if user is available
-				if (!user || !user.id) {
-					handleAuthError(new Error('User session not found. Please log in again.'), {
-						component: 'Dashboard',
-						action: 'validateUserSession',
-						userMessage: 'Session expired. Please log in again.'
-					});
-					throw new Error('User session not found. Please log in again.');
-				}
-
-
-
+			if (!user || !user.id) {
+				handleAuthError(new Error('User session not found. Please log in again.'), {
+					component: 'Dashboard',
+					action: 'validateUserSession',
+					userMessage: 'Session expired. Please log in again.'
+				});
+				throw new Error('User session not found. Please log in again.');
+			}
 
 			try {
 				// Clean and structure the extracted data to ensure it's valid for JSONB storage
@@ -758,8 +759,6 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 						horizontalPadding: 'normal'
 					}
 				};
-
-
 
 				// Optimize data size before saving
 				const dataSize = JSON.stringify(cleanExtractedData).length;
@@ -808,13 +807,14 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 						const timeoutPromise = new Promise<never>((_, reject) => {
 							saveTimeoutId = setTimeout(
-								() => reject(new Error(`Database save timeout after ${currentTimeout / 1000} seconds`)),
+								() =>
+									reject(new Error(`Database save timeout after ${currentTimeout / 1000} seconds`)),
 								currentTimeout
 							);
 						});
 
 						const result = await Promise.race([savePromise, timeoutPromise]);
-						
+
 						// Clear timeout on success
 						if (saveTimeoutId) {
 							clearTimeout(saveTimeoutId);
@@ -832,24 +832,24 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 							lastError = result.error;
 
 							if (saveAttempts < maxAttempts) {
-							const backoffDelay = Math.min(1000 * Math.pow(2, saveAttempts - 1), 8000); // Exponential backoff, max 8s
-							toasts.warning(
-								`Save attempt ${saveAttempts} failed. Retrying in ${backoffDelay / 1000}s...`
-							);
-							await new Promise((resolve) => {
-								if (retryTimeout) {
-									clearTimeout(retryTimeout);
-								}
-								retryTimeout = setTimeout(() => {
-									resolve(undefined);
-									retryTimeout = null;
-								}, backoffDelay);
-							});
-							continue;
+								const backoffDelay = Math.min(1000 * Math.pow(2, saveAttempts - 1), 8000); // Exponential backoff, max 8s
+								toasts.warning(
+									`Save attempt ${saveAttempts} failed. Retrying in ${backoffDelay / 1000}s...`
+								);
+								await new Promise((resolve) => {
+									if (retryTimeout) {
+										clearTimeout(retryTimeout);
+									}
+									retryTimeout = setTimeout(() => {
+										resolve(undefined);
+										retryTimeout = null;
+									}, backoffDelay);
+								});
+								continue;
 							} else {
 								throw new Error(
-									'Failed to save profile data after multiple attempts: ' + 
-									(result.error instanceof Error ? result.error.message : String(result.error))
+									'Failed to save profile data after multiple attempts: ' +
+										(result.error instanceof Error ? result.error.message : String(result.error))
 								);
 							}
 						}
@@ -862,7 +862,7 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 							clearTimeout(saveTimeoutId);
 							saveTimeoutId = null;
 						}
-						
+
 						handleDbError(retryError, {
 							component: 'Dashboard',
 							action: 'saveProfileData',
@@ -877,22 +877,22 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 						}
 
 						// Exponential backoff for connection errors
-					const backoffDelay = Math.min(1000 * Math.pow(2, saveAttempts - 1), 8000);
-					await new Promise((resolve) => {
-						if (retryTimeout) {
-							clearTimeout(retryTimeout);
-						}
-						retryTimeout = setTimeout(() => {
-							resolve(undefined);
-							retryTimeout = null;
-						}, backoffDelay);
-					});
+						const backoffDelay = Math.min(1000 * Math.pow(2, saveAttempts - 1), 8000);
+						await new Promise((resolve) => {
+							if (retryTimeout) {
+								clearTimeout(retryTimeout);
+							}
+							retryTimeout = setTimeout(() => {
+								resolve(undefined);
+								retryTimeout = null;
+							}, backoffDelay);
+						});
 					}
 				}
 
 				// Update local state
-			resumeData = cleanExtractedData;
-			profile = { ...profile, data: cleanExtractedData, full_name: cleanExtractedData.name };
+				resumeData = cleanExtractedData;
+				profile = { ...profile, data: cleanExtractedData, full_name: cleanExtractedData.name };
 
 				// Complete processing
 				processingProgress = 100;
@@ -918,10 +918,10 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 							errorMessage = 'Failed to create site. Please try again.';
 							toasts.error('Failed to create new website');
 						} else {
-						toasts.success('New website created successfully!');
-						// Refresh sites data
-						await loadSites();
-					}
+							toasts.success('New website created successfully!');
+							// Refresh sites data
+							await loadSites();
+						}
 					} catch (siteError) {
 						errorMessage = 'Error creating site. Please try again.';
 						toasts.error('Terjadi kesalahan saat membuat website');
@@ -938,8 +938,6 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 				tutorialContext = 'edit';
 				showTutorial = false; // Hide tutorial after successful PDF processing
-
-
 
 				// Clear the timeout since processing completed successfully
 				if (processingTimeout) {

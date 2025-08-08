@@ -46,7 +46,7 @@
 		// Initialize auth with proper state management
 		let authInitialized = false;
 		let profileLoading = false;
-		
+
 		(async () => {
 			try {
 				const { session, error } = await getValidSession();
@@ -86,7 +86,7 @@
 			// Listen for auth changes with race condition protection
 			supabase.auth.onAuthStateChange(async (event, session) => {
 				if (!authInitialized) return; // Wait for initial auth to complete
-				
+
 				if (event === 'SIGNED_OUT' || !session?.user) {
 					user = null;
 					profile = null;
@@ -196,12 +196,12 @@
 			await navigator.clipboard.writeText(url);
 			copied = true;
 			toasts.success('Profile URL copied to clipboard!');
-			
+
 			// Clear any existing timeout
 			if (copiedTimeout) {
 				clearTimeout(copiedTimeout);
 			}
-			
+
 			copiedTimeout = setTimeout(() => {
 				copied = false;
 				copiedTimeout = null;

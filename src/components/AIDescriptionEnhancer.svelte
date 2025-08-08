@@ -113,12 +113,12 @@ IMPORTANT: Return ONLY the enhanced description. Do NOT include any prefixes lik
 		try {
 			await navigator.clipboard.writeText(enhancedText);
 			copied = true;
-			
+
 			// Clear any existing timeout
 			if (copyTimeout) {
 				clearTimeout(copyTimeout);
 			}
-			
+
 			copyTimeout = setTimeout(() => {
 				copied = false;
 				copyTimeout = null;
