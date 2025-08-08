@@ -22,14 +22,20 @@
 	export let username: string = '';
 	export let saveSuccess = false;
 
-	// Listen for save success from parent
-	$: if (!uploading && saveSuccess) {
-		if (saveSuccessTimeout) clearTimeout(saveSuccessTimeout);
-		saveSuccessTimeout = setTimeout(() => {
-			saveSuccess = false;
-			saveSuccessTimeout = null;
-		}, 3000);
-	}
+        // Listen for save success from parent
+        $: if (!uploading && saveSuccess) {
+                if (profilePhotoUrl) {
+                        URL.revokeObjectURL(profilePhotoUrl);
+                        profilePhotoUrl = '';
+                }
+                profilePhotoFile = null;
+
+                if (saveSuccessTimeout) clearTimeout(saveSuccessTimeout);
+                saveSuccessTimeout = setTimeout(() => {
+                        saveSuccess = false;
+                        saveSuccessTimeout = null;
+                }, 3000);
+        }
 
 	let profilePhotoFile: File | null = null;
 	let profilePhotoUrl = '';
