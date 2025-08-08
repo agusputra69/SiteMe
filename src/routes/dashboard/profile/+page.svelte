@@ -192,17 +192,18 @@
 
 			return data.publicUrl;
 		} catch (error) {
-				handleError(error, {
-					component: 'ProfilePage',
-					action: 'uploadPhoto',
-					userMessage: 'Failed to upload photo'
-				});
-				throw error;
-			}
+			handleError(error, {
+				component: 'ProfilePage',
+				action: 'uploadPhoto',
+				userMessage: 'Failed to upload photo'
+			});
+			throw error;
+		}
 	}
 
 	async function handleSaveProfile(event: CustomEvent) {
 		const eventData = event.detail;
+		const { username, status } = eventData;
 		// Prevent multiple simultaneous saves
 		if (saving) {
 			// Save already in progress, ignoring duplicate request
@@ -247,7 +248,8 @@
 			const updateData = {
 				data: cleanResumeData,
 				full_name: cleanResumeData.name,
-				username: profile?.username
+				username: username ?? profile?.username,
+				status
 			};
 
 			// Sending data to updateProfile
@@ -265,7 +267,12 @@
 
 			// Update local state
 			resumeData = cleanResumeData;
-			profile = { ...profile, data: cleanResumeData, full_name: cleanResumeData.name };
+			profile = {
+				...profile,
+				data: cleanResumeData,
+				full_name: cleanResumeData.name,
+				username: username ?? profile?.username
+			};
 
 			// Save completed successfully
 			toasts.success('Profile updated successfully!');

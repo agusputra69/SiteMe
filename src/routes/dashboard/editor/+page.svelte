@@ -171,6 +171,7 @@
 
 	async function handleSaveProfile(event: CustomEvent) {
 		const eventData = event.detail;
+		const { username, status } = eventData;
 		// Prevent multiple simultaneous saves
 		if (saving) {
 			return;
@@ -209,7 +210,8 @@
 			const updateData = {
 				data: cleanResumeData,
 				full_name: cleanResumeData.name,
-				username: profile?.username
+				username: username ?? profile?.username,
+				status
 			};
 
 			if (!updateData || typeof updateData !== 'object' || Object.keys(updateData).length === 0) {
@@ -229,7 +231,13 @@
 
 			// Update local state
 			resumeData = cleanResumeData;
-			profile = { ...profile, data: cleanResumeData, full_name: cleanResumeData.name };
+			profile = {
+				...profile,
+				data: cleanResumeData,
+				full_name: cleanResumeData.name,
+				username: username ?? profile?.username
+			};
+			profileStatus = status;
 
 			toasts.success('Profile updated successfully!');
 			saveSuccess = true;
