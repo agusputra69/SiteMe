@@ -470,9 +470,14 @@
 	function convertFromCustomization(customization: Customization): TemplateCustomization {
 		return {
 			theme: 'blue',
-			fontFamily: customization.fontFamily,
-			fontSize: customization.fontSize,
-			layout: typeof customization.layout === 'object' ? (customization.layout.columns === 2 ? 'two-column' : 'standard') : customization.layout,
+                        fontFamily: customization.fontFamily || 'inter',
+                        fontSize: customization.fontSize || 'medium',
+                        layout:
+                                typeof customization.layout === 'object'
+                                        ? customization.layout.columns === 2
+                                                ? 'two-column'
+                                                : 'standard'
+                                        : customization.layout || 'standard',
 			spacing: 'normal',
 			borderRadius: 'medium',
 			shadow: 'medium',
@@ -482,7 +487,7 @@
 			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
 			lineHeight: customization.lineHeight?.toString() || '1.5',
 			letterSpacing: 'normal',
-			headingFont: customization.fontFamily,
+                        headingFont: customization.fontFamily || 'inter',
 			containerWidth: 'standard',
 			verticalSpacing: 'normal',
 			horizontalPadding: 'normal'
@@ -1533,41 +1538,46 @@
 							</div>
 
 							<TemplateSelector
-								profileData={{
-									name: resumeData?.name || 'Your Name',
-									avatar: profilePhotoUrl || resumeData?.photo_url || '',
-									about: resumeData?.summary || 'Your professional summary goes here...',
-									workExperience: resumeData?.experience?.map(exp => ({
-										title: exp.title || 'Job Title',
-										company: exp.company || 'Company Name',
-										type: 'Full-Time',
-										period: exp.duration || 'Start - End',
-										current: false,
-										description: exp.description || ''
-									})) || [{
-										title: 'Your Job Title',
-										company: 'Company Name',
-										type: 'Full-Time',
-										period: 'Start - End',
-										current: false,
-										description: ''
-									}],
-									education: resumeData?.education?.map(edu => ({
-										institution: edu.institution || 'University Name',
-										degree: edu.degree || 'Your Degree',
-										period: edu.year || 'Start - End'
-									})) || [{
-										institution: 'University Name',
-										degree: 'Your Degree',
-										period: 'Start - End'
-									}],
-									skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
-									contact: {
-										email: resumeData?.email || '',
-										phone: resumeData?.phone || '',
-										location: resumeData?.location || ''
-									}
-								}}
+                                                                profileData={{
+                                                                        name: resumeData?.name || 'Your Name',
+                                                                        avatar: profilePhotoUrl || resumeData?.photo_url || '',
+                                                                        about: resumeData?.summary || 'Your professional summary goes here...',
+                                                                        workExperience: resumeData?.experience?.map(exp => ({
+                                                                                title: exp.title || 'Job Title',
+                                                                                company: exp.company || 'Company Name',
+                                                                                type: 'Full-Time',
+                                                                                period: exp.period || 'Start - End',
+                                                                                current: false,
+                                                                                description: exp.description || ''
+                                                                        })) || [{
+                                                                                title: 'Your Job Title',
+                                                                                company: 'Company Name',
+                                                                                type: 'Full-Time',
+                                                                                period: 'Start - End',
+                                                                                current: false,
+                                                                                description: ''
+                                                                        }],
+                                                                        education: resumeData?.education?.map(edu => ({
+                                                                                institution: edu.institution || 'University Name',
+                                                                                degree: edu.degree || 'Your Degree',
+                                                                                period: edu.period || 'Start - End'
+                                                                        })) || [{
+                                                                                institution: 'University Name',
+                                                                                degree: 'Your Degree',
+                                                                                period: 'Start - End'
+                                                                        }],
+                                                                        skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
+                                                                        links: resumeData?.links || [],
+                                                                        projects: resumeData?.projects || [],
+                                                                        certifications: resumeData?.certifications || [],
+                                                                        languages: resumeData?.languages || [],
+                                                                        awards: resumeData?.awards || [],
+                                                                        contact: {
+                                                                                email: resumeData?.email || '',
+                                                                                phone: resumeData?.phone || '',
+                                                                                location: resumeData?.location || ''
+                                                                        }
+                                                                }}
 								customizable={true}
 								{selectedTemplate}
 								{selectedTheme}

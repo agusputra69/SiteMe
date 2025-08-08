@@ -111,23 +111,23 @@ export interface Customization {
 }
 
 export interface TemplateCustomization {
-	theme?: string;
-	fontFamily?: string;
-	fontSize?: string;
-	layout?: string;
-	spacing?: string;
-	borderRadius?: string;
-	shadow?: string;
-	accentColor?: string;
-	textColor?: string;
-	backgroundColor?: string;
-	sectionOrder?: string[];
-	lineHeight?: string | number;
-	letterSpacing?: string;
-	headingFont?: string;
-	containerWidth?: string;
-	verticalSpacing?: string;
-	horizontalPadding?: string;
+        theme: string;
+        fontFamily: string;
+        fontSize: string;
+        layout: string;
+        spacing: string;
+        borderRadius: string;
+        shadow: string;
+        accentColor: string;
+        textColor: string;
+        backgroundColor: string;
+        sectionOrder: string[];
+        lineHeight: string;
+        letterSpacing: string;
+        headingFont: string;
+        containerWidth: string;
+        verticalSpacing: string;
+        horizontalPadding: string;
 }
 
 export interface ResumeData {
