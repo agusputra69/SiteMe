@@ -906,7 +906,7 @@
 		<div class="flex">
 			<!-- Sidebar Navigation -->
 			<div class="w-64 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">
-				<nav class="p-4 space-y-2" role="tablist" aria-label="Profile editor sections">
+				<div class="p-4 space-y-2" role="tablist" aria-label="Profile editor sections">
 					{#each tabs as tab}
 						<button
 							on:click={() => activeTab = tab.id}
@@ -923,7 +923,7 @@
 							{/if}
 						</button>
 					{/each}
-				</nav>
+				</div>
 			</div>
 
 			<!-- Main Content Area -->
@@ -938,9 +938,9 @@
 
 						<!-- Profile Photo Upload -->
 						<div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+							<div class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
 								Profile Photo
-							</label>
+							</div>
 							<div class="flex items-center space-x-4">
 								{#if profilePhotoUrl || resumeData.photo_url}
 									<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
@@ -951,16 +951,18 @@
 										</span>
 									</div>
 								{/if}
-								<label class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
-									<Upload class="w-4 h-4 mr-2" />
+								<label for="profile-photo-upload" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
+									<Upload class="w-4 h-4 mr-2" aria-hidden="true" />
 									Upload Photo
-									<input
-										type="file"
-										accept="image/*"
-										on:change={handleProfilePhotoUpload}
-										class="hidden"
-									/>
 								</label>
+								<input
+									id="profile-photo-upload"
+									type="file"
+									accept="image/*"
+									on:change={handleProfilePhotoUpload}
+									class="sr-only"
+									aria-label="Upload profile photo"
+								/>
 							</div>
 						</div>
 

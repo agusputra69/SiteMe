@@ -21,8 +21,53 @@
 	let resumeData: ResumeData | null = null;
 	let loading = false;
 	let saving = false;
+	let uploading = false;
+	let saveSuccess = false;
 	let activeTab: 'content' | 'design' | 'settings' = 'content';
 	let showPreview = false;
+	let profileStatus: 'draft' | 'published' = 'draft';
+
+	// Reactive statements for state management
+	$: if (saveSuccess) {
+		setTimeout(() => {
+			saveSuccess = false;
+		}, 3000);
+	}
+
+	// Template and design state
+	let selectedTemplate = 'modern';
+	let selectedTheme = 'blue';
+	let templateCustomization = {
+		theme: 'blue',
+		fontFamily: 'inter',
+		fontSize: 'medium',
+		layout: 'standard',
+		spacing: 'normal',
+		borderRadius: 'medium',
+		shadow: 'medium',
+		accentColor: '#3B82F6',
+		textColor: '#1F2937',
+		backgroundColor: '#FFFFFF',
+		sectionOrder: [
+			'header',
+			'about',
+			'experience',
+			'education',
+			'skills',
+			'contact',
+			'projects',
+			'certifications',
+			'languages',
+			'awards',
+			'links'
+		],
+		lineHeight: 'normal',
+		letterSpacing: 'normal',
+		headingFont: 'inter',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
+	};
 
 	onMount(async () => {
 		try {
@@ -59,26 +104,34 @@
 				return;
 			}
 
-			profile = data;
-			if (profile?.data) {
-				resumeData = profile.data;
-			} else {
-				// Initialize with default structure if no profile data exists
-				resumeData = {
-					name: '',
-					email: '',
-					phone: '',
-					location: '',
-					summary: '',
-					experience: [],
-					education: [],
-					certifications: [],
-					languages: [],
-					projects: [],
-					awards: [],
-					skills: [],
-					links: []
-				};
+			if (data && typeof data === 'object') {
+				profile = data;
+				if (profile?.data && typeof profile.data === 'object') {
+					resumeData = profile.data;
+					// Load template settings from profile data
+					if (resumeData.template) selectedTemplate = resumeData.template;
+					if (resumeData.theme) selectedTheme = resumeData.theme;
+					if (resumeData.customization) {
+						templateCustomization = { ...templateCustomization, ...resumeData.customization };
+					}
+				} else {
+					// Initialize with default structure if no profile data exists
+					resumeData = {
+						name: '',
+						email: '',
+						phone: '',
+						location: '',
+						summary: '',
+						experience: [],
+						education: [],
+						certifications: [],
+						languages: [],
+						projects: [],
+						awards: [],
+						skills: [],
+						links: []
+					};
+				}
 			}
 		} catch (error) {
 			handleError(error, {
@@ -91,32 +144,268 @@
 		}
 	}
 
-	async function handleSave(data: ResumeData) {
-		if (!user?.id) return;
+	async function handleProfilePhotoUpload(file: File) {
+		try {
+			const fileExt = file.name.split('.').pop();
+			const fileName = `${Math.random()}.${fileExt}`;
+			const filePath = `${user.id}/${fileName}`;
+
+			const { error: uploadError } = await supabase.storage
+				.from('profile-photos')
+				.upload(filePath, file);
+
+			if (uploadError) throw uploadError;
+
+			const { data } = supabase.storage.from('profile-photos').getPublicUrl(filePath);
+
+			return data.publicUrl;
+		} catch (error) {
+			handleError(error, {
+				component: 'EditorPage',
+				action: 'uploadPhoto',
+				userMessage: 'Failed to upload photo'
+			});
+			throw error;
+		}
+	}
+
+	async function handleSaveProfile(event: CustomEvent) {
+		const eventData = event.detail;
+		// Prevent multiple simultaneous saves
+		if (saving) {
+			return;
+		}
 
 		saving = true;
+		uploading = true;
+		toasts.info('Saving profile changes...');
+
 		try {
-			const { error } = await updateProfile(user.id, { data });
+			let photoUrl = eventData.resumeData.photo_url || profile?.photo_url;
+
+			// Handle image upload if a new photo is provided
+			if (eventData.profilePhoto) {
+				try {
+					photoUrl = await handleProfilePhotoUpload(eventData.profilePhoto);
+				} catch (uploadError) {
+					handleError(uploadError, {
+						component: 'EditorPage',
+						action: 'uploadPhoto',
+						userMessage: 'Failed to upload photo. Profile saved without photo.'
+					});
+				}
+			}
+
+			// Clean and structure the resume data
+			const cleanResumeData = {
+				...resumeData,
+				...eventData.resumeData,
+				photo_url: photoUrl,
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: templateCustomization
+			};
+
+			const updateData = {
+				data: cleanResumeData,
+				full_name: cleanResumeData.name,
+				username: profile?.username
+			};
+
+			if (!updateData || typeof updateData !== 'object' || Object.keys(updateData).length === 0) {
+				throw new Error('Invalid update data provided');
+			}
+
+			const { error } = await updateProfile(user.id, updateData);
+
 			if (error) {
 				handleError(error, {
 					component: 'EditorPage',
-					action: 'saveProfile',
+					action: 'updateProfile',
 					userMessage: 'Failed to save profile'
 				});
-				return;
+				throw error;
 			}
 
-			resumeData = data;
-			toasts.success('Profile saved successfully!');
+			// Update local state
+			resumeData = cleanResumeData;
+			profile = { ...profile, data: cleanResumeData, full_name: cleanResumeData.name };
+
+			toasts.success('Profile updated successfully!');
+			saveSuccess = true;
 		} catch (error) {
 			handleError(error, {
 				component: 'EditorPage',
 				action: 'saveProfile',
-				userMessage: 'Failed to save profile'
+				userMessage: 'Failed to save profile. Please try again.'
 			});
 		} finally {
 			saving = false;
+			uploading = false;
 		}
+	}
+
+	// Legacy handleSave for backward compatibility
+	async function handleSave(data: ResumeData) {
+		await handleSaveProfile({ detail: { resumeData: data } });
+	}
+
+	async function handleTemplateApply(event: CustomEvent) {
+		const { template, theme, customization } = event.detail;
+
+		if (!template || typeof template !== 'string') {
+			console.error('Invalid template data received');
+			return;
+		}
+
+		try {
+			const cleanData = {
+				...resumeData,
+				template: template,
+				theme: theme,
+				customization: customization
+			};
+
+			const { error } = await updateProfile(user.id, {
+				data: cleanData,
+				full_name: resumeData.name,
+				username: profile?.username
+			});
+
+			if (error) throw error;
+
+			// Update local state
+			resumeData = cleanData;
+			profile = { ...profile, data: cleanData };
+			selectedTemplate = template;
+			selectedTheme = theme;
+			templateCustomization = customization;
+
+			toasts.success('Template applied successfully!');
+		} catch (error) {
+			handleError(error, {
+				component: 'EditorPage',
+				action: 'applyTemplate',
+				userMessage: 'Failed to save template settings'
+			});
+		}
+	}
+
+	async function handleThemeApply(event: CustomEvent) {
+		const { template, theme, customization } = event.detail;
+
+		if (!theme || typeof theme !== 'string') {
+			console.error('Invalid theme data received');
+			return;
+		}
+
+		try {
+			const cleanData = {
+				...resumeData,
+				template: template,
+				theme: theme,
+				customization: customization
+			};
+
+			const { error } = await updateProfile(user.id, {
+				data: cleanData,
+				full_name: resumeData.name,
+				username: profile?.username
+			});
+
+			if (error) throw error;
+
+			// Update local state
+			resumeData = cleanData;
+			profile = { ...profile, data: cleanData };
+			selectedTemplate = template;
+			selectedTheme = theme;
+			templateCustomization = customization;
+
+			toasts.success('Theme applied successfully!');
+		} catch (error) {
+			handleError(error, {
+				component: 'EditorPage',
+				action: 'applyTheme',
+				userMessage: 'Failed to save theme settings'
+			});
+		}
+	}
+
+	async function handleCustomizationApply(event: CustomEvent) {
+		const customization = event.detail;
+
+		if (!customization || typeof customization !== 'object') {
+			console.error('Invalid customization data received');
+			return;
+		}
+
+		try {
+			const cleanData = {
+				...resumeData,
+				template: selectedTemplate,
+				theme: selectedTheme,
+				customization: customization
+			};
+
+			const { error } = await updateProfile(user.id, {
+				data: cleanData,
+				full_name: resumeData.name,
+				username: profile?.username
+			});
+
+			if (error) throw error;
+
+			// Update local state
+			resumeData = cleanData;
+			profile = { ...profile, data: cleanData };
+			templateCustomization = customization;
+
+			toasts.success('Customization applied successfully!');
+		} catch (error) {
+			handleError(error, {
+				component: 'EditorPage',
+				action: 'applyCustomization',
+				userMessage: 'Failed to save customization settings'
+			});
+		}
+	}
+
+	async function handleStatusChange(event: CustomEvent) {
+		const { status } = event.detail;
+		if (!status || typeof status !== 'string') {
+			console.error('Invalid status data received');
+			return;
+		}
+		profileStatus = status;
+		toasts.success(`Profile status changed to ${status}`);
+	}
+
+	async function handlePhotoUpload(event: CustomEvent) {
+		const { file } = event.detail;
+		if (!file || !(file instanceof File)) {
+			console.error('Invalid file data received');
+			return;
+		}
+		try {
+			const photoUrl = await handleProfilePhotoUpload(file);
+			if (resumeData) {
+				resumeData = { ...resumeData, photo_url: photoUrl };
+			}
+			toasts.success('Photo uploaded successfully!');
+		} catch (error) {
+			handleError(error, {
+				component: 'EditorPage',
+				action: 'uploadPhoto',
+				userMessage: 'Failed to upload photo'
+			});
+		}
+	}
+
+	async function handleManualCreate(event: CustomEvent) {
+		const { resumeData: newResumeData } = event.detail;
+		resumeData = newResumeData;
+		toasts.success('Manual resume template created! Start filling in your information.');
 	}
 
 	function handlePreview() {
@@ -155,6 +444,7 @@
 			<button
 				on:click={handlePreview}
 				class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+				data-tour="preview-button"
 			>
 				<Eye class="w-4 h-4 mr-2" />
 				Preview
@@ -192,11 +482,22 @@
 			class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
 		>
 			{#if resumeData}
-				<ProfileEditor
-					bind:resumeData
-					on:save={handleSave}
-					on:preview={() => (showPreview = true)}
-				/>
+				<div data-tour="profile-editor">
+					<ProfileEditor
+						{resumeData}
+						username={profile?.username || ''}
+						{profileStatus}
+						{saveSuccess}
+						{uploading}
+						on:save={handleSaveProfile}
+						on:templateApply={handleTemplateApply}
+						on:themeApply={handleThemeApply}
+						on:customizationApply={handleCustomizationApply}
+						on:statusChange={handleStatusChange}
+						on:photoUpload={handlePhotoUpload}
+						on:manualCreate={handleManualCreate}
+					/>
+				</div>
 			{/if}
 		</div>
 	{:else if activeTab === 'design'}
@@ -205,7 +506,20 @@
 			class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
 		>
 			{#if resumeData}
-				<TemplateSelector profileData={resumeData} customizable={true} />
+				<TemplateSelector
+					bind:selectedTemplate
+					bind:selectedTheme
+					bind:customization={templateCustomization}
+					on:templateChange={(e) => {
+						selectedTemplate = e.detail;
+					}}
+					on:themeChange={(e) => {
+						selectedTheme = e.detail;
+					}}
+					on:customizationChange={(e) => {
+						templateCustomization = e.detail;
+					}}
+				/>
 			{/if}
 		</div>
 	{:else if activeTab === 'settings'}
