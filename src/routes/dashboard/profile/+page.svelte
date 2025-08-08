@@ -215,7 +215,7 @@
 		try {
 			// Starting save process
 
-			let photoUrl = eventData.resumeData.photo_url || profile?.photo_url;
+                       let photoUrl = eventData.resumeData.photo_url || profile?.data?.photo_url;
 
 			// Handle image upload if a new photo is provided
 			if (eventData.profilePhoto) {
