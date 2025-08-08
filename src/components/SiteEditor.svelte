@@ -67,8 +67,7 @@
 		Moon,
 		Sparkles as SparklesIcon
 	} from 'lucide-svelte';
-	import type { ResumeData } from '$lib/ai';
-	import type { TemplateCustomization, Customization } from '$lib/types';
+        import type { ResumeData, TemplateCustomization, Customization } from '$lib/types';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
 
@@ -362,9 +361,14 @@
 	function convertFromCustomization(customization: Customization): TemplateCustomization {
 		return {
 			theme: 'blue',
-			fontFamily: customization.fontFamily,
-			fontSize: customization.fontSize,
-			layout: typeof customization.layout === 'object' ? (customization.layout.columns === 2 ? 'two-column' : 'standard') : customization.layout,
+                        fontFamily: customization.fontFamily || 'inter',
+                        fontSize: customization.fontSize || 'medium',
+                        layout:
+                                typeof customization.layout === 'object'
+                                        ? customization.layout.columns === 2
+                                                ? 'two-column'
+                                                : 'standard'
+                                        : customization.layout || 'standard',
 			spacing: 'normal',
 			borderRadius: 'medium',
 			shadow: 'medium',
@@ -372,9 +376,9 @@
 			textColor: customization.colors?.text || '#1F2937',
 			backgroundColor: customization.colors?.accent || '#FFFFFF',
 			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
-			lineHeight: customization.lineHeight.toString(),
+                        lineHeight: customization.lineHeight?.toString() ?? '1.5',
 			letterSpacing: 'normal',
-			headingFont: customization.fontFamily,
+                        headingFont: customization.fontFamily || 'inter',
 			containerWidth: 'standard',
 			verticalSpacing: 'normal',
 			horizontalPadding: 'normal'

@@ -708,11 +708,11 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 			// Check if user is available
 				if (!user || !user.id) {
-					handleAuthError(new Error('User session not found. Please log in again.'), {
-						component: 'Dashboard',
-						action: 'validateUserSession',
-						userMessage: 'Session expired. Please log in again.'
-					});
+                                        handleAuthErr(new Error('User session not found. Please log in again.'), {
+                                                component: 'Dashboard',
+                                                action: 'validateUserSession',
+                                                userMessage: 'Session expired. Please log in again.'
+                                        });
 					throw new Error('User session not found. Please log in again.');
 				}
 

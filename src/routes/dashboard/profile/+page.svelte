@@ -3,43 +3,50 @@
 	import { goto } from '$app/navigation';
 	import { supabase, getProfile, updateProfile } from '$lib/supabase';
 	import ProfileEditor from '../../../components/ProfileEditor.svelte';
-	import TemplateSelector from '../../../components/TemplateSelector.svelte';
-	import { toasts } from '$lib/stores/toast';
-	import { ArrowLeft, User as UserIcon, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
-	import type { User } from '@supabase/supabase-js';
-	import type { Profile, ResumeData } from '$lib/types';
-	import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
+        import TemplateSelector from '../../../components/TemplateSelector.svelte';
+        import { toasts } from '$lib/stores/toast';
+        import { ArrowLeft, User as UserIcon, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
+        import type { User } from '@supabase/supabase-js';
+        import type {
+                Profile,
+                ResumeData,
+                TemplateCustomization,
+                Customization,
+                WorkExperience,
+                Education as EducationType
+        } from '$lib/types';
+        import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
 
-	// Type definitions
-	interface Experience {
-		title?: string;
-		company?: string;
-		duration?: string;
-		description?: string;
-	}
-
-	interface Education {
-		institution?: string;
-		degree?: string;
-		year?: string;
-	}
-
-	let user: User | null = null;
-	let profile: Profile | null = null;
-	let resumeData: ResumeData | null = null;
+        let user: User | null = null;
+        let profile: Profile | null = null;
+        let resumeData: ResumeData = {
+                name: '',
+                email: '',
+                phone: '',
+                location: '',
+                summary: '',
+                experience: [],
+                education: [],
+                certifications: [],
+                languages: [],
+                projects: [],
+                awards: [],
+                skills: [],
+                links: []
+        };
 	let loading = false;
 	let saving = false;
 	let saveSuccess = false;
 
 	// Template and design state
-	let selectedTemplate = 'modern';
-	let selectedTheme = 'blue';
-	let templateCustomization = {
-		theme: 'blue',
-		fontFamily: 'inter',
-		fontSize: 'medium',
-		layout: 'standard',
-		spacing: 'normal',
+        let selectedTemplate = 'modern';
+        let selectedTheme = 'blue';
+        let templateCustomization: TemplateCustomization = {
+                theme: 'blue',
+                fontFamily: 'inter',
+                fontSize: 'medium',
+                layout: 'standard',
+                spacing: 'normal',
 		borderRadius: 'medium',
 		shadow: 'medium',
 		accentColor: '#3B82F6',
@@ -63,46 +70,112 @@
 		headingFont: 'inter',
 		containerWidth: 'standard',
 		verticalSpacing: 'normal',
-		horizontalPadding: 'normal'
-	};
-	let showDesignPanel = false;
+                horizontalPadding: 'normal'
+        };
+        let showDesignPanel = false;
 
-	// Computed variables for type safety
-	$: workExperienceData =
-		resumeData?.experience && Array.isArray(resumeData.experience)
-			? resumeData.experience.map((exp: Experience) => ({
-					title: exp.title || 'Job Title',
-					company: exp.company || 'Company Name',
-					type: 'Full-Time',
-					period: exp.duration || 'Start - End',
-					current: false,
-					description: exp.description || ''
-			  }))
-			: [
-					{
-						title: 'Your Job Title',
-						company: 'Company Name',
-						type: 'Full-Time',
-						period: 'Start - End',
-						current: false,
-						description: ''
-					}
-			  ];
+        function convertToCustomization(templateCustom: TemplateCustomization): Customization {
+                return {
+                        fontFamily: templateCustom.fontFamily,
+                        fontSize: templateCustom.fontSize,
+                        lineHeight:
+                                typeof templateCustom.lineHeight === 'string'
+                                        ? 1.5
+                                        : templateCustom.lineHeight,
+                        margins: {
+                                top: 16,
+                                bottom: 16,
+                                left: 16,
+                                right: 16
+                        },
+                        colors: {
+                                primary: templateCustom.accentColor,
+                                secondary: templateCustom.textColor,
+                                accent: templateCustom.backgroundColor,
+                                text: templateCustom.textColor
+                        },
+                        layout: {
+                                columns: templateCustom.layout === 'two-column' ? 2 : 1,
+                                spacing: 16
+                        }
+                };
+        }
 
-	$: educationData =
-		resumeData?.education && Array.isArray(resumeData.education)
-			? resumeData.education.map((edu: Education) => ({
-					institution: edu.institution || 'University Name',
-					degree: edu.degree || 'Your Degree',
-					period: edu.year || 'Start - End'
-			  }))
-			: [
-					{
-						institution: 'University Name',
-						degree: 'Your Degree',
-						period: 'Start - End'
-					}
-			  ];
+        function convertFromCustomization(customization: Customization): TemplateCustomization {
+                return {
+                        theme: 'blue',
+                        fontFamily: customization.fontFamily || 'inter',
+                        fontSize: customization.fontSize || 'medium',
+                        layout:
+                                typeof customization.layout === 'object'
+                                        ? customization.layout.columns === 2
+                                                ? 'two-column'
+                                                : 'standard'
+                                        : customization.layout || 'standard',
+                        spacing: 'normal',
+                        borderRadius: 'medium',
+                        shadow: 'medium',
+                        accentColor: customization.colors?.primary || '#3B82F6',
+                        textColor: customization.colors?.text || '#1F2937',
+                        backgroundColor: customization.colors?.accent || '#FFFFFF',
+                        sectionOrder: [
+                                'header',
+                                'about',
+                                'experience',
+                                'education',
+                                'skills',
+                                'contact',
+                                'projects',
+                                'certifications',
+                                'languages',
+                                'awards',
+                                'links'
+                        ],
+                        lineHeight: customization.lineHeight?.toString() ?? '1.5',
+                        letterSpacing: 'normal',
+                        headingFont: customization.fontFamily || 'inter',
+                        containerWidth: 'standard',
+                        verticalSpacing: 'normal',
+                        horizontalPadding: 'normal'
+                };
+        }
+
+        // Computed variables for type safety
+        $: workExperienceData =
+                resumeData.experience && Array.isArray(resumeData.experience)
+                        ? resumeData.experience.map((exp: WorkExperience) => ({
+                                        title: exp.title || 'Job Title',
+                                        company: exp.company || 'Company Name',
+                                        type: 'Full-Time',
+                                        period: exp.period || 'Start - End',
+                                        current: false,
+                                        description: exp.description || ''
+                          }))
+                        : [
+                                        {
+                                                title: 'Your Job Title',
+                                                company: 'Company Name',
+                                                type: 'Full-Time',
+                                                period: 'Start - End',
+                                                current: false,
+                                                description: ''
+                                        }
+                          ];
+
+        $: educationData =
+                resumeData.education && Array.isArray(resumeData.education)
+                        ? resumeData.education.map((edu: EducationType) => ({
+                                        institution: edu.institution || 'University Name',
+                                        degree: edu.degree || 'Your Degree',
+                                        period: edu.period || 'Start - End'
+                          }))
+                        : [
+                                        {
+                                                institution: 'University Name',
+                                                degree: 'Your Degree',
+                                                period: 'Start - End'
+                                        }
+                          ];
 
 	onMount(async () => {
 		try {
@@ -128,11 +201,11 @@
 	});
 
 	async function loadProfile() {
-		if (!user?.id) return;
+                if (!user?.id) return;
 
 		loading = true;
 		try {
-			const { data, error } = await getProfile(user.id);
+                        const { data, error } = await getProfile(user!.id);
 			if (error) {
 				handleError(error, {
 					component: 'ProfilePage',
@@ -144,26 +217,33 @@
 
 			profile = data;
 			if (profile?.data) {
-				resumeData = profile.data;
-				// Load template settings from profile data
-				if (resumeData.template) selectedTemplate = resumeData.template;
-				if (resumeData.theme) selectedTheme = resumeData.theme;
-				if (resumeData.customization) {
-					templateCustomization = { ...templateCustomization, ...resumeData.customization };
-				}
+                                resumeData = profile.data;
+                                // Load template settings from profile data
+                                if (resumeData.template) selectedTemplate = resumeData.template;
+                                if (resumeData.theme) selectedTheme = resumeData.theme;
+                                if (resumeData.customization) {
+                                        templateCustomization = {
+                                                ...templateCustomization,
+                                                ...convertFromCustomization(resumeData.customization)
+                                        };
+                                }
 			} else {
 				// Initialize with default structure if no profile data exists
-				resumeData = {
-					name: '',
-					email: '',
-					phone: '',
-					location: '',
-					summary: '',
-					experience: [],
-					education: [],
-					skills: [],
-					links: []
-				};
+                                resumeData = {
+                                        name: '',
+                                        email: '',
+                                        phone: '',
+                                        location: '',
+                                        summary: '',
+                                        experience: [],
+                                        education: [],
+                                        certifications: [],
+                                        languages: [],
+                                        projects: [],
+                                        awards: [],
+                                        skills: [],
+                                        links: []
+                                };
 			}
 		} catch (error) {
 			handleError(error, {
@@ -180,7 +260,7 @@
 		try {
 			const fileExt = file.name.split('.').pop();
 			const fileName = `${Math.random()}.${fileExt}`;
-			const filePath = `${user.id}/${fileName}`;
+                        const filePath = `${user!.id}/${fileName}`;
 
 			const { error: uploadError } = await supabase.storage
 				.from('profile-photos')
@@ -231,15 +311,15 @@
 				}
 			}
 
-			// Clean and structure the resume data to ensure it's valid for JSONB storage
-			const cleanResumeData = {
-				...resumeData, // Start with existing data
-				...eventData.resumeData, // Overwrite with new data
-				photo_url: photoUrl, // Ensure the photo URL is updated
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			};
+                        // Clean and structure the resume data to ensure it's valid for JSONB storage
+                        const cleanResumeData: ResumeData = {
+                                ...resumeData, // Start with existing data
+                                ...eventData.resumeData, // Overwrite with new data
+                                photo_url: photoUrl, // Ensure the photo URL is updated
+                                template: selectedTemplate,
+                                theme: selectedTheme,
+                                customization: convertToCustomization(templateCustomization)
+                        };
 
 			// Resume data cleaned
 
@@ -252,7 +332,7 @@
 
 			// Sending data to updateProfile
 
-			const { error } = await updateProfile(user.id, updateData);
+                        const { error } = await updateProfile(user!.id, updateData);
 
 			if (error) {
 				handleError(error, {
@@ -263,9 +343,9 @@
 				throw error;
 			}
 
-			// Update local state
-			resumeData = cleanResumeData;
-			profile = { ...profile, data: cleanResumeData, full_name: cleanResumeData.name };
+                        // Update local state
+                        resumeData = cleanResumeData;
+                        profile = { ...(profile as Profile), data: cleanResumeData, full_name: cleanResumeData.name };
 
 			// Save completed successfully
 			toasts.success('Profile updated successfully!');
@@ -293,37 +373,37 @@
 
 		try {
 			// Clean and structure the data to ensure it's valid for JSONB storage
-			const cleanData = {
-				name: resumeData.name,
-				email: resumeData.email,
-				phone: resumeData.phone,
-				location: resumeData.location,
-				summary: resumeData.summary,
-				experience: resumeData.experience || [],
-				education: resumeData.education || [],
-				skills: resumeData.skills || [],
-				projects: resumeData.projects || [],
-				certifications: resumeData.certifications || [],
-				languages: resumeData.languages || [],
-				links: resumeData.links || [],
-				awards: resumeData.awards || [],
-				photo_url: resumeData.photo_url,
-				template: template,
-				theme: theme,
-				customization: customization
-			};
+                        const cleanData: ResumeData = {
+                                name: resumeData.name,
+                                email: resumeData.email,
+                                phone: resumeData.phone,
+                                location: resumeData.location,
+                                summary: resumeData.summary,
+                                experience: resumeData.experience || [],
+                                education: resumeData.education || [],
+                                skills: resumeData.skills || [],
+                                projects: resumeData.projects || [],
+                                certifications: resumeData.certifications || [],
+                                languages: resumeData.languages || [],
+                                links: resumeData.links || [],
+                                awards: resumeData.awards || [],
+                                photo_url: resumeData.photo_url,
+                                template: template,
+                                theme: theme,
+                                customization: convertToCustomization(customization)
+                        };
 
-			const { error } = await updateProfile(user.id, {
-				data: cleanData,
-				full_name: resumeData.name,
-				username: profile?.username
-			});
+                        const { error } = await updateProfile(user!.id, {
+                                data: cleanData,
+                                full_name: resumeData.name,
+                                username: profile?.username
+                        });
 
 			if (error) throw error;
 
 			// Update local state
-			resumeData = cleanData;
-			profile = { ...profile, data: cleanData };
+                        resumeData = cleanData;
+                        profile = { ...(profile as Profile), data: cleanData };
 
 			toasts.success('Template applied successfully!');
 		} catch (error) {
@@ -338,37 +418,37 @@
 
 		try {
 			// Clean and structure the data to ensure it's valid for JSONB storage
-			const cleanData = {
-				name: resumeData.name,
-				email: resumeData.email,
-				phone: resumeData.phone,
-				location: resumeData.location,
-				summary: resumeData.summary,
-				experience: resumeData.experience || [],
-				education: resumeData.education || [],
-				skills: resumeData.skills || [],
-				projects: resumeData.projects || [],
-				certifications: resumeData.certifications || [],
-				languages: resumeData.languages || [],
-				links: resumeData.links || [],
-				awards: resumeData.awards || [],
-				photo_url: resumeData.photo_url,
-				template: template,
-				theme: theme,
-				customization: customization
-			};
+                        const cleanData: ResumeData = {
+                                name: resumeData.name,
+                                email: resumeData.email,
+                                phone: resumeData.phone,
+                                location: resumeData.location,
+                                summary: resumeData.summary,
+                                experience: resumeData.experience || [],
+                                education: resumeData.education || [],
+                                skills: resumeData.skills || [],
+                                projects: resumeData.projects || [],
+                                certifications: resumeData.certifications || [],
+                                languages: resumeData.languages || [],
+                                links: resumeData.links || [],
+                                awards: resumeData.awards || [],
+                                photo_url: resumeData.photo_url,
+                                template: template,
+                                theme: theme,
+                                customization: convertToCustomization(customization)
+                        };
 
-			const { error } = await updateProfile(user.id, {
-				data: cleanData,
-				full_name: resumeData.name,
-				username: profile?.username
-			});
+                        const { error } = await updateProfile(user!.id, {
+                                data: cleanData,
+                                full_name: resumeData.name,
+                                username: profile?.username
+                        });
 
 			if (error) throw error;
 
 			// Update local state
-			resumeData = cleanData;
-			profile = { ...profile, data: cleanData };
+                        resumeData = cleanData;
+                        profile = { ...(profile as Profile), data: cleanData };
 
 			toasts.success('Theme applied successfully!');
 		} catch (error) {
@@ -383,37 +463,37 @@
 
 		try {
 			// Clean and structure the data to ensure it's valid for JSONB storage
-			const cleanData = {
-				name: resumeData.name,
-				email: resumeData.email,
-				phone: resumeData.phone,
-				location: resumeData.location,
-				summary: resumeData.summary,
-				experience: resumeData.experience || [],
-				education: resumeData.education || [],
-				skills: resumeData.skills || [],
-				projects: resumeData.projects || [],
-				certifications: resumeData.certifications || [],
-				languages: resumeData.languages || [],
-				links: resumeData.links || [],
-				awards: resumeData.awards || [],
-				photo_url: resumeData.photo_url,
-				template: resumeData.template,
-				theme: resumeData.theme,
-				customization: customization
-			};
+                        const cleanData: ResumeData = {
+                                name: resumeData.name,
+                                email: resumeData.email,
+                                phone: resumeData.phone,
+                                location: resumeData.location,
+                                summary: resumeData.summary,
+                                experience: resumeData.experience || [],
+                                education: resumeData.education || [],
+                                skills: resumeData.skills || [],
+                                projects: resumeData.projects || [],
+                                certifications: resumeData.certifications || [],
+                                languages: resumeData.languages || [],
+                                links: resumeData.links || [],
+                                awards: resumeData.awards || [],
+                                photo_url: resumeData.photo_url,
+                                template: resumeData.template,
+                                theme: resumeData.theme,
+                                customization: convertToCustomization(customization)
+                        };
 
-			const { error } = await updateProfile(user.id, {
-				data: cleanData,
-				full_name: resumeData.name,
-				username: profile?.username
-			});
+                        const { error } = await updateProfile(user!.id, {
+                                data: cleanData,
+                                full_name: resumeData.name,
+                                username: profile?.username
+                        });
 
 			if (error) throw error;
 
 			// Update local state
-			resumeData = cleanData;
-			profile = { ...profile, data: cleanData };
+                        resumeData = cleanData;
+                        profile = { ...(profile as Profile), data: cleanData };
 
 			toasts.success('Customization applied successfully!');
 		} catch (error) {
@@ -427,16 +507,19 @@
 			console.log('Template change received:', event.detail);
 			selectedTemplate = event.detail.template;
 			selectedTheme = event.detail.theme;
-			if (event.detail.customization) {
-				templateCustomization = { ...templateCustomization, ...event.detail.customization };
-			}
-			// Update resumeData with new template settings for immediate preview
-			resumeData = {
-				...resumeData,
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			};
+                        if (event.detail.customization) {
+                                templateCustomization = {
+                                        ...templateCustomization,
+                                        ...event.detail.customization
+                                };
+                        }
+                        // Update resumeData with new template settings for immediate preview
+                        resumeData = {
+                                ...resumeData,
+                                template: selectedTemplate,
+                                theme: selectedTheme,
+                                customization: convertToCustomization(templateCustomization)
+                        };
 			console.log('Updated selectedTemplate:', selectedTemplate, 'selectedTheme:', selectedTheme);
 		} catch (error) {
 			console.error('Template change error:', error);
@@ -446,16 +529,19 @@
 	function handleThemeChange(event: CustomEvent) {
 		try {
 			selectedTheme = event.detail.theme;
-			if (event.detail.customization) {
-				templateCustomization = { ...templateCustomization, ...event.detail.customization };
-			}
-			// Update resumeData with new theme settings for immediate preview
-			resumeData = {
-				...resumeData,
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			};
+                        if (event.detail.customization) {
+                                templateCustomization = {
+                                        ...templateCustomization,
+                                        ...event.detail.customization
+                                };
+                        }
+                        // Update resumeData with new theme settings for immediate preview
+                        resumeData = {
+                                ...resumeData,
+                                template: selectedTemplate,
+                                theme: selectedTheme,
+                                customization: convertToCustomization(templateCustomization)
+                        };
 		} catch (error) {
 			console.error('Theme change error:', error);
 		}
@@ -463,9 +549,12 @@
 
 	function handleCustomizationChange(event: CustomEvent) {
 		try {
-			templateCustomization = { ...templateCustomization, ...event.detail };
-			// Update resumeData with new customization settings for immediate preview
-			resumeData = { ...resumeData, customization: templateCustomization };
+                        templateCustomization = { ...templateCustomization, ...event.detail };
+                        // Update resumeData with new customization settings for immediate preview
+                        resumeData = {
+                                ...resumeData,
+                                customization: convertToCustomization(templateCustomization)
+                        };
 		} catch (error) {
 			console.error('Customization change error:', error);
 		}
@@ -477,25 +566,37 @@
 		resumeData = { ...resumeData, theme: selectedTheme };
 	}
 
-	function updateFontFamily(fontFamily: string) {
-		templateCustomization.fontFamily = fontFamily;
-		resumeData = { ...resumeData, customization: templateCustomization };
-	}
+        function updateFontFamily(fontFamily: string) {
+                templateCustomization.fontFamily = fontFamily;
+                resumeData = {
+                        ...resumeData,
+                        customization: convertToCustomization(templateCustomization)
+                };
+        }
 
-	function updateFontSize(fontSize: string) {
-		templateCustomization.fontSize = fontSize;
-		resumeData = { ...resumeData, customization: templateCustomization };
-	}
+        function updateFontSize(fontSize: string) {
+                templateCustomization.fontSize = fontSize;
+                resumeData = {
+                        ...resumeData,
+                        customization: convertToCustomization(templateCustomization)
+                };
+        }
 
-	function updateLayout(layout: string) {
-		templateCustomization.layout = layout;
-		resumeData = { ...resumeData, customization: templateCustomization };
-	}
+        function updateLayout(layout: string) {
+                templateCustomization.layout = layout;
+                resumeData = {
+                        ...resumeData,
+                        customization: convertToCustomization(templateCustomization)
+                };
+        }
 
-	function updateContainerWidth(containerWidth: string) {
-		templateCustomization.containerWidth = containerWidth;
-		resumeData = { ...resumeData, customization: templateCustomization };
-	}
+        function updateContainerWidth(containerWidth: string) {
+                templateCustomization.containerWidth = containerWidth;
+                resumeData = {
+                        ...resumeData,
+                        customization: convertToCustomization(templateCustomization)
+                };
+        }
 </script>
 
 <svelte:head>
@@ -698,7 +799,7 @@
 								<div class="space-y-2">
 									<select
 										bind:value={templateCustomization.fontFamily}
-										on:change={() => updateFontFamily(templateCustomization.fontFamily)}
+                                                                                on:change={() => updateFontFamily(templateCustomization.fontFamily || '')}
 										class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
 									>
 										<option value="inter">Inter</option>
@@ -708,7 +809,7 @@
 									</select>
 									<select
 										bind:value={templateCustomization.fontSize}
-										on:change={() => updateFontSize(templateCustomization.fontSize)}
+                                                                                on:change={() => updateFontSize(templateCustomization.fontSize || '')}
 										class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
 									>
 										<option value="small">Small</option>

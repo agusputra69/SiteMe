@@ -8,17 +8,31 @@
 		getValidSession,
 		handleAuthError
 	} from '$lib/supabase';
-	import TemplateSelector from '../../../components/TemplateSelector.svelte';
-	import ProfileEditor from '../../../components/ProfileEditor.svelte';
-	import { toasts } from '$lib/stores/toast';
-	import { ArrowLeft, Save, Eye, Settings, Palette, Layout } from 'lucide-svelte';
-	import type { User } from '@supabase/supabase-js';
-	import type { Profile, ResumeData } from '$lib/types';
-	import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
+        import TemplateSelector from '../../../components/TemplateSelector.svelte';
+        import ProfileEditor from '../../../components/ProfileEditor.svelte';
+        import { toasts } from '$lib/stores/toast';
+        import { ArrowLeft, Save, Eye, Settings, Palette, Layout } from 'lucide-svelte';
+        import type { User } from '@supabase/supabase-js';
+        import type { Profile, ResumeData, TemplateCustomization, Customization } from '$lib/types';
+        import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
 
-	let user: User | null = null;
-	let profile: Profile | null = null;
-	let resumeData: ResumeData | null = null;
+        let user: User | null = null;
+        let profile: Profile | null = null;
+        let resumeData: ResumeData = {
+                name: '',
+                email: '',
+                phone: '',
+                location: '',
+                summary: '',
+                experience: [],
+                education: [],
+                certifications: [],
+                languages: [],
+                projects: [],
+                awards: [],
+                skills: [],
+                links: []
+        };
 	let loading = false;
 	let saving = false;
 	let uploading = false;
@@ -35,14 +49,14 @@
 	}
 
 	// Template and design state
-	let selectedTemplate = 'modern';
-	let selectedTheme = 'blue';
-	let templateCustomization = {
-		theme: 'blue',
-		fontFamily: 'inter',
-		fontSize: 'medium',
-		layout: 'standard',
-		spacing: 'normal',
+        let selectedTemplate = 'modern';
+        let selectedTheme = 'blue';
+        let templateCustomization: TemplateCustomization = {
+                theme: 'blue',
+                fontFamily: 'inter',
+                fontSize: 'medium',
+                layout: 'standard',
+                spacing: 'normal',
 		borderRadius: 'medium',
 		shadow: 'medium',
 		accentColor: '#3B82F6',
@@ -66,8 +80,74 @@
 		headingFont: 'inter',
 		containerWidth: 'standard',
 		verticalSpacing: 'normal',
-		horizontalPadding: 'normal'
-	};
+                horizontalPadding: 'normal'
+        };
+
+        function convertToCustomization(templateCustom: TemplateCustomization): Customization {
+                return {
+                        fontFamily: templateCustom.fontFamily,
+                        fontSize: templateCustom.fontSize,
+                        lineHeight:
+                                typeof templateCustom.lineHeight === 'string'
+                                        ? 1.5
+                                        : templateCustom.lineHeight,
+                        margins: {
+                                top: 16,
+                                bottom: 16,
+                                left: 16,
+                                right: 16
+                        },
+                        colors: {
+                                primary: templateCustom.accentColor,
+                                secondary: templateCustom.textColor,
+                                accent: templateCustom.backgroundColor,
+                                text: templateCustom.textColor
+                        },
+                        layout: {
+                                columns: templateCustom.layout === 'two-column' ? 2 : 1,
+                                spacing: 16
+                        }
+                };
+        }
+
+        function convertFromCustomization(customization: Customization): TemplateCustomization {
+                return {
+                        theme: 'blue',
+                        fontFamily: customization.fontFamily || 'inter',
+                        fontSize: customization.fontSize || 'medium',
+                        layout:
+                                typeof customization.layout === 'object'
+                                        ? customization.layout.columns === 2
+                                                ? 'two-column'
+                                                : 'standard'
+                                        : customization.layout || 'standard',
+                        spacing: 'normal',
+                        borderRadius: 'medium',
+                        shadow: 'medium',
+                        accentColor: customization.colors?.primary || '#3B82F6',
+                        textColor: customization.colors?.text || '#1F2937',
+                        backgroundColor: customization.colors?.accent || '#FFFFFF',
+                        sectionOrder: [
+                                'header',
+                                'about',
+                                'experience',
+                                'education',
+                                'skills',
+                                'contact',
+                                'projects',
+                                'certifications',
+                                'languages',
+                                'awards',
+                                'links'
+                        ],
+                        lineHeight: customization.lineHeight?.toString() ?? '1.5',
+                        letterSpacing: 'normal',
+                        headingFont: customization.fontFamily || 'inter',
+                        containerWidth: 'standard',
+                        verticalSpacing: 'normal',
+                        horizontalPadding: 'normal'
+                };
+        }
 
 	onMount(async () => {
 		try {
@@ -94,7 +174,7 @@
 
 		loading = true;
 		try {
-			const { data, error } = await getProfile(user.id);
+                        const { data, error } = await getProfile(user!.id);
 			if (error) {
 				handleError(error, {
 					component: 'EditorPage',
@@ -111,9 +191,12 @@
 					// Load template settings from profile data
 					if (resumeData.template) selectedTemplate = resumeData.template;
 					if (resumeData.theme) selectedTheme = resumeData.theme;
-					if (resumeData.customization) {
-						templateCustomization = { ...templateCustomization, ...resumeData.customization };
-					}
+                                        if (resumeData.customization) {
+                                                templateCustomization = {
+                                                        ...templateCustomization,
+                                                        ...convertFromCustomization(resumeData.customization)
+                                                };
+                                        }
 				} else {
 					// Initialize with default structure if no profile data exists
 					resumeData = {
@@ -148,7 +231,7 @@
 		try {
 			const fileExt = file.name.split('.').pop();
 			const fileName = `${Math.random()}.${fileExt}`;
-			const filePath = `${user.id}/${fileName}`;
+                        const filePath = `${user!.id}/${fileName}`;
 
 			const { error: uploadError } = await supabase.storage
 				.from('profile-photos')
@@ -197,14 +280,14 @@
 			}
 
 			// Clean and structure the resume data
-			const cleanResumeData = {
-				...resumeData,
-				...eventData.resumeData,
-				photo_url: photoUrl,
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: templateCustomization
-			};
+                        const cleanResumeData: ResumeData = {
+                                ...resumeData,
+                                ...eventData.resumeData,
+                                photo_url: photoUrl,
+                                template: selectedTemplate,
+                                theme: selectedTheme,
+                                customization: convertToCustomization(templateCustomization)
+                        };
 
 			const updateData = {
 				data: cleanResumeData,
@@ -216,7 +299,7 @@
 				throw new Error('Invalid update data provided');
 			}
 
-			const { error } = await updateProfile(user.id, updateData);
+                        const { error } = await updateProfile(user!.id, updateData);
 
 			if (error) {
 				handleError(error, {
@@ -229,7 +312,7 @@
 
 			// Update local state
 			resumeData = cleanResumeData;
-			profile = { ...profile, data: cleanResumeData, full_name: cleanResumeData.name };
+                        profile = { ...(profile as Profile), data: cleanResumeData, full_name: cleanResumeData.name };
 
 			toasts.success('Profile updated successfully!');
 			saveSuccess = true;
@@ -246,9 +329,11 @@
 	}
 
 	// Legacy handleSave for backward compatibility
-	async function handleSave(data: ResumeData) {
-		await handleSaveProfile({ detail: { resumeData: data } });
-	}
+        async function handleSave(data: ResumeData) {
+                await handleSaveProfile(
+                        new CustomEvent('save', { detail: { resumeData: data } })
+                );
+        }
 
 	async function handleTemplateApply(event: CustomEvent) {
 		const { template, theme, customization } = event.detail;
@@ -259,24 +344,24 @@
 		}
 
 		try {
-			const cleanData = {
-				...resumeData,
-				template: template,
-				theme: theme,
-				customization: customization
-			};
+                        const cleanData: ResumeData = {
+                                ...resumeData,
+                                template: template,
+                                theme: theme,
+                                customization: convertToCustomization(customization)
+                        };
 
-			const { error } = await updateProfile(user.id, {
-				data: cleanData,
-				full_name: resumeData.name,
-				username: profile?.username
-			});
+                        const { error } = await updateProfile(user!.id, {
+                                data: cleanData,
+                                full_name: resumeData.name,
+                                username: profile?.username
+                        });
 
 			if (error) throw error;
 
 			// Update local state
 			resumeData = cleanData;
-			profile = { ...profile, data: cleanData };
+                        profile = { ...(profile as Profile), data: cleanData };
 			selectedTemplate = template;
 			selectedTheme = theme;
 			templateCustomization = customization;
@@ -300,24 +385,24 @@
 		}
 
 		try {
-			const cleanData = {
-				...resumeData,
-				template: template,
-				theme: theme,
-				customization: customization
-			};
+                        const cleanData: ResumeData = {
+                                ...resumeData,
+                                template: template,
+                                theme: theme,
+                                customization: convertToCustomization(customization)
+                        };
 
-			const { error } = await updateProfile(user.id, {
-				data: cleanData,
-				full_name: resumeData.name,
-				username: profile?.username
-			});
+                        const { error } = await updateProfile(user!.id, {
+                                data: cleanData,
+                                full_name: resumeData.name,
+                                username: profile?.username
+                        });
 
 			if (error) throw error;
 
 			// Update local state
 			resumeData = cleanData;
-			profile = { ...profile, data: cleanData };
+                        profile = { ...(profile as Profile), data: cleanData };
 			selectedTemplate = template;
 			selectedTheme = theme;
 			templateCustomization = customization;
@@ -341,24 +426,24 @@
 		}
 
 		try {
-			const cleanData = {
-				...resumeData,
-				template: selectedTemplate,
-				theme: selectedTheme,
-				customization: customization
-			};
+                        const cleanData: ResumeData = {
+                                ...resumeData,
+                                template: selectedTemplate,
+                                theme: selectedTheme,
+                                customization: convertToCustomization(customization)
+                        };
 
-			const { error } = await updateProfile(user.id, {
-				data: cleanData,
-				full_name: resumeData.name,
-				username: profile?.username
-			});
+                        const { error } = await updateProfile(user!.id, {
+                                data: cleanData,
+                                full_name: resumeData.name,
+                                username: profile?.username
+                        });
 
 			if (error) throw error;
 
 			// Update local state
 			resumeData = cleanData;
-			profile = { ...profile, data: cleanData };
+                        profile = { ...(profile as Profile), data: cleanData };
 			templateCustomization = customization;
 
 			toasts.success('Customization applied successfully!');
@@ -377,7 +462,7 @@
 			console.error('Invalid status data received');
 			return;
 		}
-		profileStatus = status;
+                profileStatus = status as 'draft' | 'published';
 		toasts.success(`Profile status changed to ${status}`);
 	}
 
@@ -506,23 +591,41 @@
 			class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
 		>
 			{#if resumeData}
-				<TemplateSelector
-					bind:selectedTemplate
-					bind:selectedTheme
-					bind:customization={templateCustomization}
-					on:templateChange={(e) => {
-						selectedTemplate = e.detail;
-					}}
-					on:themeChange={(e) => {
-						selectedTheme = e.detail;
-					}}
-					on:customizationChange={(e) => {
-						templateCustomization = e.detail;
-					}}
-				/>
-			{/if}
-		</div>
-	{:else if activeTab === 'settings'}
+                                <TemplateSelector
+                                        profileData={{
+                                                name: resumeData.name,
+                                                avatar: resumeData.photo_url || '',
+                                                about: resumeData.summary,
+                                                workExperience: resumeData.experience,
+                                                education: resumeData.education,
+                                                skills: resumeData.skills,
+                                                links: resumeData.links,
+                                                projects: resumeData.projects,
+                                                certifications: resumeData.certifications,
+                                                languages: resumeData.languages,
+                                                awards: resumeData.awards,
+                                                contact: {
+                                                        email: resumeData.email,
+                                                        phone: resumeData.phone,
+                                                        location: resumeData.location
+                                                }
+                                        }}
+                                        bind:selectedTemplate
+                                        bind:selectedTheme
+                                        bind:customization={templateCustomization}
+                                        on:templateChange={(e) => {
+                                                selectedTemplate = e.detail;
+                                        }}
+                                        on:themeChange={(e) => {
+                                                selectedTheme = e.detail;
+                                        }}
+                                        on:customizationChange={(e) => {
+                                                templateCustomization = e.detail;
+                                        }}
+                                />
+                        {/if}
+                </div>
+        {:else if activeTab === 'settings'}
 		<!-- Site Settings -->
 		<div
 			class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
@@ -640,7 +743,27 @@
 			</div>
 			<div class="p-6 overflow-auto max-h-[calc(90vh-120px)]">
 				{#if resumeData}
-					<TemplateSelector profileData={resumeData} customizable={false} />
+                                    <TemplateSelector
+                                            profileData={{
+                                                    name: resumeData.name,
+                                                    avatar: resumeData.photo_url || '',
+                                                    about: resumeData.summary,
+                                                    workExperience: resumeData.experience,
+                                                    education: resumeData.education,
+                                                    skills: resumeData.skills,
+                                                    links: resumeData.links,
+                                                    projects: resumeData.projects,
+                                                    certifications: resumeData.certifications,
+                                                    languages: resumeData.languages,
+                                                    awards: resumeData.awards,
+                                                    contact: {
+                                                            email: resumeData.email,
+                                                            phone: resumeData.phone,
+                                                            location: resumeData.location
+                                                    }
+                                            }}
+                                            customizable={false}
+                                    />
 				{/if}
 			</div>
 		</div>
