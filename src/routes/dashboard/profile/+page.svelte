@@ -192,13 +192,13 @@
 
 			return data.publicUrl;
 		} catch (error) {
-				handleError(error, {
-					component: 'ProfilePage',
-					action: 'uploadPhoto',
-					userMessage: 'Failed to upload photo'
-				});
-				throw error;
-			}
+			handleError(error, {
+				component: 'ProfilePage',
+				action: 'uploadPhoto',
+				userMessage: 'Failed to upload photo'
+			});
+			throw error;
+		}
 	}
 
 	async function handleSaveProfile(event: CustomEvent) {
