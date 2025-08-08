@@ -245,13 +245,9 @@ class ErrorHandler {
 				} catch (error) {
 					lastError = error;
 					
-					if (attempt < maxRetries) {
-					await new Promise(resolve => {
-						const timeoutId = setTimeout(resolve, delay * attempt);
-						// Store timeout ID for potential cleanup if needed
-						return timeoutId;
-					});
-				}
+                                        if (attempt < maxRetries) {
+                                                await new Promise((resolve) => setTimeout(resolve, delay * attempt));
+                                        }
 				}
 			}
 			
