@@ -331,12 +331,12 @@ export async function listUserResumes(userId: string): Promise<{ data?: any[]; e
 		});
 
 		if (error) {
-			return { data: null, error };
+			return { data: undefined, error };
 		}
 
 		return { data, error: null };
 	} catch (err) {
-		return { data: null, error: err };
+		return { data: undefined, error: err };
 	}
 }
 

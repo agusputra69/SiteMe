@@ -657,30 +657,7 @@
 		resumeData = { ...resumeData, customization: convertToCustomization(templateCustomization) };
 	}
 
-	// Convert TemplateCustomization to Customization
-	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
-		return {
-			fontFamily: templateCustom.fontFamily || 'inter',
-			fontSize: templateCustom.fontSize || 'medium',
-			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight || 1.5,
-			margins: {
-				top: 16,
-				bottom: 16,
-				left: 16,
-				right: 16
-			},
-			colors: {
-				primary: templateCustom.accentColor || '#3B82F6',
-				secondary: templateCustom.textColor || '#1F2937',
-				accent: templateCustom.backgroundColor || '#FFFFFF',
-				text: templateCustom.textColor || '#1F2937'
-			},
-			layout: {
-				columns: templateCustom.layout === 'two-column' ? 2 : 1,
-				spacing: 16
-			}
-		};
-	}
+
 </script>
 
 <svelte:head>
