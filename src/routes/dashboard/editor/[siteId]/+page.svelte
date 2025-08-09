@@ -4,7 +4,8 @@
 	import { page } from '$app/stores';
 	import { supabase, getProfile, getValidSession, handleAuthError } from '$lib/supabase';
 	import TemplateSelector from '../../../../components/TemplateSelector.svelte';
-	import ProfileEditor from '../../../../components/ProfileEditor.svelte';
+import TemplateCustomizer from '../../../../components/TemplateCustomizer.svelte';
+import ProfileEditor from '../../../../components/ProfileEditor.svelte';
 	import { toasts } from '$lib/stores/toast';
 	import { ArrowLeft, Save, Eye, Settings, Palette, Layout, Globe, Trash2 } from 'lucide-svelte';
 	import ConfirmDialog from '../../../../components/ConfirmDialog.svelte';
@@ -20,8 +21,17 @@
 	let activeTab: 'content' | 'design' | 'settings' = 'content';
 	let showPreview = false;
 	let showDeleteConfirm = false;
-	let isNewSite = false;
-	let siteId: string;
+let isNewSite = false;
+let siteId: string;
+
+// Design-related variables
+let selectedTemplate = 'modern';
+let selectedTheme = 'default';
+let templateCustomization = {};
+let showAdvancedCustomization = false;
+let applyingTemplate = false;
+let applyingTheme = false;
+let applyingCustomization = false;
 
 	$: siteId = $page.params.siteId || '';
 	$: isNewSite = siteId === 'new';
@@ -322,6 +332,109 @@
 		}
 	}
 
+	// Design event handlers
+	async function handleTemplateApply(event: CustomEvent) {
+		if (!user || !site) return;
+
+		applyingTemplate = true;
+		try {
+			const { template, theme, customization } = event.detail;
+			
+			const { error } = await supabase
+				.from('sites')
+				.update({
+					template: template,
+					theme: theme,
+					customization: customization,
+					updated_at: new Date().toISOString()
+				})
+				.eq('id', site.id)
+				.eq('user_id', user.id);
+
+			if (error) {
+				console.error('Error applying template:', error);
+				toasts.error('Failed to apply template');
+				return;
+			}
+
+			site.template = template;
+			site.theme = theme;
+			site.customization = customization;
+			toasts.success('Template applied successfully!');
+		} catch (error) {
+			console.error('Error applying template:', error);
+			toasts.error('Failed to apply template');
+		} finally {
+			applyingTemplate = false;
+		}
+	}
+
+	async function handleThemeApply(event: CustomEvent) {
+		if (!user || !site) return;
+
+		applyingTheme = true;
+		try {
+			const { template, theme, customization } = event.detail;
+			
+			const { error } = await supabase
+				.from('sites')
+				.update({
+					theme: theme,
+					customization: customization,
+					updated_at: new Date().toISOString()
+				})
+				.eq('id', site.id)
+				.eq('user_id', user.id);
+
+			if (error) {
+				console.error('Error applying theme:', error);
+				toasts.error('Failed to apply theme');
+				return;
+			}
+
+			site.theme = theme;
+			site.customization = customization;
+			toasts.success('Theme applied successfully!');
+		} catch (error) {
+			console.error('Error applying theme:', error);
+			toasts.error('Failed to apply theme');
+		} finally {
+			applyingTheme = false;
+		}
+	}
+
+	async function handleCustomizationApply(event: CustomEvent) {
+		if (!user || !site) return;
+
+		applyingCustomization = true;
+		try {
+			const { template, theme, customization } = event.detail;
+			
+			const { error } = await supabase
+				.from('sites')
+				.update({
+					customization: customization,
+					updated_at: new Date().toISOString()
+				})
+				.eq('id', site.id)
+				.eq('user_id', user.id);
+
+			if (error) {
+				console.error('Error applying customization:', error);
+				toasts.error('Failed to apply customization');
+				return;
+			}
+
+			site.customization = customization;
+			toasts.success('Customization applied successfully!');
+		} catch (error) {
+			console.error('Error applying customization:', error);
+			toasts.error('Failed to apply customization');
+		} finally {
+			applyingCustomization = false;
+		}
+	}
+
 	const tabs: Array<{ id: 'content' | 'design' | 'settings'; label: string; icon: any }> = [
 		{ id: 'content', label: 'Content', icon: Layout },
 		{ id: 'design', label: 'Design', icon: Palette },
@@ -471,24 +584,114 @@
 						/>
 					</div>
 				{:else if activeTab === 'design'}
-					<div class="p-6">
-						<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-							Template & Tema
-						</h3>
-						<TemplateSelector
-							profileData={resumeData}
-							selectedTemplate={site.template}
-							on:templateSelect={(e) => {
-								site.template = e.detail;
-								// Save template change
-								supabase
-									.from('sites')
-									.update({ template: e.detail })
-									.eq('id', site.id)
-									.eq('user_id', user.id);
-							}}
-						/>
+		<div class="p-6">
+			<div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-lg border border-indigo-200 dark:border-indigo-700">
+				<div class="flex items-center justify-between mb-4">
+					<h5 class="text-lg font-semibold text-gray-900 dark:text-white">
+						Template Customization
+					</h5>
+					<button
+						on:click={() => (showAdvancedCustomization = !showAdvancedCustomization)}
+						class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium px-3 py-1 bg-white dark:bg-gray-700 rounded-lg border border-indigo-200 dark:border-indigo-600 transition-colors"
+					>
+						{showAdvancedCustomization ? 'Hide' : 'Show'} Advanced Options
+					</button>
+				</div>
+
+				<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+					Choose a template, customize colors, and make it uniquely yours
+				</p>
+
+				<TemplateSelector
+					profileData={resumeData}
+					customizable={true}
+					bind:selectedTemplate
+					bind:selectedTheme
+					bind:customization={templateCustomization}
+					on:templateChange={(e) => {
+						selectedTemplate = e.detail.template;
+						selectedTheme = e.detail.theme;
+						if (e.detail.customization) {
+							templateCustomization = { ...templateCustomization, ...e.detail.customization };
+						}
+					}}
+					on:themeChange={(e) => {
+						selectedTheme = e.detail.theme;
+						if (e.detail.customization) {
+							templateCustomization = { ...templateCustomization, ...e.detail.customization };
+						}
+					}}
+					on:customizationChange={(e) => {
+						templateCustomization = { ...templateCustomization, ...e.detail };
+					}}
+				/>
+
+				{#if showAdvancedCustomization}
+					<TemplateCustomizer
+						bind:customization={templateCustomization}
+						on:customizationChange={(e) => {
+							templateCustomization = { ...templateCustomization, ...e.detail };
+						}}
+					/>
+				{/if}
+
+				<!-- Apply Buttons -->
+				<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+					<div class="flex flex-wrap gap-3">
+						<button
+							on:click={() => handleTemplateApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
+							disabled={applyingTemplate}
+							class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+						>
+							{#if applyingTemplate}
+								<div
+									class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"
+								/>
+								Applying...
+							{:else}
+								<Eye class="w-4 h-4 mr-2" />
+								Apply Template
+							{/if}
+						</button>
+						<button
+							on:click={() => handleThemeApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
+							disabled={applyingTheme}
+							class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+						>
+							{#if applyingTheme}
+								<div
+									class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"
+								/>
+								Applying...
+							{:else}
+								<Palette class="w-4 h-4 mr-2" />
+								Apply Theme
+							{/if}
+						</button>
+						{#if showAdvancedCustomization}
+							<button
+								on:click={() => handleCustomizationApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
+								disabled={applyingCustomization}
+								class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+							>
+								{#if applyingCustomization}
+									<div
+										class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"
+									/>
+									Applying...
+								{:else}
+									<Settings class="w-4 h-4 mr-2" />
+									Apply Customization
+								{/if}
+							</button>
+						{/if}
 					</div>
+					<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+						Click apply buttons to see changes reflected in your profile preview
+					</p>
+				</div>
+			</div>
+		</div>
 				{:else if activeTab === 'settings'}
 					<div class="p-6">
 						<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">

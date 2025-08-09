@@ -3,19 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { supabase, getProfile, updateProfile } from '$lib/supabase';
 	import ProfileEditor from '../../../components/ProfileEditor.svelte';
-        import TemplateSelector from '../../../components/TemplateSelector.svelte';
-        import { toasts } from '$lib/stores/toast';
-        import { ArrowLeft, User as UserIcon, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
-        import type { User } from '@supabase/supabase-js';
-        import type {
-                Profile,
-                ResumeData,
-                TemplateCustomization,
-                Customization,
-                WorkExperience,
-                Education as EducationType
-        } from '$lib/types';
-        import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
+	import TemplateSelector from '../../../components/TemplateSelector.svelte';
+	import { toasts } from '$lib/stores/toast';
+	import { ArrowLeft, User as UserIcon, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
+	import type { User } from '@supabase/supabase-js';
+	import type { Profile, ResumeData, TemplateCustomization, Customization } from '$lib/types';
+	import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
 
         let user: User | null = null;
         let profile: Profile | null = null;
@@ -363,6 +356,84 @@
 		}
 	}
 
+	async function handleStatusChange(event: CustomEvent) {
+		const { status } = event.detail;
+		if (!status || typeof status !== 'string') {
+			handleError(new Error('Invalid status data'), {
+				component: 'ProfilePage',
+				action: 'statusChange',
+				userMessage: 'Invalid status data received'
+			});
+			return;
+		}
+		
+		// Update profile status and save to database
+		try {
+			const updateData = {
+				data: {
+					...resumeData,
+					status: status
+				},
+				full_name: resumeData?.name,
+				username: profile?.username
+			};
+
+			const { error } = await updateProfile(user.id, updateData);
+			if (error) throw error;
+
+			// Update local state
+			if (resumeData) {
+				resumeData = { ...resumeData, status };
+			}
+			toasts.success(`Profile status changed to ${status}`);
+		} catch (error) {
+			handleError(error, {
+				component: 'ProfilePage',
+				action: 'statusChange',
+				userMessage: 'Failed to update profile status'
+			});
+		}
+	}
+
+	async function handlePhotoUpload(event: CustomEvent) {
+		const { file } = event.detail;
+		if (!file || !(file instanceof File)) {
+			handleError(new Error('Invalid file data'), {
+				component: 'ProfilePage',
+				action: 'photoUpload',
+				userMessage: 'Invalid file data received'
+			});
+			return;
+		}
+		
+		try {
+			const photoUrl = await handleProfilePhotoUpload(file);
+			if (resumeData) {
+				resumeData = { ...resumeData, photo_url: photoUrl };
+				
+				// Save the updated photo URL to database
+				const updateData = {
+					data: resumeData,
+					full_name: resumeData.name,
+					username: profile?.username
+				};
+
+				const { error } = await updateProfile(user.id, updateData);
+				if (error) throw error;
+
+				// Update local profile state
+				profile = { ...profile, data: resumeData, photo_url: photoUrl };
+			}
+			toasts.success('Photo uploaded successfully!');
+		} catch (error) {
+			handleError(error, {
+				component: 'ProfilePage',
+				action: 'photoUpload',
+				userMessage: 'Failed to upload photo'
+			});
+		}
+	}
+
 	function goBack() {
 		goto('/dashboard');
 	}
@@ -566,37 +637,50 @@
 		resumeData = { ...resumeData, theme: selectedTheme };
 	}
 
-        function updateFontFamily(fontFamily: string) {
-                templateCustomization.fontFamily = fontFamily;
-                resumeData = {
-                        ...resumeData,
-                        customization: convertToCustomization(templateCustomization)
-                };
-        }
+	function updateFontFamily(fontFamily: string) {
+		templateCustomization.fontFamily = fontFamily;
+		resumeData = { ...resumeData, customization: convertToCustomization(templateCustomization) };
+	}
 
-        function updateFontSize(fontSize: string) {
-                templateCustomization.fontSize = fontSize;
-                resumeData = {
-                        ...resumeData,
-                        customization: convertToCustomization(templateCustomization)
-                };
-        }
+	function updateFontSize(fontSize: string) {
+		templateCustomization.fontSize = fontSize;
+		resumeData = { ...resumeData, customization: convertToCustomization(templateCustomization) };
+	}
 
-        function updateLayout(layout: string) {
-                templateCustomization.layout = layout;
-                resumeData = {
-                        ...resumeData,
-                        customization: convertToCustomization(templateCustomization)
-                };
-        }
+	function updateLayout(layout: string) {
+		templateCustomization.layout = layout;
+		resumeData = { ...resumeData, customization: convertToCustomization(templateCustomization) };
+	}
 
-        function updateContainerWidth(containerWidth: string) {
-                templateCustomization.containerWidth = containerWidth;
-                resumeData = {
-                        ...resumeData,
-                        customization: convertToCustomization(templateCustomization)
-                };
-        }
+	function updateContainerWidth(containerWidth: string) {
+		templateCustomization.containerWidth = containerWidth;
+		resumeData = { ...resumeData, customization: convertToCustomization(templateCustomization) };
+	}
+
+	// Convert TemplateCustomization to Customization
+	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
+		return {
+			fontFamily: templateCustom.fontFamily || 'inter',
+			fontSize: templateCustom.fontSize || 'medium',
+			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight || 1.5,
+			margins: {
+				top: 16,
+				bottom: 16,
+				left: 16,
+				right: 16
+			},
+			colors: {
+				primary: templateCustom.accentColor || '#3B82F6',
+				secondary: templateCustom.textColor || '#1F2937',
+				accent: templateCustom.backgroundColor || '#FFFFFF',
+				text: templateCustom.textColor || '#1F2937'
+			},
+			layout: {
+				columns: templateCustom.layout === 'two-column' ? 2 : 1,
+				spacing: 16
+			}
+		};
+	}
 </script>
 
 <svelte:head>
@@ -878,7 +962,10 @@
 					{resumeData}
 					uploading={saving}
 					{saveSuccess}
+					username={profile?.username}
 					on:save={handleSaveProfile}
+					on:photoUpload={handlePhotoUpload}
+					on:statusChange={handleStatusChange}
 					on:templateApply={handleTemplateApply}
 					on:themeApply={handleThemeApply}
 					on:customizationApply={handleCustomizationApply}

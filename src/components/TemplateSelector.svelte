@@ -610,71 +610,101 @@
 	}
 </script>
 
-<div class="space-y-4 sm:space-y-6">
+<div class="space-y-6">
+	<!-- Header -->
+	<div class="text-center">
+		<h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Design Your Resume</h2>
+		<p class="text-sm text-gray-600 dark:text-gray-400">Choose a template, customize colors, and make it uniquely yours</p>
+	</div>
+
 	<!-- Navigation Tabs -->
 	{#if customizable}
-		<div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6">
-			<button
-				on:click={() => (activeView = 'templates')}
-				class="flex items-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
-				class:border-blue-500={activeView === 'templates'}
-				class:text-blue-600={activeView === 'templates'}
-				class:border-transparent={activeView !== 'templates'}
-				class:text-gray-500={activeView !== 'templates'}
-			>
-				<Eye class="w-4 h-4 mr-1 sm:mr-2" />
-				<span class="hidden sm:inline">Templates</span>
-				<span class="sm:hidden">Temp</span>
-			</button>
-			<button
-				on:click={() => (activeView = 'themes')}
-				class="flex items-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
-				class:border-blue-500={activeView === 'themes'}
-				class:text-blue-600={activeView === 'themes'}
-				class:border-transparent={activeView !== 'themes'}
-				class:text-gray-500={activeView !== 'themes'}
-			>
-				<Palette class="w-4 h-4 mr-1 sm:mr-2" />
-				Themes
-			</button>
-			<button
-				on:click={() => (activeView = 'customizer')}
-				class="flex items-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors"
-				class:border-blue-500={activeView === 'customizer'}
-				class:text-blue-600={activeView === 'customizer'}
-				class:border-transparent={activeView !== 'customizer'}
-				class:text-gray-500={activeView !== 'customizer'}
-			>
-				<Settings class="w-4 h-4 mr-1 sm:mr-2" />
-				<span class="hidden sm:inline">Customize</span>
-				<span class="sm:hidden">Custom</span>
-			</button>
+		<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-1">
+			<div class="grid grid-cols-3 gap-1">
+				<button
+					on:click={() => (activeView = 'templates')}
+					class="flex items-center justify-center px-4 py-3 text-sm font-medium rounded-md transition-all duration-200"
+					class:bg-white={activeView === 'templates'}
+					class:shadow-sm={activeView === 'templates'}
+					class:text-blue-600={activeView === 'templates'}
+					class:text-gray-600={activeView !== 'templates'}
+					class:hover:text-gray-900={activeView !== 'templates'}
+				>
+					<Eye class="w-4 h-4 mr-2" />
+					Templates
+				</button>
+				<button
+					on:click={() => (activeView = 'themes')}
+					class="flex items-center justify-center px-4 py-3 text-sm font-medium rounded-md transition-all duration-200"
+					class:bg-white={activeView === 'themes'}
+					class:shadow-sm={activeView === 'themes'}
+					class:text-blue-600={activeView === 'themes'}
+					class:text-gray-600={activeView !== 'themes'}
+					class:hover:text-gray-900={activeView !== 'themes'}
+				>
+					<Palette class="w-4 h-4 mr-2" />
+					Colors
+				</button>
+				<button
+					on:click={() => (activeView = 'customizer')}
+					class="flex items-center justify-center px-4 py-3 text-sm font-medium rounded-md transition-all duration-200"
+					class:bg-white={activeView === 'customizer'}
+					class:shadow-sm={activeView === 'customizer'}
+					class:text-blue-600={activeView === 'customizer'}
+					class:text-gray-600={activeView !== 'customizer'}
+					class:hover:text-gray-900={activeView !== 'customizer'}
+				>
+					<Settings class="w-4 h-4 mr-2" />
+					Advanced
+				</button>
+			</div>
 		</div>
 	{/if}
 
 	<!-- Template Selector -->
 	{#if !customizable || activeView === 'templates'}
-		<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4">
-			<h3 class="font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 text-sm sm:text-base">
-				Choose Template
-			</h3>
+		<div class="space-y-4">
+			<div class="text-center">
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+					Choose Your Template
+				</h3>
+				<p class="text-sm text-gray-600 dark:text-gray-400">
+					Select a professional layout that matches your style
+				</p>
+			</div>
 
 			<!-- Template Options -->
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				{#each templates as template}
 					<button
 						on:click={() => selectTemplate(template.id)}
-						class="p-3 rounded-lg border-2 transition-all duration-200 text-left {selectedTemplate ===
+						class="group relative p-4 rounded-xl border-2 transition-all duration-300 text-left hover:shadow-lg {selectedTemplate ===
 						template.id
-							? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-							: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+							? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+							: 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-400 bg-white dark:bg-gray-800'}"
 					>
-						<h4 class="font-medium text-gray-900 dark:text-white text-sm mb-1">
+						{#if selectedTemplate === template.id}
+							<div class="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+								<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+									<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+								</svg>
+							</div>
+						{/if}
+						<div class="mb-3">
+							<span class="inline-block px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full mb-2">
+								{template.category}
+							</span>
+						</div>
+						<h4 class="font-semibold text-gray-900 dark:text-white text-base mb-2">
 							{template.name}
 						</h4>
-						<p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+						<p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
 							{template.description}
 						</p>
+						<div class="mt-3 flex items-center text-xs text-gray-500 dark:text-gray-400">
+							<span class="mr-3">{template.themes.length} color themes</span>
+							<span>Professional</span>
+						</div>
 					</button>
 				{/each}
 			</div>
@@ -683,28 +713,55 @@
 
 	<!-- Theme Options -->
 	{#if !customizable || activeView === 'themes'}
-		<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4">
-			<h3 class="font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 text-sm sm:text-base">
-				Theme Colors
-			</h3>
-			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-				{#each currentTemplate.themes as theme}
-					<button
-						on:click={() => selectTheme(theme)}
-						class="flex items-center space-x-2 px-2 sm:px-3 py-2 rounded-lg border transition-colors duration-200 {currentTheme.name ===
-						theme.name
-							? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-							: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
-					>
-						<div class="flex space-x-1 flex-shrink-0">
-							<div class="w-3 h-3 rounded-full bg-{theme.primary}" />
-							<div class="w-3 h-3 rounded-full bg-{theme.secondary}" />
-						</div>
-						<span class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-							{theme.name}
-						</span>
-					</button>
-				{/each}
+		<div class="space-y-4">
+			<div class="text-center">
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+					Choose Your Colors
+				</h3>
+				<p class="text-sm text-gray-600 dark:text-gray-400">
+					Select a color scheme that represents your personality
+				</p>
+			</div>
+
+			<div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+				<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+					{#each currentTemplate.themes as theme}
+						<button
+							on:click={() => selectTheme(theme)}
+							class="group relative p-4 rounded-lg border-2 transition-all duration-300 hover:shadow-md {currentTheme.name ===
+							theme.name
+								? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+								: 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-400'}"
+						>
+							{#if currentTheme.name === theme.name}
+								<div class="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+									<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+									</svg>
+								</div>
+							{/if}
+							<div class="flex justify-center space-x-1 mb-3">
+								<div class="w-6 h-6 rounded-full bg-{theme.primary} border-2 border-white shadow-sm" />
+								<div class="w-6 h-6 rounded-full bg-{theme.secondary} border-2 border-white shadow-sm" />
+							</div>
+							<div class="text-center">
+								<span class="text-sm font-medium text-gray-900 dark:text-white">
+									{theme.name}
+								</span>
+								<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+									{theme.name === 'Blue' ? 'Professional & Trustworthy' : 
+									 theme.name === 'Green' ? 'Fresh & Growth-oriented' :
+									 theme.name === 'Purple' ? 'Creative & Innovative' :
+									 theme.name === 'Red' ? 'Bold & Energetic' :
+									 theme.name === 'Indigo' ? 'Modern & Sophisticated' :
+									 theme.name === 'Teal' ? 'Calm & Balanced' :
+									 theme.name === 'Orange' ? 'Vibrant & Enthusiastic' :
+									 theme.name === 'Pink' ? 'Creative & Approachable' : 'Professional'}
+								</p>
+							</div>
+						</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 	{/if}

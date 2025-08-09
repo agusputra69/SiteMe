@@ -1,6 +1,23 @@
 <script lang="ts">
 	import { createEventDispatcher, onDestroy } from 'svelte';
-	import { Plus, Trash2, Upload, Save, Eye, Edit3, Download, FileText, User as UserIcon, ChevronRight, Globe, Palette, Settings, Award, Code, Trophy } from 'lucide-svelte';
+	import {
+		Plus,
+		Trash2,
+		Upload,
+		Save,
+		Eye,
+		Edit3,
+		Download,
+		FileText,
+		User as UserIcon,
+		ChevronRight,
+		Globe,
+		Palette,
+		Settings,
+		Award,
+		Code,
+		Trophy
+	} from 'lucide-svelte';
 	import type { ResumeData, TemplateCustomization, Customization } from '$lib/types';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
@@ -87,11 +104,12 @@
 			selectedTheme = resumeData.theme;
 		}
 		if (resumeData.customization) {
-			templateCustomization = { ...templateCustomization, ...convertFromCustomization(resumeData.customization) };
+			templateCustomization = {
+				...templateCustomization,
+				...convertFromCustomization(resumeData.customization)
+			};
 		}
 	}
-
-
 
 	// Tab configuration
 	const tabs = [
@@ -102,8 +120,7 @@
 		{ id: 'languages', label: 'Languages', icon: Globe },
 		{ id: 'projects', label: 'Projects', icon: Code },
 		{ id: 'awards', label: 'Awards', icon: Trophy },
-		{ id: 'skills', label: 'Skills & Links', icon: Plus },
-		{ id: 'design', label: 'Design', icon: Edit3 }
+		{ id: 'skills', label: 'Skills & Links', icon: Plus }
 	];
 
 	// Form validation functions
@@ -118,11 +135,15 @@
 			case 'phone':
 				if (!value.trim()) return '';
 				const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-				return phoneRegex.test(value.replace(/[\s\-\(\)]/g, '')) ? '' : 'Please enter a valid phone number';
+				return phoneRegex.test(value.replace(/[\s\-\(\)]/g, ''))
+					? ''
+					: 'Please enter a valid phone number';
 			case 'username':
 				if (!value.trim()) return 'Username is required';
 				const usernameRegex = /^[a-zA-Z0-9-_]+$/;
-				return usernameRegex.test(value) ? '' : 'Username can only contain letters, numbers, hyphens, and underscores';
+				return usernameRegex.test(value)
+					? ''
+					: 'Username can only contain letters, numbers, hyphens, and underscores';
 			default:
 				return '';
 		}
@@ -130,14 +151,14 @@
 
 	function validateForm(): boolean {
 		const errors: Record<string, string> = {};
-		
+
 		errors.name = validateField('name', resumeData.name || '');
 		errors.email = validateField('email', resumeData.email || '');
 		errors.phone = validateField('phone', resumeData.phone || '');
 		errors.username = validateField('username', username);
 
 		formErrors = errors;
-		return !Object.values(errors).some(error => error !== '');
+		return !Object.values(errors).some((error) => error !== '');
 	}
 
 	// Keyboard navigation support
@@ -161,19 +182,21 @@
 	function addExperience() {
 		if (!resumeData.experience) resumeData.experience = [];
 		resumeData.experience = [
-				...resumeData.experience,
-				{ 
-					title: '', 
-					company: '', 
-					type: '',
-					period: '', 
-					current: false,
-					description: ''
-				}
-			];
+			...resumeData.experience,
+			{
+				title: '',
+				company: '',
+				type: '',
+				period: '',
+				current: false,
+				description: ''
+			}
+		];
 		// Focus the first input of the new experience entry
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#job-title-${resumeData.experience.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#job-title-${resumeData.experience.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -186,15 +209,17 @@
 		if (!resumeData.education) resumeData.education = [];
 		resumeData.education = [
 			...resumeData.education,
-			{ 
-				degree: '', 
-				institution: '', 
+			{
+				degree: '',
+				institution: '',
 				period: ''
 			}
 		];
 		// Focus the first input of the new education entry
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#degree-${resumeData.education.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#degree-${resumeData.education.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -208,7 +233,9 @@
 		resumeData.skills = [...resumeData.skills, ''];
 		// Focus the new skill input
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#skill-${resumeData.skills.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#skill-${resumeData.skills.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -236,9 +263,9 @@
 		if (!resumeData.certifications) resumeData.certifications = [];
 		resumeData.certifications = [
 			...resumeData.certifications,
-			{ 
-				name: '', 
-				issuer: '', 
+			{
+				name: '',
+				issuer: '',
 				date: '',
 				description: '',
 				credentialId: ''
@@ -246,7 +273,9 @@
 		];
 		// Focus the first input of the new certification entry
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#cert-name-${resumeData.certifications.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#cert-name-${resumeData.certifications.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -259,14 +288,16 @@
 		if (!resumeData.languages) resumeData.languages = [];
 		resumeData.languages = [
 			...resumeData.languages,
-			{ 
-				language: '', 
+			{
+				language: '',
 				proficiency: ''
 			}
 		];
 		// Focus the first input of the new language entry
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#language-${resumeData.languages.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#language-${resumeData.languages.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -279,15 +310,17 @@
 		if (!resumeData.projects) resumeData.projects = [];
 		resumeData.projects = [
 			...resumeData.projects,
-			{ 
-				title: '', 
-				description: '', 
+			{
+				title: '',
+				description: '',
 				technologies: ['']
 			}
 		];
 		// Focus the first input of the new project entry
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#project-name-${resumeData.projects.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#project-name-${resumeData.projects.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -300,16 +333,18 @@
 		if (!resumeData.awards) resumeData.awards = [];
 		resumeData.awards = [
 			...resumeData.awards,
-			{ 
-				title: '', 
-				organization: '', 
+			{
+				title: '',
+				organization: '',
 				date: '',
 				description: ''
 			}
 		];
 		// Focus the first input of the new award entry
 		requestAnimationFrame(() => {
-			const newInput = document.querySelector(`#award-title-${resumeData.awards.length - 1}`) as HTMLInputElement;
+			const newInput = document.querySelector(
+				`#award-title-${resumeData.awards.length - 1}`
+			) as HTMLInputElement;
 			if (newInput) newInput.focus();
 		});
 	}
@@ -321,7 +356,7 @@
 	function handleProfilePhotoUpload(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
-		
+
 		if (file && file.type.startsWith('image/')) {
 			profilePhotoFile = file;
 			// Create preview URL
@@ -331,8 +366,8 @@
 	}
 
 	function saveProfile() {
-		dispatch('save', { 
-			resumeData, 
+		dispatch('save', {
+			resumeData,
 			profilePhoto: profilePhotoFile,
 			status: profileStatus,
 			username: username
@@ -346,8 +381,8 @@
 
 	function publishProfile() {
 		profileStatus = 'published';
-		dispatch('publish', { 
-			resumeData, 
+		dispatch('publish', {
+			resumeData,
 			profilePhoto: profilePhotoFile,
 			status: 'published'
 		});
@@ -359,7 +394,7 @@
 			// Upload in progress, ignoring save request
 			return;
 		}
-		
+
 		// Create a fresh copy of resumeData to ensure reactivity
 		const dataToSave = {
 			...resumeData,
@@ -367,19 +402,19 @@
 			theme: selectedTheme,
 			customization: templateCustomization
 		};
-		
+
 		// Preparing data to save
-		
+
 		// Reset success state
 		saveSuccess = false;
-		
+
 		// Add a small delay to prevent rapid successive clicks
 		if (saveDelayTimeout) clearTimeout(saveDelayTimeout);
 		saveDelayTimeout = setTimeout(() => {
 			profileStatus = 'draft';
 			// Dispatching save event
-			dispatch('save', { 
-				resumeData: dataToSave, 
+			dispatch('save', {
+				resumeData: dataToSave,
 				profilePhoto: profilePhotoFile,
 				status: 'draft'
 			});
@@ -390,8 +425,8 @@
 	function togglePublishStatus() {
 		const newStatus = profileStatus === 'published' ? 'draft' : 'published';
 		profileStatus = newStatus;
-		dispatch('statusChange', { 
-			resumeData, 
+		dispatch('statusChange', {
+			resumeData,
 			profilePhoto: profilePhotoFile,
 			status: newStatus
 		});
@@ -401,7 +436,7 @@
 		applyingTheme = true;
 		if (themeApplyTimeout) clearTimeout(themeApplyTimeout);
 		themeApplyTimeout = setTimeout(() => {
-			dispatch('themeApply', { 
+			dispatch('themeApply', {
 				template: selectedTemplate,
 				theme: selectedTheme,
 				customization: templateCustomization
@@ -415,7 +450,7 @@
 		applyingTemplate = true;
 		if (templateApplyTimeout) clearTimeout(templateApplyTimeout);
 		templateApplyTimeout = setTimeout(() => {
-			dispatch('templateApply', { 
+			dispatch('templateApply', {
 				template: selectedTemplate,
 				theme: selectedTheme,
 				customization: templateCustomization
@@ -429,7 +464,7 @@
 		applyingCustomization = true;
 		if (customizationApplyTimeout) clearTimeout(customizationApplyTimeout);
 		customizationApplyTimeout = setTimeout(() => {
-			dispatch('customizationApply', { 
+			dispatch('customizationApply', {
 				template: selectedTemplate,
 				theme: selectedTheme,
 				customization: templateCustomization
@@ -450,9 +485,9 @@
 	// Convert TemplateCustomization to Customization
 	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
 		return {
-			fontFamily: templateCustom.fontFamily,
-			fontSize: templateCustom.fontSize,
-			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight,
+			fontFamily: templateCustom.fontFamily || 'inter',
+			fontSize: templateCustom.fontSize || 'medium',
+			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight || 1.5,
 			margins: {
 				top: 16,
 				bottom: 16,
@@ -460,10 +495,10 @@
 				right: 16
 			},
 			colors: {
-				primary: templateCustom.accentColor,
-				secondary: templateCustom.textColor,
-				accent: templateCustom.backgroundColor,
-				text: templateCustom.textColor
+				primary: templateCustom.accentColor || '#3B82F6',
+				secondary: templateCustom.textColor || '#1F2937',
+				accent: templateCustom.backgroundColor || '#FFFFFF',
+				text: templateCustom.textColor || '#1F2937'
 			},
 			layout: {
 				columns: templateCustom.layout === 'two-column' ? 2 : 1,
@@ -476,14 +511,14 @@
 	function convertFromCustomization(customization: Customization): TemplateCustomization {
 		return {
 			theme: 'blue',
-                        fontFamily: customization.fontFamily || 'inter',
-                        fontSize: customization.fontSize || 'medium',
-                        layout:
-                                typeof customization.layout === 'object'
-                                        ? customization.layout.columns === 2
-                                                ? 'two-column'
-                                                : 'standard'
-                                        : customization.layout || 'standard',
+			fontFamily: customization.fontFamily || 'inter',
+			fontSize: customization.fontSize || 'medium',
+			layout:
+				typeof customization.layout === 'object'
+					? customization.layout.columns === 2
+						? 'two-column'
+						: 'standard'
+					: customization.layout || 'standard',
 			spacing: 'normal',
 			borderRadius: 'medium',
 			shadow: 'medium',
@@ -493,7 +528,7 @@
 			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
 			lineHeight: customization.lineHeight?.toString() || '1.5',
 			letterSpacing: 'normal',
-                        headingFont: customization.fontFamily || 'inter',
+			headingFont: customization.fontFamily || 'inter',
 			containerWidth: 'standard',
 			verticalSpacing: 'normal',
 			horizontalPadding: 'normal'
@@ -508,7 +543,12 @@
 			templateCustomization = { ...templateCustomization, ...event.detail.customization };
 		}
 		// Update resumeData with new template settings for immediate preview
-		resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: convertToCustomization(templateCustomization) };
+		resumeData = {
+			...resumeData,
+			template: selectedTemplate,
+			theme: selectedTheme,
+			customization: convertToCustomization(templateCustomization)
+		};
 		// Updated template and theme
 	}
 
@@ -518,7 +558,12 @@
 			templateCustomization = { ...templateCustomization, ...event.detail.customization };
 		}
 		// Update resumeData with new theme settings for immediate preview
-		resumeData = { ...resumeData, template: selectedTemplate, theme: selectedTheme, customization: convertToCustomization(templateCustomization) };
+		resumeData = {
+			...resumeData,
+			template: selectedTemplate,
+			theme: selectedTheme,
+			customization: convertToCustomization(templateCustomization)
+		};
 	}
 
 	function handleCustomizationChange(event: CustomEvent) {
@@ -538,25 +583,13 @@
 			experience: [
 				{ title: '', company: '', type: '', period: '', current: false, description: '' }
 			],
-			education: [
-				{ degree: '', institution: '', period: '' }
-			],
-			certifications: [
-				{ name: '', issuer: '', date: '', description: '', credentialId: '' }
-			],
-			languages: [
-				{ language: '', proficiency: '' }
-			],
-			projects: [
-				{ title: '', description: '', technologies: [''] }
-			],
-			awards: [
-				{ title: '', organization: '', date: '', description: '' }
-			],
+			education: [{ degree: '', institution: '', period: '' }],
+			certifications: [{ name: '', issuer: '', date: '', description: '', credentialId: '' }],
+			languages: [{ language: '', proficiency: '' }],
+			projects: [{ title: '', description: '', technologies: [''] }],
+			awards: [{ title: '', organization: '', date: '', description: '' }],
 			skills: [''],
-			links: [
-				{ type: 'LinkedIn', url: '' }
-			]
+			links: [{ type: 'LinkedIn', url: '' }]
 		};
 		dispatch('manualCreate', { resumeData });
 	}
@@ -581,10 +614,10 @@
 		if (data.email) content += `Email: ${data.email}\n`;
 		if (data.phone) content += `Phone: ${data.phone}\n`;
 		if (data.location) content += `Location: ${data.location}\n`;
-		
+
 		// Links
 		if (data.links && data.links.length > 0) {
-			data.links.forEach(link => {
+			data.links.forEach((link) => {
 				if (link.url) content += `${link.type}: ${link.url}\n`;
 			});
 		}
@@ -632,7 +665,7 @@
 		if (data.skills && data.skills.length > 0) {
 			content += 'SKILLS\n';
 			content += '-'.repeat(6) + '\n';
-			const skillsList = data.skills.filter(skill => skill.trim()).join(', ');
+			const skillsList = data.skills.filter((skill) => skill.trim()).join(', ');
 			content += `${skillsList}\n\n`;
 		}
 
@@ -674,7 +707,7 @@
 					content += `${project.name}\n`;
 					if (project.description) content += `${project.description}\n`;
 					if (project.technologies && project.technologies.length > 0) {
-						const techList = project.technologies.filter(tech => tech.trim()).join(', ');
+						const techList = project.technologies.filter((tech) => tech.trim()).join(', ');
 						content += `Technologies: ${techList}\n`;
 					}
 					if (project.url) content += `URL: ${project.url}\n`;
@@ -743,31 +776,51 @@
 	});
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" role="main" aria-label="Profile Editor">
+<div
+	class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
+	role="main"
+	aria-label="Profile Editor"
+>
 	<!-- Header with Progress and Actions -->
 	<div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center space-x-4">
 				<div class="text-white">
 					<h3 class="text-lg font-semibold" id="profile-editor-title">Profile Editor</h3>
-					<p class="text-blue-100 text-sm" aria-live="polite" aria-label="Profile completion status">
+					<p
+						class="text-blue-100 text-sm"
+						aria-live="polite"
+						aria-label="Profile completion status"
+					>
 						{getCompletionPercentage()}% Complete
 					</p>
 				</div>
 				<!-- Progress Bar -->
-				<div class="w-32 bg-blue-500/30 rounded-full h-2" role="progressbar" aria-valuenow={getCompletionPercentage()} aria-valuemin="0" aria-valuemax="100" aria-labelledby="profile-editor-title">
-					<div 
-						class="bg-white rounded-full h-2 transition-all duration-300" 
+				<div
+					class="w-32 bg-blue-500/30 rounded-full h-2"
+					role="progressbar"
+					aria-valuenow={getCompletionPercentage()}
+					aria-valuemin="0"
+					aria-valuemax="100"
+					aria-labelledby="profile-editor-title"
+				>
+					<div
+						class="bg-white rounded-full h-2 transition-all duration-300"
 						style="width: {getCompletionPercentage()}%"
 						aria-label="Profile completion progress"
-					></div>
+					/>
 				</div>
 			</div>
 
 			<!-- Status Indicator -->
 			<div class="flex items-center space-x-4">
 				<div class="flex items-center space-x-2" role="status" aria-live="polite">
-					<div class="w-2 h-2 rounded-full {profileStatus === 'published' ? 'bg-green-400' : 'bg-yellow-400'}" aria-label="Profile status indicator"></div>
+					<div
+						class="w-2 h-2 rounded-full {profileStatus === 'published'
+							? 'bg-green-400'
+							: 'bg-yellow-400'}"
+						aria-label="Profile status indicator"
+					/>
 					<span class="text-white text-sm font-medium">
 						{profileStatus === 'published' ? 'Published' : 'Draft'}
 					</span>
@@ -795,7 +848,7 @@
 					<button
 						on:click={togglePreview}
 						class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-						aria-label="{showPreview ? 'Switch to edit mode' : 'Switch to preview mode'}"
+						aria-label={showPreview ? 'Switch to edit mode' : 'Switch to preview mode'}
 						aria-pressed={showPreview}
 					>
 						{#if showPreview}
@@ -825,13 +878,17 @@
 				<div class="flex items-center space-x-2">
 					<button
 						on:click={saveDraft}
-						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {saveSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'} rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {saveSuccess
+							? 'bg-green-600 hover:bg-green-700'
+							: 'bg-gray-600 hover:bg-gray-700'} rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						disabled={uploading}
 						aria-label="Save profile as draft"
 						aria-busy={uploading}
 					>
 						{#if uploading}
-							<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+							<div
+								class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"
+							/>
 							Saving...
 						{:else if saveSuccess}
 							<Save class="w-4 h-4 mr-2" aria-hidden="true" />
@@ -844,9 +901,12 @@
 
 					<button
 						on:click={togglePublishStatus}
-						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {profileStatus === 'published' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'} rounded-lg transition-colors"
+						class="inline-flex items-center px-4 py-2 text-sm font-medium text-white {profileStatus ===
+						'published'
+							? 'bg-yellow-600 hover:bg-yellow-700'
+							: 'bg-green-600 hover:bg-green-700'} rounded-lg transition-colors"
 						disabled={uploading}
-						aria-label="{profileStatus === 'published' ? 'Unpublish profile' : 'Publish profile'}"
+						aria-label={profileStatus === 'published' ? 'Unpublish profile' : 'Publish profile'}
 						aria-busy={uploading}
 					>
 						{#if profileStatus === 'published'}
@@ -870,30 +930,34 @@
 					name: resumeData?.name || 'Your Name',
 					avatar: profilePhotoUrl || resumeData?.photo_url || '',
 					about: resumeData?.summary || 'Your professional summary goes here...',
-					workExperience: resumeData?.experience?.map(exp => ({
+					workExperience: resumeData?.experience?.map((exp) => ({
 						title: exp.title || 'Job Title',
 						company: exp.company || 'Company Name',
 						type: 'Full-Time',
 						period: exp.period || 'Start - End',
 						current: false,
 						description: exp.description || ''
-					})) || [{
-						title: 'Your Job Title',
-						company: 'Company Name',
-						type: 'Full-Time',
-						period: 'Start - End',
-						current: false,
-						description: ''
-					}],
-					education: resumeData?.education?.map(edu => ({
+					})) || [
+						{
+							title: 'Your Job Title',
+							company: 'Company Name',
+							type: 'Full-Time',
+							period: 'Start - End',
+							current: false,
+							description: ''
+						}
+					],
+					education: resumeData?.education?.map((edu) => ({
 						institution: edu.institution || 'University Name',
 						degree: edu.degree || 'Your Degree',
 						period: edu.period || 'Start - End'
-					})) || [{
-						institution: 'University Name',
-						degree: 'Your Degree',
-						period: 'Start - End'
-					}],
+					})) || [
+						{
+							institution: 'University Name',
+							degree: 'Your Degree',
+							period: 'Start - End'
+						}
+					],
 					skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
 					links: resumeData?.links || [],
 					projects: resumeData?.projects || [],
@@ -907,8 +971,8 @@
 					}
 				}}
 				customizable={false}
-				selectedTemplate={selectedTemplate}
-				selectedTheme={selectedTheme}
+				{selectedTemplate}
+				{selectedTheme}
 				customization={templateCustomization}
 			/>
 		</div>
@@ -920,8 +984,11 @@
 				<div class="p-4 space-y-2" role="tablist" aria-label="Profile editor sections">
 					{#each tabs as tab}
 						<button
-							on:click={() => activeTab = tab.id}
-							class="w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors {activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+							on:click={() => (activeTab = tab.id)}
+							class="w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors {activeTab ===
+							tab.id
+								? 'bg-blue-600 text-white'
+								: 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
 							role="tab"
 							aria-selected={activeTab === tab.id}
 							aria-controls="tabpanel-{tab.id}"
@@ -954,15 +1021,24 @@
 							</div>
 							<div class="flex items-center space-x-4">
 								{#if profilePhotoUrl || resumeData.photo_url}
-									<img src={profilePhotoUrl || resumeData.photo_url} alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
+									<img
+										src={profilePhotoUrl || resumeData.photo_url}
+										alt="Profile"
+										class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+									/>
 								{:else}
-									<div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+									<div
+										class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg"
+									>
 										<span class="text-2xl font-bold text-white">
 											{resumeData.name?.charAt(0) || 'U'}
 										</span>
 									</div>
 								{/if}
-								<label for="profile-photo-upload" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
+								<label
+									for="profile-photo-upload"
+									class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors"
+								>
 									<Upload class="w-4 h-4 mr-2" aria-hidden="true" />
 									Upload Photo
 								</label>
@@ -980,41 +1056,56 @@
 						<!-- Contact Information -->
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div>
-								<label for="fullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label
+									for="fullName"
+									class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+								>
 									Full Name *
 								</label>
 								<input
 									id="fullName"
 									type="text"
 									bind:value={resumeData.name}
-									on:blur={() => formErrors.name = validateField('name', resumeData.name || '')}
-									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
+									on:blur={() => (formErrors.name = validateField('name', resumeData.name || ''))}
+									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.name
+										? 'border-red-500 focus:ring-red-500'
+										: 'border-gray-300 dark:border-gray-600'}"
 									placeholder="Your full name"
 									aria-describedby="fullName-error"
 									aria-invalid={!!formErrors.name}
 									required
 								/>
 								{#if formErrors.name}
-									<p id="fullName-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.name}</p>
+									<p id="fullName-error" class="text-red-600 text-sm mt-1" role="alert">
+										{formErrors.name}
+									</p>
 								{/if}
 							</div>
 
 							<div>
-								<label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label
+									for="email"
+									class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+								>
 									Email Address
 								</label>
 								<input
 									id="email"
 									type="email"
 									bind:value={resumeData.email}
-									on:blur={() => formErrors.email = validateField('email', resumeData.email || '')}
-									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
+									on:blur={() =>
+										(formErrors.email = validateField('email', resumeData.email || ''))}
+									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.email
+										? 'border-red-500 focus:ring-red-500'
+										: 'border-gray-300 dark:border-gray-600'}"
 									placeholder="your.email@example.com"
 									aria-describedby="email-error"
 									aria-invalid={!!formErrors.email}
 								/>
 								{#if formErrors.email}
-									<p id="email-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.email}</p>
+									<p id="email-error" class="text-red-600 text-sm mt-1" role="alert">
+										{formErrors.email}
+									</p>
 								{/if}
 							</div>
 
@@ -1025,18 +1116,24 @@
 										resumeData.phone = e.detail.value;
 										formErrors.phone = validateField('phone', resumeData.phone || '');
 									}}
-									on:blur={() => formErrors.phone = validateField('phone', resumeData.phone || '')}
+									on:blur={() =>
+										(formErrors.phone = validateField('phone', resumeData.phone || ''))}
 									id="phone"
 									label="Phone Number"
 									placeholder="+1 (555) 123-4567"
 								/>
 								{#if formErrors.phone}
-									<p id="phone-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.phone}</p>
+									<p id="phone-error" class="text-red-600 text-sm mt-1" role="alert">
+										{formErrors.phone}
+									</p>
 								{/if}
 							</div>
 
 							<div>
-								<label for="location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label
+									for="location"
+									class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+								>
 									Location
 								</label>
 								<input
@@ -1049,15 +1146,20 @@
 							</div>
 
 							<div>
-								<label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label
+									for="username"
+									class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+								>
 									Username *
 								</label>
 								<input
 									id="username"
 									type="text"
 									bind:value={username}
-									on:blur={() => formErrors.username = validateField('username', username)}
-									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}"
+									on:blur={() => (formErrors.username = validateField('username', username))}
+									class="w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent {formErrors.username
+										? 'border-red-500 focus:ring-red-500'
+										: 'border-gray-300 dark:border-gray-600'}"
 									placeholder="your-username"
 									pattern="[a-zA-Z0-9-_]+"
 									title="Username can only contain letters, numbers, hyphens, and underscores"
@@ -1066,10 +1168,13 @@
 									required
 								/>
 								{#if formErrors.username}
-									<p id="username-error" class="text-red-600 text-sm mt-1" role="alert">{formErrors.username}</p>
+									<p id="username-error" class="text-red-600 text-sm mt-1" role="alert">
+										{formErrors.username}
+									</p>
 								{/if}
 								<p id="username-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-									Your public profile will be available at: siteme.com/u/{username || 'your-username'}
+									Your public profile will be available at: siteme.com/u/{username ||
+										'your-username'}
 								</p>
 							</div>
 						</div>
@@ -1084,10 +1189,14 @@
 							/>
 						</div>
 					</div>
-
 				{:else if activeTab === 'experience'}
 					<!-- Experience Tab -->
-					<div class="space-y-6" role="tabpanel" id="tabpanel-experience" aria-labelledby="tab-experience">
+					<div
+						class="space-y-6"
+						role="tabpanel"
+						id="tabpanel-experience"
+						aria-labelledby="tab-experience"
+					>
 						<div class="flex items-center justify-between mb-6">
 							<div class="flex items-center">
 								<FileText class="w-6 h-6 text-green-600 mr-3" aria-hidden="true" />
@@ -1106,10 +1215,18 @@
 						{#if resumeData.experience && resumeData.experience.length > 0}
 							<div class="space-y-6">
 								{#each resumeData.experience as exp, index}
-									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+									<div
+										class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm"
+									>
 										<div class="flex items-center justify-between mb-4">
-											<h6 class="font-medium text-gray-900 dark:text-white flex items-center" id="experience-{index}-title">
-												<span class="w-6 h-6 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center text-sm font-bold mr-2" aria-hidden="true">
+											<h6
+												class="font-medium text-gray-900 dark:text-white flex items-center"
+												id="experience-{index}-title"
+											>
+												<span
+													class="w-6 h-6 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+													aria-hidden="true"
+												>
 													{index + 1}
 												</span>
 												Experience {index + 1}
@@ -1124,7 +1241,10 @@
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 											<div>
-												<label for="job-title-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												<label
+													for="job-title-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
 													Job Title
 												</label>
 												<input
@@ -1137,7 +1257,10 @@
 												/>
 											</div>
 											<div>
-												<label for="company-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												<label
+													for="company-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
 													Company
 												</label>
 												<input
@@ -1150,28 +1273,28 @@
 												/>
 											</div>
 										</div>
-										
+
 										<!-- Work Details -->
-											<WorkDetailsInput
-												location={''}
-												contractType={exp.type || ''}
-												on:input={(e) => {
-													exp.type = e.detail.contractType;
-												}}
-												label="Work Details"
-											/>
+										<WorkDetailsInput
+											location={''}
+											contractType={exp.type || ''}
+											on:input={(e) => {
+												exp.type = e.detail.contractType;
+											}}
+											label="Work Details"
+										/>
 										<div class="mb-4">
-												<DateRangePicker
-													startDate={''}
-													endDate={''}
-													isCurrent={exp.current || false}
-													on:input={(e) => {
-														exp.period = e.detail.duration;
-														exp.current = e.detail.isCurrent;
-													}}
-													id="duration-{index}"
-													label="Duration"
-												/>
+											<DateRangePicker
+												startDate={''}
+												endDate={''}
+												isCurrent={exp.current || false}
+												on:input={(e) => {
+													exp.period = e.detail.duration;
+													exp.current = e.detail.isCurrent;
+												}}
+												id="duration-{index}"
+												label="Duration"
+											/>
 										</div>
 										<div>
 											<AIDescriptionEnhancer
@@ -1198,7 +1321,6 @@
 							</div>
 						{/if}
 					</div>
-
 				{:else if activeTab === 'education'}
 					<!-- Education Tab -->
 					<div class="space-y-6">
@@ -1219,10 +1341,14 @@
 						{#if resumeData.education && resumeData.education.length > 0}
 							<div class="space-y-6">
 								{#each resumeData.education as edu, index}
-									<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm">
+									<div
+										class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm"
+									>
 										<div class="flex items-center justify-between mb-4">
 											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
-												<span class="w-6 h-6 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+												<span
+													class="w-6 h-6 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+												>
 													{index + 1}
 												</span>
 												Education {index + 1}
@@ -1236,7 +1362,10 @@
 										</div>
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 											<div>
-												<label for="degree-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												<label
+													for="degree-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
 													Degree
 												</label>
 												<input
@@ -1248,7 +1377,10 @@
 												/>
 											</div>
 											<div>
-												<label for="institution-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												<label
+													for="institution-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
 													Institution
 												</label>
 												<input
@@ -1289,7 +1421,6 @@
 							</div>
 						{/if}
 					</div>
-
 				{:else if activeTab === 'skills'}
 					<!-- Skills & Links Tab -->
 					<div class="space-y-6">
@@ -1299,7 +1430,7 @@
 								<Plus class="w-6 h-6 text-blue-600 mr-3" />
 								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Skills</h4>
 							</div>
-							
+
 							<SkillsInput
 								bind:skills={resumeData.skills}
 								on:input={(e) => {
@@ -1329,10 +1460,14 @@
 							{#if resumeData.links && resumeData.links.length > 0}
 								<div class="space-y-4">
 									{#each resumeData.links as link, index}
-										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+										<div
+											class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm"
+										>
 											<div class="flex items-center justify-between mb-4">
 												<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
-													<span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													<span
+														class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+													>
 														{index + 1}
 													</span>
 													Link {index + 1}
@@ -1346,7 +1481,10 @@
 											</div>
 											<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 												<div>
-													<label for="link-label-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													<label
+														for="link-label-{index}"
+														class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+													>
 														Label
 													</label>
 													<input
@@ -1358,7 +1496,10 @@
 													/>
 												</div>
 												<div>
-													<label for="link-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													<label
+														for="link-url-{index}"
+														class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+													>
 														URL
 													</label>
 													<input
@@ -1388,7 +1529,6 @@
 							{/if}
 						</div>
 					</div>
-
 				{:else if activeTab === 'skills'}
 					<!-- Skills & Links Tab -->
 					<div class="space-y-8">
@@ -1411,8 +1551,12 @@
 							{#if resumeData.skills && resumeData.skills.length > 0}
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 									{#each resumeData.skills as skill, index}
-										<div class="flex items-center space-x-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-											<span class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+										<div
+											class="flex items-center space-x-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+										>
+											<span
+												class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+											>
 												{index + 1}
 											</span>
 											<input
@@ -1450,7 +1594,9 @@
 							<div class="flex items-center justify-between mb-6">
 								<div class="flex items-center">
 									<ChevronRight class="w-6 h-6 text-blue-600 mr-3" />
-									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Professional Links</h4>
+									<h4 class="text-xl font-semibold text-gray-900 dark:text-white">
+										Professional Links
+									</h4>
 								</div>
 								<button
 									on:click={addLink}
@@ -1464,10 +1610,14 @@
 							{#if resumeData.links && resumeData.links.length > 0}
 								<div class="space-y-4">
 									{#each resumeData.links as link, index}
-										<div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+										<div
+											class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm"
+										>
 											<div class="flex items-center justify-between mb-4">
 												<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
-													<span class="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold mr-2">
+													<span
+														class="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+													>
 														{index + 1}
 													</span>
 													Link {index + 1}
@@ -1481,7 +1631,10 @@
 											</div>
 											<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 												<div>
-													<label for="link-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													<label
+														for="link-type-{index}"
+														class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+													>
 														Type
 													</label>
 													<input
@@ -1493,7 +1646,10 @@
 													/>
 												</div>
 												<div class="md:col-span-2">
-													<label for="link-url-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+													<label
+														for="link-url-{index}"
+														class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+													>
 														URL
 													</label>
 													<input
@@ -1511,7 +1667,9 @@
 							{:else}
 								<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
 									<ChevronRight class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-									<p class="text-gray-500 dark:text-gray-400 mb-4">No professional links added yet</p>
+									<p class="text-gray-500 dark:text-gray-400 mb-4">
+										No professional links added yet
+									</p>
 									<button
 										on:click={addLink}
 										class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -1524,136 +1682,7 @@
 						</div>
 					</div>
 
-				{:else if activeTab === 'design'}
-					<!-- Design Tab -->
-					<div class="space-y-6">
-						<div class="flex items-center mb-6">
-							<Edit3 class="w-6 h-6 text-indigo-600 mr-3" />
-							<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Template & Design</h4>
-						</div>
 
-						<div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-lg border border-indigo-200 dark:border-indigo-700">
-							<div class="flex items-center justify-between mb-4">
-								<h5 class="text-lg font-semibold text-gray-900 dark:text-white">Template Customization</h5>
-								<button
-									on:click={() => showAdvancedCustomization = !showAdvancedCustomization}
-									class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium px-3 py-1 bg-white dark:bg-gray-700 rounded-lg border border-indigo-200 dark:border-indigo-600 transition-colors"
-								>
-									{showAdvancedCustomization ? 'Hide' : 'Show'} Advanced Options
-								</button>
-							</div>
-
-							<TemplateSelector
-                                                                profileData={{
-                                                                        name: resumeData?.name || 'Your Name',
-                                                                        avatar: profilePhotoUrl || resumeData?.photo_url || '',
-                                                                        about: resumeData?.summary || 'Your professional summary goes here...',
-                                                                        workExperience: resumeData?.experience?.map(exp => ({
-                                                                                title: exp.title || 'Job Title',
-                                                                                company: exp.company || 'Company Name',
-                                                                                type: 'Full-Time',
-                                                                                period: exp.period || 'Start - End',
-                                                                                current: false,
-                                                                                description: exp.description || ''
-                                                                        })) || [{
-                                                                                title: 'Your Job Title',
-                                                                                company: 'Company Name',
-                                                                                type: 'Full-Time',
-                                                                                period: 'Start - End',
-                                                                                current: false,
-                                                                                description: ''
-                                                                        }],
-                                                                        education: resumeData?.education?.map(edu => ({
-                                                                                institution: edu.institution || 'University Name',
-                                                                                degree: edu.degree || 'Your Degree',
-                                                                                period: edu.period || 'Start - End'
-                                                                        })) || [{
-                                                                                institution: 'University Name',
-                                                                                degree: 'Your Degree',
-                                                                                period: 'Start - End'
-                                                                        }],
-                                                                        skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
-                                                                        links: resumeData?.links || [],
-                                                                        projects: resumeData?.projects || [],
-                                                                        certifications: resumeData?.certifications || [],
-                                                                        languages: resumeData?.languages || [],
-                                                                        awards: resumeData?.awards || [],
-                                                                        contact: {
-                                                                                email: resumeData?.email || '',
-                                                                                phone: resumeData?.phone || '',
-                                                                                location: resumeData?.location || ''
-                                                                        }
-                                                                }}
-								customizable={true}
-								{selectedTemplate}
-								{selectedTheme}
-								customization={templateCustomization}
-								on:templateChange={handleTemplateChange}
-								on:themeChange={handleThemeChange}
-								on:customizationChange={handleCustomizationChange}
-							/>
-
-							{#if showAdvancedCustomization}
-						<div class="mt-6 pt-6 border-t border-indigo-200 dark:border-indigo-700">
-							<TemplateCustomizer
-								{selectedTemplate}
-								customization={templateCustomization}
-								on:update={handleCustomizationChange}
-							/>
-						</div>
-					{/if}
-
-					<!-- Apply Buttons -->
-					<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-						<div class="flex flex-wrap gap-3">
-							<button
-								on:click={applyTemplate}
-								disabled={applyingTemplate}
-								class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-							>
-								{#if applyingTemplate}
-									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-									Applying...
-								{:else}
-									<Eye class="w-4 h-4 mr-2" />
-									Apply Template
-								{/if}
-							</button>
-							<button
-								on:click={applyTheme}
-								disabled={applyingTheme}
-								class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-							>
-								{#if applyingTheme}
-									<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-									Applying...
-								{:else}
-									<Palette class="w-4 h-4 mr-2" />
-									Apply Theme
-								{/if}
-							</button>
-							{#if showAdvancedCustomization}
-								<button
-									on:click={applyCustomization}
-									disabled={applyingCustomization}
-									class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-								>
-									{#if applyingCustomization}
-										<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-										Applying...
-									{:else}
-										<Settings class="w-4 h-4 mr-2" />
-										Apply Customization
-									{/if}
-								</button>
-							{/if}
-						</div>
-						<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-							Click apply buttons to see changes reflected in your profile preview
-						</p>
-					</div>
-				</div>
-			</div>
 				{/if}
 			</div>
 		</div>
