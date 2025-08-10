@@ -17,6 +17,10 @@ pnpm-debug.log*
 build/
 dist/
 
+# Development
+.env.local
+.env.development
+
 # IDE and editor files
 .vscode/
 .idea/
