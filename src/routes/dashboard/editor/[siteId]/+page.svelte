@@ -2,13 +2,15 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { supabase, getProfile, getValidSession, handleAuthError } from '$lib/supabase';
-	import TemplateSelector from '../../../../components/TemplateSelector.svelte';
-import TemplateCustomizer from '../../../../components/TemplateCustomizer.svelte';
-import ProfileEditor from '../../../../components/ProfileEditor.svelte';
+	import { supabase, getProfile, getValidSession, handleAuthError, updateProfile } from '$lib/supabase';
+	import TemplateSelector from '$lib/../components/TemplateSelector.svelte';
+import TemplateCustomizer from '$lib/../components/TemplateCustomizer.svelte';
+import ProfileEditor from '$lib/../components/ProfileEditor.svelte';
+import type { TemplateCustomization, ResumeData, ProfileData, WorkExperience, Education, Link, Project, Certification, Language, Award, Profile as ProfileType } from '$lib/types';
 	import { toasts } from '$lib/stores/toast';
 	import { ArrowLeft, Save, Eye, Settings, Palette, Layout, Globe, Trash2 } from 'lucide-svelte';
-	import ConfirmDialog from '../../../../components/ConfirmDialog.svelte';
+	import ConfirmDialog from '$lib/../components/ConfirmDialog.svelte';
+	import { uploadProfilePhoto as uploadPhotoUtil, toProfileData } from '$lib/profile';
 
 	let user: any = null;
 	let profile: any = null;
@@ -27,7 +29,25 @@ let siteId: string;
 // Design-related variables
 let selectedTemplate = 'modern';
 let selectedTheme = 'default';
-let templateCustomization = {};
+let templateCustomization: TemplateCustomization = {
+		theme: 'default',
+		fontFamily: 'Inter',
+		fontSize: 'medium',
+		layout: 'single-column',
+		spacing: 'normal',
+		borderRadius: 'medium',
+		shadow: 'subtle',
+		accentColor: '#3B82F6',
+		textColor: '#1F2937',
+		backgroundColor: '#FFFFFF',
+		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+		lineHeight: '1.6',
+		letterSpacing: 'normal',
+		headingFont: 'sans',
+		containerWidth: 'standard',
+		verticalSpacing: 'normal',
+		horizontalPadding: 'normal'
+	};
 let showAdvancedCustomization = false;
 let applyingTemplate = false;
 let applyingTheme = false;
@@ -156,10 +176,18 @@ let applyingCustomization = false;
 	async function handleSave(event: CustomEvent) {
 		if (!user || !site) return;
 
-		const data = event.detail.resumeData;
+		const data = { ...(event.detail?.resumeData || {}) } as ResumeData;
+		const incomingUsername = (event.detail?.username || '').trim();
 
 		saving = true;
 		try {
+			// If a new profile photo is included, upload and attach URL
+			if (event.detail?.profilePhoto instanceof File) {
+				const photoUrl = await uploadPhotoUtil(event.detail.profilePhoto, user.id);
+				(data as any).photo_url = photoUrl;
+			}
+
+			// Persist site data
 			const { error } = await supabase
 				.from('sites')
 				.update({
@@ -177,12 +205,43 @@ let applyingCustomization = false;
 
 			resumeData = data;
 			site.data = data;
+
+			// Persist username change to profiles if provided
+			if (incomingUsername) {
+				await updateProfile(user.id, { username: incomingUsername });
+				if (profile) profile = { ...(profile as ProfileType), username: incomingUsername };
+			}
+
 			toasts.success('Website saved successfully!');
 		} catch (error) {
 			console.error('Error saving site:', error);
 			toasts.error('Failed to save website');
 		} finally {
 			saving = false;
+		}
+	}
+
+	// Upload profile photo to Supabase storage and return public URL
+	// removed local duplicate, using shared util
+
+	async function handlePhotoUpload(event: CustomEvent) {
+		const { file } = event.detail;
+		if (!file || !(file instanceof File)) return;
+		try {
+			const photoUrl = await uploadPhotoUtil(file, user.id);
+			if (resumeData) {
+				resumeData = { ...resumeData, photo_url: photoUrl };
+			}
+			const { error } = await supabase
+				.from('sites')
+				.update({ data: resumeData, updated_at: new Date().toISOString() })
+				.eq('id', site.id)
+				.eq('user_id', user.id);
+			if (error) throw error;
+			toasts.success('Photo uploaded and saved!');
+		} catch (err) {
+			console.error('Photo upload failed:', err);
+			toasts.error('Failed to upload photo');
 		}
 	}
 
@@ -331,6 +390,8 @@ let applyingCustomization = false;
 			}
 		}
 	}
+
+
 
 	// Design event handlers
 	async function handleTemplateApply(event: CustomEvent) {
@@ -580,7 +641,7 @@ let applyingCustomization = false;
 							on:themeApply={() => {}}
 							on:customizationApply={() => {}}
 							on:togglePreview={handlePreview}
-							on:photoUpload={() => {}}
+							on:photoUpload={handlePhotoUpload}
 						/>
 					</div>
 				{:else if activeTab === 'design'}
@@ -603,7 +664,7 @@ let applyingCustomization = false;
 				</p>
 
 				<TemplateSelector
-					profileData={resumeData}
+					profileData={toProfileData(resumeData)}
 					customizable={true}
 					bind:selectedTemplate
 					bind:selectedTheme
@@ -639,7 +700,7 @@ let applyingCustomization = false;
 				<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
 					<div class="flex flex-wrap gap-3">
 						<button
-							on:click={() => handleTemplateApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
+							on:click={() => handleTemplateApply(new CustomEvent('templateApply', { detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } }))}
 							disabled={applyingTemplate}
 							class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
 						>
@@ -654,7 +715,7 @@ let applyingCustomization = false;
 							{/if}
 						</button>
 						<button
-							on:click={() => handleThemeApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
+							on:click={() => handleThemeApply(new CustomEvent('themeApply', { detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } }))}
 							disabled={applyingTheme}
 							class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
 						>
@@ -670,7 +731,7 @@ let applyingCustomization = false;
 						</button>
 						{#if showAdvancedCustomization}
 							<button
-								on:click={() => handleCustomizationApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
+								on:click={() => handleCustomizationApply(new CustomEvent('customizationApply', { detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } }))}
 								disabled={applyingCustomization}
 								class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
 							>

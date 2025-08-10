@@ -7,7 +7,10 @@
 	import { toasts } from '$lib/stores/toast';
 	import { ArrowLeft, User as UserIcon, Eye, Edit3, Palette, Settings } from 'lucide-svelte';
 	import type { User } from '@supabase/supabase-js';
-	import type { Profile, ResumeData, TemplateCustomization, Customization } from '$lib/types';
+import type { Profile, ResumeData, TemplateCustomization, Customization, WorkExperience, Education } from '$lib/types';
+
+// Type alias for compatibility
+type EducationType = Education;
 	import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
 
         let user: User | null = null;
@@ -70,7 +73,7 @@
         function convertToCustomization(templateCustom: TemplateCustomization): Customization {
                 return {
                         fontFamily: templateCustom.fontFamily,
-                        fontSize: templateCustom.fontSize,
+                        fontSize: (templateCustom.fontSize === 'small' ? '12' : templateCustom.fontSize === 'large' ? '16' : '14'),
                         lineHeight:
                                 typeof templateCustom.lineHeight === 'string'
                                         ? 1.5
@@ -378,12 +381,12 @@
 				username: profile?.username
 			};
 
-			const { error } = await updateProfile(user.id, updateData);
+			const { error } = await updateProfile(user!.id, updateData);
 			if (error) throw error;
 
 			// Update local state
 			if (resumeData) {
-				resumeData = { ...resumeData, status };
+				resumeData = { ...resumeData };
 			}
 			toasts.success(`Profile status changed to ${status}`);
 		} catch (error) {
@@ -418,11 +421,13 @@
 					username: profile?.username
 				};
 
-				const { error } = await updateProfile(user.id, updateData);
+				const { error } = await updateProfile(user!.id, updateData);
 				if (error) throw error;
 
 				// Update local profile state
+			if (profile) {
 				profile = { ...profile, data: resumeData, photo_url: photoUrl };
+			}
 			}
 			toasts.success('Photo uploaded successfully!');
 		} catch (error) {
@@ -474,7 +479,9 @@
 
 			// Update local state
                         resumeData = cleanData;
-                        profile = { ...(profile as Profile), data: cleanData };
+                        if (profile) {
+                        	profile = { ...profile, data: cleanData };
+                        }
 
 			toasts.success('Template applied successfully!');
 		} catch (error) {
@@ -519,7 +526,9 @@
 
 			// Update local state
                         resumeData = cleanData;
-                        profile = { ...(profile as Profile), data: cleanData };
+                        if (profile) {
+                        	profile = { ...profile, data: cleanData };
+                        }
 
 			toasts.success('Theme applied successfully!');
 		} catch (error) {
@@ -564,7 +573,9 @@
 
 			// Update local state
                         resumeData = cleanData;
-                        profile = { ...(profile as Profile), data: cleanData };
+                        if (profile) {
+                        	profile = { ...profile, data: cleanData };
+                        }
 
 			toasts.success('Customization applied successfully!');
 		} catch (error) {

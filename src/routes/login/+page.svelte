@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { ArrowLeft, Mail, Lock, Eye, EyeOff, Github } from 'lucide-svelte';
 	import { toasts } from '$lib/stores/toast';
+	import Logo from '../../components/Logo.svelte';
 
 	let email = '';
 	let password = '';
@@ -107,14 +108,11 @@
 
 			<div class="flex items-center justify-center mb-6">
 				<div
-					class="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 hover:rotate-3"
+					class="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 hover:rotate-3 p-2"
 					role="img"
 					aria-label="SiteMe logo"
 				>
-					<span
-						class="text-white font-bold text-2xl hover:scale-110 transition-transform duration-300"
-						>S</span
-					>
+					<Logo className="w-full h-full hover:scale-110 transition-transform duration-300" textColor="text-white" />
 				</div>
 			</div>
 

@@ -78,6 +78,86 @@ export interface ResumeData {
 		verticalSpacing: string;
 		horizontalPadding: string;
 	};
+	// Section visibility settings
+	sectionVisibility?: {
+		basicInfo: {
+			visible: boolean;
+			fields: {
+				name: boolean;
+				email: boolean;
+				phone: boolean;
+				location: boolean;
+				summary: boolean;
+				photo: boolean;
+			};
+		};
+		experience: {
+			visible: boolean;
+			fields: {
+				title: boolean;
+				company: boolean;
+				type: boolean;
+				period: boolean;
+				description: boolean;
+			};
+		};
+		education: {
+			visible: boolean;
+			fields: {
+				degree: boolean;
+				institution: boolean;
+				period: boolean;
+			};
+		};
+		certifications: {
+			visible: boolean;
+			fields: {
+				name: boolean;
+				issuer: boolean;
+				date: boolean;
+				description: boolean;
+				credentialId: boolean;
+			};
+		};
+		languages: {
+			visible: boolean;
+			fields: {
+				language: boolean;
+				proficiency: boolean;
+			};
+		};
+		projects: {
+			visible: boolean;
+			fields: {
+				title: boolean;
+				description: boolean;
+				technologies: boolean;
+				liveUrl: boolean;
+				githubUrl: boolean;
+				duration: boolean;
+				image: boolean;
+			};
+		};
+		awards: {
+			visible: boolean;
+			fields: {
+				title: boolean;
+				organization: boolean;
+				date: boolean;
+				description: boolean;
+			};
+		};
+		skills: {
+			visible: boolean;
+		};
+		links: {
+			visible: boolean;
+			fields: {
+				type: boolean;
+				url: boolean;
+			};
+		};
+	};
 }
 
 export function createFallbackResumeData(text: string): ResumeData {

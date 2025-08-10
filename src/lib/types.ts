@@ -11,6 +11,7 @@ export interface Education {
 	institution: string;
 	degree: string;
 	period: string;
+	description?: string;
 }
 
 export interface Link {
@@ -88,10 +89,19 @@ export interface Template {
 	features: string[];
 }
 
+export interface SectionVisibility {
+	[sectionKey: string]: {
+		visible: boolean;
+		fields: {
+			[fieldKey: string]: boolean;
+		};
+	};
+}
+
 export interface Customization {
 	fontFamily?: string;
 	fontSize?: string;
-	lineHeight?: number;
+	lineHeight?: string;
 	margins?: {
 		top?: number;
 		bottom?: number;
@@ -108,6 +118,7 @@ export interface Customization {
 		columns?: number;
 		spacing?: number;
 	};
+	sectionOrder?: string[];
 }
 
 export interface TemplateCustomization {
@@ -148,6 +159,8 @@ export interface ResumeData {
 	theme?: string;
 	customization?: Customization;
 	photo_url?: string;
+	sectionVisibility?: SectionVisibility;
+	status?: 'draft' | 'published';
 }
 
 export interface Profile {

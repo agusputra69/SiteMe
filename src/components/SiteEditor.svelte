@@ -337,7 +337,7 @@
 		return {
 			fontFamily: templateCustom.fontFamily,
 			fontSize: templateCustom.fontSize,
-			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight,
+			lineHeight: typeof templateCustom.lineHeight === 'string' ? templateCustom.lineHeight : '1.5',
 			margins: {
 				top: 16,
 				bottom: 16,

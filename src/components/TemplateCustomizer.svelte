@@ -13,193 +13,54 @@
 		Check
 	} from 'lucide-svelte';
 
+	// Import configuration and utilities
+	import {
+		type CustomizationConfig,
+		DEFAULT_CUSTOMIZATION,
+		THEME_OPTIONS,
+		FONT_FAMILIES,
+		HEADING_FONTS,
+		FONT_SIZES,
+		LAYOUT_OPTIONS,
+		LINE_HEIGHT_OPTIONS,
+		LETTER_SPACING_OPTIONS,
+		CONTAINER_WIDTH_OPTIONS,
+		VERTICAL_SPACING_OPTIONS,
+		HORIZONTAL_PADDING_OPTIONS,
+		SPACING_OPTIONS,
+		BORDER_RADIUS_OPTIONS,
+		SHADOW_OPTIONS,
+		SECTION_LABELS,
+		createDefaultCustomization
+	} from '$lib/customizerConfig';
+
+	import {
+		validateCustomization,
+		announceChange,
+		focusFirstElement,
+		exportCustomizationToFile,
+		SectionReorderManager,
+		handleKeyboardNavigation
+	} from '$lib/customizerUtils';
+
 	const dispatch = createEventDispatcher();
 
 	export let selectedTemplate = 'classic';
-	export let customization = {
-		theme: 'blue',
-		fontFamily: 'inter',
-		fontSize: 'medium',
-		layout: 'standard',
-		spacing: 'normal',
-		borderRadius: 'medium',
-		shadow: 'medium',
-		accentColor: '#3B82F6',
-		textColor: '#1F2937',
-		backgroundColor: '#FFFFFF',
-		sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
-		lineHeight: 'normal',
-		letterSpacing: 'normal',
-		headingFont: 'same',
-		containerWidth: 'standard',
-		verticalSpacing: 'normal',
-		horizontalPadding: 'normal'
-	};
+	export let customization: CustomizationConfig = createDefaultCustomization();
 
-	// Accessibility state
-	let focusableElements: HTMLElement[] = [];
-	let currentFocusIndex = 0;
-
-	// Keyboard navigation support
-	function handleKeydown(event: KeyboardEvent) {
-		switch (event.key) {
-			case 'Escape':
-				// Close any open modals or return to previous state
-				break;
-			case 'Tab':
-				// Handle tab navigation
-				break;
-		}
-	}
-
-	// Focus management
-	function focusFirstElement() {
-		const firstButton = document.querySelector('button') as HTMLElement;
-		if (firstButton) {
-			firstButton.focus();
-		}
-	}
-
-	// Announce changes to screen readers
-	let announcementTimeout: ReturnType<typeof setTimeout> | null = null;
-
-	function announceChange(message: string) {
-		const announcement = document.createElement('div');
-		announcement.setAttribute('aria-live', 'polite');
-		announcement.setAttribute('aria-atomic', 'true');
-		announcement.className = 'sr-only';
-		announcement.textContent = message;
-		document.body.appendChild(announcement);
-		announcementTimeout = setTimeout(() => {
-			if (document.body.contains(announcement)) {
-				document.body.removeChild(announcement);
-			}
-			announcementTimeout = null;
-		}, 1000);
-	}
-
-	onDestroy(() => {
-		if (announcementTimeout) {
-			clearTimeout(announcementTimeout);
-		}
-	});
-
-	const themes = [
-		{ name: 'blue', color: '#3B82F6', label: 'Professional Blue' },
-		{ name: 'green', color: '#10B981', label: 'Fresh Green' },
-		{ name: 'purple', color: '#8B5CF6', label: 'Creative Purple' },
-		{ name: 'red', color: '#EF4444', label: 'Bold Red' },
-		{ name: 'indigo', color: '#6366F1', label: 'Modern Indigo' },
-		{ name: 'teal', color: '#14B8A6', label: 'Calm Teal' },
-		{ name: 'orange', color: '#F97316', label: 'Energetic Orange' },
-		{ name: 'pink', color: '#EC4899', label: 'Vibrant Pink' }
-	];
-
-	const fontFamilies = [
-		{ value: 'inter', label: 'Inter (Modern)', class: 'font-sans', preview: 'Modern & Clean' },
-		{
-			value: 'serif',
-			label: 'Times (Classic)',
-			class: 'font-serif',
-			preview: 'Traditional & Elegant'
-		},
-		{ value: 'mono', label: 'Mono (Technical)', class: 'font-mono', preview: 'Code & Technical' },
-		{
-			value: 'poppins',
-			label: 'Poppins (Friendly)',
-			class: 'font-sans',
-			preview: 'Rounded & Approachable'
-		},
-		{
-			value: 'playfair',
-			label: 'Playfair (Luxury)',
-			class: 'font-serif',
-			preview: 'Sophisticated & Bold'
-		},
-		{ value: 'roboto', label: 'Roboto (Google)', class: 'font-sans', preview: 'Neutral & Readable' }
-	];
-
-	const headingFonts = [
-		{ value: 'same', label: 'Same as Body' },
-		{ value: 'serif', label: 'Serif Headings' },
-		{ value: 'sans', label: 'Sans-serif Headings' },
-		{ value: 'display', label: 'Display Font' }
-	];
-
-	const lineHeightOptions = [
-		{ value: 'tight', label: 'Tight', class: 'leading-tight' },
-		{ value: 'normal', label: 'Normal', class: 'leading-normal' },
-		{ value: 'relaxed', label: 'Relaxed', class: 'leading-relaxed' },
-		{ value: 'loose', label: 'Loose', class: 'leading-loose' }
-	];
-
-	const letterSpacingOptions = [
-		{ value: 'tight', label: 'Tight', class: 'tracking-tight' },
-		{ value: 'normal', label: 'Normal', class: 'tracking-normal' },
-		{ value: 'wide', label: 'Wide', class: 'tracking-wide' },
-		{ value: 'wider', label: 'Wider', class: 'tracking-wider' }
-	];
-
-	const containerWidthOptions = [
-		{ value: 'narrow', label: 'Narrow (600px)', class: 'max-w-2xl' },
-		{ value: 'standard', label: 'Standard (800px)', class: 'max-w-4xl' },
-		{ value: 'wide', label: 'Wide (1000px)', class: 'max-w-5xl' },
-		{ value: 'full', label: 'Full Width', class: 'max-w-full' }
-	];
-
-	const verticalSpacingOptions = [
-		{ value: 'compact', label: 'Compact', class: 'space-y-4' },
-		{ value: 'normal', label: 'Normal', class: 'space-y-6' },
-		{ value: 'relaxed', label: 'Relaxed', class: 'space-y-8' },
-		{ value: 'spacious', label: 'Spacious', class: 'space-y-12' }
-	];
-
-	const horizontalPaddingOptions = [
-		{ value: 'minimal', label: 'Minimal', class: 'px-4' },
-		{ value: 'normal', label: 'Normal', class: 'px-6' },
-		{ value: 'generous', label: 'Generous', class: 'px-8' },
-		{ value: 'maximum', label: 'Maximum', class: 'px-12' }
-	];
-
-	const fontSizes = [
-		{ value: 'small', label: 'Compact', class: 'text-sm' },
-		{ value: 'medium', label: 'Standard', class: 'text-base' },
-		{ value: 'large', label: 'Readable', class: 'text-lg' }
-	];
-
-	const layouts = [
-		{ value: 'standard', label: 'Standard', description: 'Traditional single column' },
-		{ value: 'compact', label: 'Compact', description: 'Dense information layout' },
-		{ value: 'spacious', label: 'Spacious', description: 'Generous whitespace' },
-		{ value: 'sidebar', label: 'Sidebar', description: 'Two-column with sidebar' }
-	];
-
-	const spacingOptions = [
-		{ value: 'tight', label: 'Tight', class: 'space-y-2' },
-		{ value: 'normal', label: 'Normal', class: 'space-y-4' },
-		{ value: 'relaxed', label: 'Relaxed', class: 'space-y-6' },
-		{ value: 'loose', label: 'Loose', class: 'space-y-8' }
-	];
-
-	const borderRadiusOptions = [
-		{ value: 'none', label: 'Sharp', class: 'rounded-none' },
-		{ value: 'small', label: 'Subtle', class: 'rounded-sm' },
-		{ value: 'medium', label: 'Standard', class: 'rounded-md' },
-		{ value: 'large', label: 'Rounded', class: 'rounded-lg' },
-		{ value: 'full', label: 'Pill', class: 'rounded-full' }
-	];
-
-	const shadowOptions = [
-		{ value: 'none', label: 'Flat', class: 'shadow-none' },
-		{ value: 'small', label: 'Subtle', class: 'shadow-sm' },
-		{ value: 'medium', label: 'Standard', class: 'shadow-md' },
-		{ value: 'large', label: 'Prominent', class: 'shadow-lg' },
-		{ value: 'xl', label: 'Dramatic', class: 'shadow-xl' }
-	];
-
+	// Component state
 	let activeTab = 'colors';
 	let draggedIndex = -1;
 	let dragOverIndex = -1;
+
+	// Initialize section reorder manager
+	const sectionReorderManager = new SectionReorderManager(
+		(newOrder: string[]) => updateCustomization('sectionOrder', newOrder),
+		(message: string) => announceChange(message)
+	);
+
+	// Reactive statement to validate customization
+	$: customization = validateCustomization(customization);
 
 	// Section labels for display
 	const sectionLabels: { [key: string]: string } = {
@@ -213,25 +74,7 @@
 
 	function updateCustomization(key: string, value: any) {
 		if (!customization) {
-			customization = {
-				theme: 'blue',
-				fontFamily: 'inter',
-				fontSize: 'medium',
-				layout: 'standard',
-				spacing: 'normal',
-				borderRadius: 'medium',
-				shadow: 'medium',
-				accentColor: '#3B82F6',
-				textColor: '#1F2937',
-				backgroundColor: '#FFFFFF',
-				sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
-				lineHeight: 'normal',
-				letterSpacing: 'normal',
-				headingFont: 'same',
-				containerWidth: 'standard',
-				verticalSpacing: 'normal',
-				horizontalPadding: 'normal'
-			};
+			customization = createDefaultCustomization();
 		}
 		customization = { ...customization, [key]: value };
 		dispatch('update', customization);
@@ -241,40 +84,15 @@
 	}
 
 	function resetToDefaults() {
-		customization = {
-			theme: 'blue',
-			fontFamily: 'inter',
-			fontSize: 'medium',
-			layout: 'standard',
-			spacing: 'normal',
-			borderRadius: 'medium',
-			shadow: 'medium',
-			accentColor: '#3B82F6',
-			textColor: '#1F2937',
-			backgroundColor: '#FFFFFF',
-			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
-			lineHeight: 'normal',
-			letterSpacing: 'normal',
-			headingFont: 'same',
-			containerWidth: 'standard',
-			verticalSpacing: 'normal',
-			horizontalPadding: 'normal'
-		};
+		customization = createDefaultCustomization();
 		dispatch('update', customization);
 		announceChange('Customization reset to defaults');
 	}
 
-	// Drag and drop functions for section reordering
+	// Drag and drop functions using SectionReorderManager
 	function handleDragStart(event: DragEvent, index: number) {
 		draggedIndex = index;
-		if (event.dataTransfer) {
-			event.dataTransfer.effectAllowed = 'move';
-		}
-		announceChange(
-			`Started dragging ${
-				sectionLabels[customization.sectionOrder[index]] || customization.sectionOrder[index]
-			} section`
-		);
+		sectionReorderManager.handleDragStart(event, index, customization.sectionOrder);
 	}
 
 	function handleDragOver(event: DragEvent, index: number) {
@@ -289,12 +107,14 @@
 	function handleDrop(event: DragEvent, dropIndex: number) {
 		event.preventDefault();
 		if (draggedIndex !== -1 && draggedIndex !== dropIndex) {
+			sectionReorderManager.handleDrop(event, dropIndex, customization.sectionOrder);
+			// Update the section order after the manager handles the drop
 			const newOrder = [...customization.sectionOrder];
 			const draggedItem = newOrder.splice(draggedIndex, 1)[0];
 			newOrder.splice(dropIndex, 0, draggedItem);
 			updateCustomization('sectionOrder', newOrder);
 			announceChange(
-				`${sectionLabels[draggedItem] || draggedItem} section moved to position ${dropIndex + 1}`
+				`${SECTION_LABELS[draggedItem] || draggedItem} section moved to position ${dropIndex + 1}`
 			);
 		}
 		draggedIndex = -1;
@@ -302,19 +122,13 @@
 	}
 
 	function handleDragEnd() {
+		sectionReorderManager.handleDragEnd();
 		draggedIndex = -1;
 		dragOverIndex = -1;
 	}
 
 	function exportCustomization() {
-		const dataStr = JSON.stringify(customization, null, 2);
-		const dataBlob = new Blob([dataStr], { type: 'application/json' });
-		const url = URL.createObjectURL(dataBlob);
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = `${selectedTemplate}-customization.json`;
-		link.click();
-		URL.revokeObjectURL(url);
+		exportCustomizationToFile(customization, selectedTemplate);
 		announceChange('Customization settings exported');
 	}
 
@@ -438,7 +252,7 @@
 						<p class="text-sm text-gray-600 dark:text-gray-400">Choose a pre-designed color scheme for your resume</p>
 					</div>
 					<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-						{#each themes as theme}
+						{#each THEME_OPTIONS as theme}
 							<button
 								on:click={() => updateCustomization('theme', theme.name)}
 								class="relative p-3 rounded-lg border-2 transition-all group {customization.theme ===
@@ -542,27 +356,27 @@
 						<p class="text-sm text-gray-600 dark:text-gray-400">Choose the main typeface for your resume content</p>
 					</div>
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						{#each fontFamilies as font}
-							<button
-								on:click={() => updateCustomization('fontFamily', font.value)}
-								class="text-left p-4 rounded-lg border-2 transition-all relative {customization.fontFamily ===
-								font.value
-									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
-								aria-label="Set font family to {font.label}"
-								aria-pressed={customization.fontFamily === font.value}
-							>
-								{#if customization.fontFamily === font.value}
-									<div class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-										<Check class="w-4 h-4 text-white" />
-									</div>
-								{/if}
-								<div class="font-medium text-gray-900 dark:text-white mb-2 {font.class}">
-									{font.label}
+						{#each FONT_FAMILIES as font}
+						<button
+							on:click={() => updateCustomization('fontFamily', font.value)}
+							class="text-left p-4 rounded-lg border-2 transition-all relative {customization.fontFamily ===
+							font.value
+								? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+								: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+							aria-label="Set font family to {font.label}"
+							aria-pressed={customization.fontFamily === font.value}
+						>
+							{#if customization.fontFamily === font.value}
+								<div class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+									<Check class="w-4 h-4 text-white" />
 								</div>
-								<div class="text-xs text-gray-500 dark:text-gray-400">{font.preview}</div>
-							</button>
-						{/each}
+							{/if}
+							<div class="font-medium text-gray-900 dark:text-white mb-2 {font.class}">
+								{font.label}
+							</div>
+							<div class="text-xs text-gray-500 dark:text-gray-400">{font.preview}</div>
+						</button>
+					{/each}
 					</div>
 				</div>
 
@@ -573,23 +387,23 @@
 						<p class="text-sm text-gray-600 dark:text-gray-400">Adjust the overall text size for better readability</p>
 					</div>
 					<div class="grid grid-cols-3 gap-3">
-						{#each fontSizes as size}
-							<button
-								on:click={() => updateCustomization('fontSize', size.value)}
-								class="p-4 rounded-lg border-2 transition-all relative {customization.fontSize === size.value
-									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
-								aria-label="Set font size to {size.label}"
-								aria-pressed={customization.fontSize === size.value}
-							>
-								{#if customization.fontSize === size.value}
-									<div class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-										<Check class="w-4 h-4 text-white" />
-									</div>
-								{/if}
-								<span class="text-sm font-medium text-gray-900 dark:text-white">{size.label}</span>
-							</button>
-						{/each}
+						{#each FONT_SIZES as size}
+						<button
+							on:click={() => updateCustomization('fontSize', size.value)}
+							class="p-4 rounded-lg border-2 transition-all relative {customization.fontSize === size.value
+								? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+								: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+							aria-label="Set font size to {size.label}"
+							aria-pressed={customization.fontSize === size.value}
+						>
+							{#if customization.fontSize === size.value}
+								<div class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+									<Check class="w-4 h-4 text-white" />
+								</div>
+							{/if}
+							<span class="text-sm font-medium text-gray-900 dark:text-white">{size.label}</span>
+						</button>
+					{/each}
 					</div>
 				</div>
 
@@ -602,24 +416,24 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Space between lines of text</p>
 						</div>
 						<div class="grid grid-cols-2 gap-2">
-							{#each lineHeightOptions as option}
-								<button
-									on:click={() => updateCustomization('lineHeight', option.value)}
-									class="p-3 rounded-lg border-2 transition-all relative {customization.lineHeight ===
-									option.value
-										? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-										: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
-									aria-label="Set line height to {option.label}"
-									aria-pressed={customization.lineHeight === option.value}
-								>
-									{#if customization.lineHeight === option.value}
-										<div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-											<Check class="w-3 h-3 text-white" />
-										</div>
-									{/if}
-									<span class="text-xs font-medium text-gray-900 dark:text-white">{option.label}</span>
-								</button>
-							{/each}
+							{#each LINE_HEIGHT_OPTIONS as option}
+							<button
+								on:click={() => updateCustomization('lineHeight', option.value)}
+								class="p-3 rounded-lg border-2 transition-all relative {customization.lineHeight ===
+								option.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set line height to {option.label}"
+								aria-pressed={customization.lineHeight === option.value}
+							>
+								{#if customization.lineHeight === option.value}
+									<div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+										<Check class="w-3 h-3 text-white" />
+									</div>
+								{/if}
+								<span class="text-xs font-medium text-gray-900 dark:text-white">{option.label}</span>
+							</button>
+						{/each}
 						</div>
 					</div>
 
@@ -630,24 +444,24 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Space between individual letters</p>
 						</div>
 						<div class="grid grid-cols-2 gap-2">
-							{#each letterSpacingOptions as option}
-								<button
-									on:click={() => updateCustomization('letterSpacing', option.value)}
-									class="p-3 rounded-lg border-2 transition-all relative {customization.letterSpacing ===
-									option.value
-										? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-										: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
-									aria-label="Set letter spacing to {option.label}"
-									aria-pressed={customization.letterSpacing === option.value}
-								>
-									{#if customization.letterSpacing === option.value}
-										<div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-											<Check class="w-3 h-3 text-white" />
-										</div>
-									{/if}
-									<span class="text-xs font-medium text-gray-900 dark:text-white">{option.label}</span>
-								</button>
-							{/each}
+							{#each LETTER_SPACING_OPTIONS as option}
+							<button
+								on:click={() => updateCustomization('letterSpacing', option.value)}
+								class="p-3 rounded-lg border-2 transition-all relative {customization.letterSpacing ===
+								option.value
+									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+									: 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								aria-label="Set letter spacing to {option.label}"
+								aria-pressed={customization.letterSpacing === option.value}
+							>
+								{#if customization.letterSpacing === option.value}
+									<div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+										<Check class="w-3 h-3 text-white" />
+									</div>
+								{/if}
+								<span class="text-xs font-medium text-gray-900 dark:text-white">{option.label}</span>
+							</button>
+						{/each}
 						</div>
 					</div>
 				</div>
@@ -666,7 +480,7 @@
 						<p class="text-xs text-gray-600 dark:text-gray-400 mb-3">Choose how content is arranged on your resume</p>
 					</div>
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						{#each layouts as layout}
+						{#each LAYOUT_OPTIONS as layout}
 							<button
 								on:click={() => updateCustomization('layout', layout.value)}
 								class="text-left p-4 rounded-lg border-2 transition-all relative {customization.layout ===
@@ -697,7 +511,7 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Overall width of your resume</p>
 						</div>
 						<div class="grid grid-cols-2 gap-2">
-							{#each containerWidthOptions as option}
+							{#each CONTAINER_WIDTH_OPTIONS as option}
 								<button
 									on:click={() => updateCustomization('containerWidth', option.value)}
 									class="p-3 rounded-lg border-2 transition-all relative {customization.containerWidth ===
@@ -725,7 +539,7 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Space between sections vertically</p>
 						</div>
 						<div class="grid grid-cols-2 gap-2">
-							{#each verticalSpacingOptions as spacing}
+							{#each VERTICAL_SPACING_OPTIONS as spacing}
 								<button
 									on:click={() => updateCustomization('verticalSpacing', spacing.value)}
 									class="p-3 rounded-lg border-2 transition-all relative {customization.verticalSpacing ===
@@ -753,7 +567,7 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Left and right padding inside sections</p>
 						</div>
 						<div class="grid grid-cols-2 gap-2">
-							{#each horizontalPaddingOptions as padding}
+							{#each HORIZONTAL_PADDING_OPTIONS as padding}
 								<button
 									on:click={() => updateCustomization('horizontalPadding', padding.value)}
 									class="p-3 rounded-lg border-2 transition-all relative {customization.horizontalPadding ===
@@ -781,7 +595,7 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Overall spacing between elements</p>
 						</div>
 						<div class="grid grid-cols-2 gap-2">
-							{#each spacingOptions as spacing}
+							{#each SPACING_OPTIONS as spacing}
 								<button
 									on:click={() => updateCustomization('spacing', spacing.value)}
 									class="p-3 rounded-lg border-2 transition-all relative {customization.spacing ===
@@ -812,7 +626,7 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Rounded corners for sections and elements</p>
 						</div>
 						<div class="grid grid-cols-3 gap-2">
-							{#each borderRadiusOptions as radius}
+							{#each BORDER_RADIUS_OPTIONS as radius}
 								<button
 									on:click={() => updateCustomization('borderRadius', radius.value)}
 									class="p-3 rounded-lg border-2 transition-all relative {customization.borderRadius ===
@@ -840,7 +654,7 @@
 							<p class="text-xs text-gray-600 dark:text-gray-400">Drop shadow depth and intensity</p>
 						</div>
 						<div class="grid grid-cols-3 gap-2">
-							{#each shadowOptions as shadow}
+							{#each SHADOW_OPTIONS as shadow}
 								<button
 									on:click={() => updateCustomization('shadow', shadow.value)}
 									class="p-3 rounded-lg border-2 transition-all relative {customization.shadow === shadow.value
@@ -894,12 +708,12 @@
 								on:drop={(e) => handleDrop(e, index)}
 								on:dragend={handleDragEnd}
 								role="button"
-								aria-label="Drag to reorder {sectionLabels[section] || section} section"
+								aria-label="Drag to reorder {SECTION_LABELS[section] || section} section"
 								tabindex="0"
 							>
 								<GripVertical class="w-4 h-4 text-gray-400 mr-3" aria-hidden="true" />
 								<span class="flex-1 text-sm font-medium text-gray-900 dark:text-white">
-									{sectionLabels[section] || section}
+									{SECTION_LABELS[section] || section}
 								</span>
 								<span class="text-xs text-gray-500 dark:text-gray-400">
 									{index + 1}

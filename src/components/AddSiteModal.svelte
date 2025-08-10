@@ -51,6 +51,9 @@
 					<div
 						class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
 						on:click={handleManualCreate}
+						on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleManualCreate(); } }}
+						role="button"
+						tabindex="0"
 					>
 						<div class="space-y-4">
 							<div

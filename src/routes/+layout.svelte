@@ -9,6 +9,7 @@
 	import type { User } from '@supabase/supabase-js';
 	import type { Profile } from '$lib/types';
 	import { handleError, handleAuthError as handleAuthErr } from '$lib/error-handler';
+	import Logo from '../components/Logo.svelte';
 	import '../app.css';
 
 	let theme: 'light' | 'dark' = 'light';
@@ -266,11 +267,11 @@
 								aria-label="Go to dashboard home"
 							>
 								<div
-									class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center"
+									class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center p-1.5"
 									role="img"
 									aria-label="SiteMe logo"
 								>
-									<span class="text-white font-bold text-lg">S</span>
+									<Logo className="w-full h-full" textColor="text-white" />
 								</div>
 								<span class="text-xl font-bold text-gray-900 dark:text-white">SiteMe</span>
 							</a>
@@ -282,14 +283,11 @@
 							aria-label="Go to SiteMe homepage"
 						>
 							<div
-								class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3"
+								class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3 p-1.5"
 								role="img"
 								aria-label="SiteMe logo"
 							>
-								<span
-									class="text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300"
-									>S</span
-								>
+								<Logo className="w-full h-full group-hover:scale-110 transition-transform duration-300" textColor="text-white" />
 							</div>
 							<span
 								class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
@@ -584,8 +582,8 @@
       <div class="grid md:grid-cols-4 gap-8">
         <div class="md:col-span-2">
           <div class="flex items-center space-x-2 mb-4 group">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300">
-              <span class="text-white font-bold text-lg">S</span>
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 p-1.5">
+              <Logo className="w-full h-full" textColor="text-white" />
             </div>
             <span class="text-xl font-bold text-gray-900 dark:text-white">SiteMe</span>
           </div>

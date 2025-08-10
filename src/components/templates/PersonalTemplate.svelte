@@ -597,9 +597,3 @@
 		</div>
 	</footer>
 </div>
-
-<style>
-	html {
-		scroll-behavior: smooth;
-	}
-</style>

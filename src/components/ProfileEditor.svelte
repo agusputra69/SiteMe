@@ -19,6 +19,7 @@
 		Trophy
 	} from 'lucide-svelte';
 	import type { ResumeData, TemplateCustomization, Customization } from '$lib/types';
+	import { convertToCustomization, convertFromCustomization, toProfileData } from '$lib/profile';
 	import TemplateSelector from './TemplateSelector.svelte';
 	import TemplateCustomizer from './TemplateCustomizer.svelte';
 	import RichTextEditor from './RichTextEditor.svelte';
@@ -482,58 +483,7 @@
 		}
 	}
 
-	// Convert TemplateCustomization to Customization
-	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
-		return {
-			fontFamily: templateCustom.fontFamily || 'inter',
-			fontSize: templateCustom.fontSize || 'medium',
-			lineHeight: typeof templateCustom.lineHeight === 'string' ? 1.5 : templateCustom.lineHeight || 1.5,
-			margins: {
-				top: 16,
-				bottom: 16,
-				left: 16,
-				right: 16
-			},
-			colors: {
-				primary: templateCustom.accentColor || '#3B82F6',
-				secondary: templateCustom.textColor || '#1F2937',
-				accent: templateCustom.backgroundColor || '#FFFFFF',
-				text: templateCustom.textColor || '#1F2937'
-			},
-			layout: {
-				columns: templateCustom.layout === 'two-column' ? 2 : 1,
-				spacing: 16
-			}
-		};
-	}
 
-	// Convert Customization to TemplateCustomization
-	function convertFromCustomization(customization: Customization): TemplateCustomization {
-		return {
-			theme: 'blue',
-			fontFamily: customization.fontFamily || 'inter',
-			fontSize: customization.fontSize || 'medium',
-			layout:
-				typeof customization.layout === 'object'
-					? customization.layout.columns === 2
-						? 'two-column'
-						: 'standard'
-					: customization.layout || 'standard',
-			spacing: 'normal',
-			borderRadius: 'medium',
-			shadow: 'medium',
-			accentColor: customization.colors?.primary || '#3B82F6',
-			textColor: customization.colors?.text || '#1F2937',
-			backgroundColor: customization.colors?.accent || '#FFFFFF',
-			sectionOrder: ['header', 'about', 'experience', 'education', 'skills', 'contact'],
-			lineHeight: customization.lineHeight?.toString() || '1.5',
-			letterSpacing: 'normal',
-			headingFont: customization.fontFamily || 'inter',
-			containerWidth: 'standard',
-			verticalSpacing: 'normal',
-			horizontalPadding: 'normal'
-		};
-	}
 
 	function handleTemplateChange(event: CustomEvent) {
 		// Template change received
@@ -926,50 +876,7 @@
 		<!-- Preview Mode with Template -->
 		<div class="p-6">
 			<TemplateSelector
-				profileData={{
-					name: resumeData?.name || 'Your Name',
-					avatar: profilePhotoUrl || resumeData?.photo_url || '',
-					about: resumeData?.summary || 'Your professional summary goes here...',
-					workExperience: resumeData?.experience?.map((exp) => ({
-						title: exp.title || 'Job Title',
-						company: exp.company || 'Company Name',
-						type: 'Full-Time',
-						period: exp.period || 'Start - End',
-						current: false,
-						description: exp.description || ''
-					})) || [
-						{
-							title: 'Your Job Title',
-							company: 'Company Name',
-							type: 'Full-Time',
-							period: 'Start - End',
-							current: false,
-							description: ''
-						}
-					],
-					education: resumeData?.education?.map((edu) => ({
-						institution: edu.institution || 'University Name',
-						degree: edu.degree || 'Your Degree',
-						period: edu.period || 'Start - End'
-					})) || [
-						{
-							institution: 'University Name',
-							degree: 'Your Degree',
-							period: 'Start - End'
-						}
-					],
-					skills: resumeData?.skills || ['Skill 1', 'Skill 2', 'Skill 3'],
-					links: resumeData?.links || [],
-					projects: resumeData?.projects || [],
-					certifications: resumeData?.certifications || [],
-					languages: resumeData?.languages || [],
-					awards: resumeData?.awards || [],
-					contact: {
-						email: resumeData?.email || '',
-						phone: resumeData?.phone || '',
-						location: resumeData?.location || ''
-					}
-				}}
+				profileData={toProfileData(resumeData)}
 				customizable={false}
 				{selectedTemplate}
 				{selectedTheme}
@@ -1417,6 +1324,454 @@
 								>
 									<Plus class="w-4 h-4 mr-2" />
 									Add Your First Education
+								</button>
+							</div>
+						{/if}
+					</div>
+				{:else if activeTab === 'certifications'}
+					<!-- Certifications Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Award class="w-6 h-6 text-yellow-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Certifications</h4>
+							</div>
+							<button
+								on:click={addCertification}
+								class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Certification
+							</button>
+						</div>
+
+						{#if resumeData.certifications && resumeData.certifications.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.certifications as cert, index}
+									<div
+										class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span
+													class="w-6 h-6 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+												>
+													{index + 1}
+												</span>
+												Certification {index + 1}
+											</h6>
+											<button
+												on:click={() => removeCertification(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label
+													for="cert-name-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Certification Name
+												</label>
+												<input
+													id="cert-name-{index}"
+													type="text"
+													bind:value={cert.name}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="AWS Certified Solutions Architect"
+												/>
+											</div>
+											<div>
+												<label
+													for="cert-issuer-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Issuing Organization
+												</label>
+												<input
+													id="cert-issuer-{index}"
+													type="text"
+													bind:value={cert.issuer}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="Amazon Web Services"
+												/>
+											</div>
+											<div>
+												<label
+													for="cert-date-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Date Issued
+												</label>
+												<input
+													id="cert-date-{index}"
+													type="text"
+													bind:value={cert.date}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="January 2024"
+												/>
+											</div>
+											<div>
+												<label
+													for="cert-credential-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Credential ID
+												</label>
+												<input
+													id="cert-credential-{index}"
+													type="text"
+													bind:value={cert.credentialId}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+													placeholder="ABC123XYZ"
+												/>
+											</div>
+										</div>
+										<div>
+											<label
+												for="cert-description-{index}"
+												class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+											>
+												Description
+											</label>
+											<textarea
+												id="cert-description-{index}"
+												bind:value={cert.description}
+												rows="3"
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+												placeholder="Brief description of the certification..."
+											></textarea>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Award class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No certifications added yet</p>
+								<button
+									on:click={addCertification}
+									class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Certification
+								</button>
+							</div>
+						{/if}
+					</div>
+				{:else if activeTab === 'languages'}
+					<!-- Languages Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Globe class="w-6 h-6 text-green-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Languages</h4>
+							</div>
+							<button
+								on:click={addLanguage}
+								class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Language
+							</button>
+						</div>
+
+						{#if resumeData.languages && resumeData.languages.length > 0}
+							<div class="space-y-4">
+								{#each resumeData.languages as language, index}
+									<div
+										class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span
+													class="w-6 h-6 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+												>
+													{index + 1}
+												</span>
+												Language {index + 1}
+											</h6>
+											<button
+												on:click={() => removeLanguage(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<label
+													for="language-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Language
+												</label>
+												<input
+													id="language-{index}"
+													type="text"
+													bind:value={language.language}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+													placeholder="English, Spanish, French"
+												/>
+											</div>
+											<div>
+												<label
+													for="proficiency-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Proficiency Level
+												</label>
+												<select
+													id="proficiency-{index}"
+													bind:value={language.proficiency}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+												>
+													<option value="">Select proficiency</option>
+													<option value="Native">Native</option>
+													<option value="Fluent">Fluent</option>
+													<option value="Advanced">Advanced</option>
+													<option value="Intermediate">Intermediate</option>
+													<option value="Beginner">Beginner</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Globe class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No languages added yet</p>
+								<button
+									on:click={addLanguage}
+									class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Language
+								</button>
+							</div>
+						{/if}
+					</div>
+				{:else if activeTab === 'projects'}
+					<!-- Projects Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Code class="w-6 h-6 text-indigo-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Projects</h4>
+							</div>
+							<button
+								on:click={addProject}
+								class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Project
+							</button>
+						</div>
+
+						{#if resumeData.projects && resumeData.projects.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.projects as project, index}
+									<div
+										class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span
+													class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+												>
+													{index + 1}
+												</span>
+												Project {index + 1}
+											</h6>
+											<button
+												on:click={() => removeProject(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 gap-4 mb-4">
+											<div>
+												<label
+													for="project-name-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Project Title
+												</label>
+												<input
+													id="project-name-{index}"
+													type="text"
+													bind:value={project.title}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+													placeholder="E-commerce Website"
+												/>
+											</div>
+											<div>
+												<label
+													for="project-description-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Description
+												</label>
+												<textarea
+													id="project-description-{index}"
+													bind:value={project.description}
+													rows="3"
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+													placeholder="Brief description of the project and your role..."
+												></textarea>
+											</div>
+											<div>
+												<label
+													for="project-tech-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Technologies Used
+												</label>
+												<SkillsInput
+													bind:skills={project.technologies}
+													on:input={(e) => {
+														project.technologies = e.detail.skills;
+													}}
+													label="Technologies"
+													placeholder="React, Node.js, MongoDB"
+												/>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Code class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No projects added yet</p>
+								<button
+									on:click={addProject}
+									class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Project
+								</button>
+							</div>
+						{/if}
+					</div>
+				{:else if activeTab === 'awards'}
+					<!-- Awards Tab -->
+					<div class="space-y-6">
+						<div class="flex items-center justify-between mb-6">
+							<div class="flex items-center">
+								<Trophy class="w-6 h-6 text-orange-600 mr-3" />
+								<h4 class="text-xl font-semibold text-gray-900 dark:text-white">Awards & Recognition</h4>
+							</div>
+							<button
+								on:click={addAward}
+								class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+							>
+								<Plus class="w-4 h-4 mr-2" />
+								Add Award
+							</button>
+						</div>
+
+						{#if resumeData.awards && resumeData.awards.length > 0}
+							<div class="space-y-6">
+								{#each resumeData.awards as award, index}
+									<div
+										class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h6 class="font-medium text-gray-900 dark:text-white flex items-center">
+												<span
+													class="w-6 h-6 bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-sm font-bold mr-2"
+												>
+													{index + 1}
+												</span>
+												Award {index + 1}
+											</h6>
+											<button
+												on:click={() => removeAward(index)}
+												class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+											<div>
+												<label
+													for="award-title-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Award Title
+												</label>
+												<input
+													id="award-title-{index}"
+													type="text"
+													bind:value={award.title}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+													placeholder="Employee of the Year"
+												/>
+											</div>
+											<div>
+												<label
+													for="award-organization-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Organization
+												</label>
+												<input
+													id="award-organization-{index}"
+													type="text"
+													bind:value={award.organization}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+													placeholder="Company Name"
+												/>
+											</div>
+											<div class="md:col-span-2">
+												<label
+													for="award-date-{index}"
+													class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+												>
+													Date Received
+												</label>
+												<input
+													id="award-date-{index}"
+													type="text"
+													bind:value={award.date}
+													class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+													placeholder="January 2024"
+												/>
+											</div>
+										</div>
+										<div>
+											<label
+												for="award-description-{index}"
+												class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+											>
+												Description
+											</label>
+											<textarea
+												id="award-description-{index}"
+												bind:value={award.description}
+												rows="3"
+												class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+												placeholder="Brief description of the award and achievement..."
+											></textarea>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+								<Trophy class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+								<p class="text-gray-500 dark:text-gray-400 mb-4">No awards added yet</p>
+								<button
+									on:click={addAward}
+									class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+								>
+									<Plus class="w-4 h-4 mr-2" />
+									Add Your First Award
 								</button>
 							</div>
 						{/if}

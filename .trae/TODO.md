@@ -1,8 +1,7 @@
 # TODO:
 
-- [x] resolve_profileeditor_conflicts: Resolve merge conflicts in ProfileEditor.svelte (priority: High)
-- [x] resolve_dashboard_conflicts: Resolve merge conflicts in dashboard/+page.svelte (priority: High)
-- [x] resolve_editor_conflicts: Resolve merge conflicts in dashboard/editor/+page.svelte (priority: High)
-- [x] resolve_profile_conflicts: Resolve merge conflicts in dashboard/profile/+page.svelte (priority: High)
-- [x] commit_merge: Add resolved files and continue rebase (priority: Medium)
-- [ ] verify_functionality: Test that the application works correctly after merge (**IN PROGRESS**) (priority: Medium)
+- [x] fix-profileeditor-export: Fix ProfileEditor.svelte module has no default export error (priority: High)
+- [x] fix-number-string-type: Fix type error in profile +page.svelte - number not assignable to string at line 77:25 (priority: High)
+- [x] fix-profileeditor-types: Fix type mismatches in ProfileEditor.svelte for projects and work experience data structures (priority: High)
+- [x] fix-case-sensitivity: Delete lowercase profileeditor.svelte file to resolve case sensitivity conflict (priority: High)
+- [ ] fix-customevent-error: Fix CustomEvent argument type error in editor +page.svelte at line 614:47 (**IN PROGRESS**) (priority: Medium)

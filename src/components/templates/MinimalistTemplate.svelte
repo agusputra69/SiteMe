@@ -16,7 +16,7 @@
 		awards: []
 	};
 
-	export let theme = {
+	export const theme = {
 		primary: 'gray-900',
 		secondary: 'gray-700',
 		accent: 'gray-200',

@@ -9,17 +9,16 @@
 	import { supabase, getProfile, updateProfile, getValidSession } from '$lib/supabase';
 	import { toasts } from '$lib/stores/toast';
 	import { handleError, handleAuthError } from '$lib/error-handler';
-	
-	// Component imports
 	import TemplateSelector from '../../../components/TemplateSelector.svelte';
 	import ProfileEditor from '../../../components/ProfileEditor.svelte';
+	import { uploadProfilePhoto as uploadPhotoUtil, convertToCustomization as toCustomization, convertFromCustomization as fromCustomization, toProfileData } from '$lib/profile';
 	
 	// Icon imports
 	import { ArrowLeft, Eye, Settings, Layout, Palette } from 'lucide-svelte';
 	
 	// Type imports
 	import type { User } from '@supabase/supabase-js';
-	import type { Profile, ResumeData } from '$lib/types';
+	import type { Profile, ResumeData, TemplateCustomization, ProfileData, WorkExperience, Education, Link, Project, Certification, Language, Award, Customization } from '$lib/types';
 
 	// User and profile state
 	let user: User | null = null;
@@ -31,7 +30,7 @@
 	let saving = false;
 	let uploading = false;
 	let saveSuccess = false;
-	let activeTab: 'content' | 'settings' = 'content';
+	let activeTab: 'content' | 'design' | 'settings' = 'content';
 	let showPreview = false;
 	let profileStatus: 'draft' | 'published' = 'draft';
 	
@@ -42,7 +41,7 @@
 	let applyingTemplate = false;
 	let applyingTheme = false;
 	let applyingCustomization = false;
-	let templateCustomization = {
+	let templateCustomization: TemplateCustomization = {
 		theme: 'blue',
 		fontFamily: 'inter',
 		fontSize: 'medium',
@@ -73,56 +72,73 @@
 		verticalSpacing: 'normal',
 		horizontalPadding: 'normal'
 	};
-	
-	// Reactive statements
-	$: if (saveSuccess) {
-		setTimeout(() => (saveSuccess = false), 3000);
-	}
 
-	// Enhanced error handling utility
-	function handleError(error: any, context: { component: string; action: string; userMessage: string }) {
-		const errorMessage = error?.message || 'An unexpected error occurred';
-		const errorCode = error?.code || 'UNKNOWN_ERROR';
-		
-		// Log error for debugging (only in development)
-		if (import.meta.env.DEV) {
-			console.error(`[${context.component}] ${context.action}:`, {
-				error: errorMessage,
-				code: errorCode,
-				stack: error?.stack,
-				context
-			});
-		}
-		
-		// Show user-friendly error message
-		toasts.error(context.userMessage);
-		
-		// Return structured error for further handling if needed
+	// Helpers to convert between customization models
+	function convertToCustomization(templateCustom: TemplateCustomization): Customization {
 		return {
-			message: errorMessage,
-			code: errorCode,
-			original: error
+			fontFamily: templateCustom.fontFamily || 'inter',
+			fontSize: templateCustom.fontSize || 'medium',
+			lineHeight: templateCustom.lineHeight || '1.5',
+			margins: { top: 16, bottom: 16, left: 16, right: 16 },
+			colors: {
+				primary: templateCustom.accentColor || '#3B82F6',
+				secondary: templateCustom.textColor || '#1F2937',
+				accent: templateCustom.backgroundColor || '#FFFFFF',
+				text: templateCustom.textColor || '#1F2937'
+			},
+			layout: {
+				columns: templateCustom.layout === 'two-column' ? 2 : 1,
+				spacing: 16
+			},
+			sectionOrder: templateCustom.sectionOrder
 		};
 	}
 
-	// Initialization
+	function convertFromCustomization(customization: Customization): TemplateCustomization {
+		return {
+			theme: 'blue',
+			fontFamily: customization.fontFamily || 'inter',
+			fontSize: customization.fontSize || 'medium',
+			layout:
+				typeof customization.layout === 'object'
+					? customization.layout.columns === 2
+						? 'two-column'
+						: 'standard'
+					: (customization.layout as unknown as string) || 'standard',
+			spacing: 'normal',
+			borderRadius: 'medium',
+			shadow: 'medium',
+			accentColor: customization.colors?.primary || '#3B82F6',
+			textColor: customization.colors?.text || '#1F2937',
+			backgroundColor: customization.colors?.accent || '#FFFFFF',
+			sectionOrder: customization.sectionOrder || ['header', 'about', 'experience', 'education', 'skills', 'contact'],
+			lineHeight: (customization.lineHeight as unknown as string) || '1.5',
+			letterSpacing: 'normal',
+			headingFont: customization.fontFamily || 'inter',
+			containerWidth: 'standard',
+			verticalSpacing: 'normal',
+			horizontalPadding: 'normal'
+		};
+	}
+
 	onMount(async () => {
 		try {
 			const { session, error } = await getValidSession();
-			if (error || !session?.user) {
+			if (error || !session) {
 				await goto('/login');
-				return;
 			}
-			user = session.user;
-			await loadProfile();
-		} catch (error) {
+			if (session) {
+				user = session.user;
+				await loadProfile();
+			}
+		} catch (error: unknown) {
 			handleError(error, {
 				component: 'EditorPage',
 				action: 'onMount',
 				userMessage: 'Failed to initialize editor. Please refresh the page.'
 			});
-			// Redirect to login on auth errors
-			if (error?.message?.includes('auth') || error?.code === 'UNAUTHORIZED') {
+			const e = error as any;
+			if ((typeof e?.message === 'string' && e.message.includes('auth')) || e?.code === 'UNAUTHORIZED') {
 				await goto('/login');
 			}
 		}
@@ -134,7 +150,7 @@
 
 		loading = true;
 		try {
-                                        const { data, error } = await getProfile(user.id);
+			const { data, error } = await getProfile(user.id);
 			if (error) {
 				handleError(error, {
 					component: 'EditorPage',
@@ -145,9 +161,9 @@
 			}
 
 			if (data) {
-			profile = data;
-			loadResumeData(data);
-		}
+				profile = data;
+				loadResumeData(data);
+			}
 		} catch (error) {
 			handleError(error, {
 				component: 'EditorPage',
@@ -161,6 +177,11 @@
 		}
 	}
 
+	function isAuthError(err: unknown): boolean {
+		const e = err as any;
+		return typeof e?.message === 'string' && e.message.includes('auth') || e?.code === 'UNAUTHORIZED';
+	}
+
 	function loadResumeData(profileData: Profile): void {
 		if (profileData?.data && typeof profileData.data === 'object') {
 			resumeData = profileData.data;
@@ -168,7 +189,7 @@
 			if (resumeData.template) selectedTemplate = resumeData.template;
 			if (resumeData.theme) selectedTheme = resumeData.theme;
 			if (resumeData.customization) {
-				templateCustomization = { ...templateCustomization, ...resumeData.customization };
+				templateCustomization = { ...templateCustomization, ...fromCustomization(resumeData.customization) };
 			}
 		} else {
 			// Initialize with default structure
@@ -232,7 +253,7 @@
 
 			const { error: uploadError } = await supabase.storage
 				.from('profile-photos')
-				.upload(filePath, file);
+				.upload(filePath, file, { contentType: file.type, upsert: true });
 
 			if (uploadError) throw uploadError;
 
@@ -267,12 +288,12 @@
 		toasts.info('Saving profile changes...');
 
 		try {
-                       let photoUrl = eventData.resumeData.photo_url || profile?.data?.photo_url;
+			let photoUrl = eventData.resumeData.photo_url || profile?.data?.photo_url;
 
 			// Handle photo upload if provided
 			if (eventData.profilePhoto && isValidFile(eventData.profilePhoto)) {
 				try {
-					photoUrl = await uploadProfilePhoto(eventData.profilePhoto);
+					photoUrl = await uploadPhotoUtil(eventData.profilePhoto, user!.id);
 				} catch (uploadError) {
 					// Don't fail the entire save if photo upload fails
 					handleError(uploadError, {
@@ -283,15 +304,50 @@
 				}
 			}
 
+			// Ensure username from the editor is saved
+			const newUsername = (eventData.username || '').trim() || profile?.username || '';
+			if (profile) {
+				profile = { ...profile, username: newUsername } as Profile;
+			}
+
 			const updatedData = await updateProfileData({
 				...eventData.resumeData,
 				photo_url: photoUrl
 			});
 
-			// Update local state
-			resumeData = updatedData;
-			if (profile) {
-				profile = { ...profile, data: updatedData, full_name: updatedData.name };
+			// Explicitly persist username to profiles table
+			if (newUsername) {
+				const usernameRegex = /^[a-zA-Z0-9-_]+$/;
+				if (!usernameRegex.test(newUsername)) {
+					toasts.error('Username invalid. Use letters, numbers, hyphens, or underscores only.');
+				} else {
+					const { error: usernameError } = await updateProfile(user.id, { username: newUsername });
+					if (usernameError) {
+						toasts.error((usernameError as any).message || 'Failed to save username');
+					} else {
+						// Re-fetch to confirm persistence
+						const { data: refreshed, error: refetchErr } = await getProfile(user.id);
+						if (!refetchErr && refreshed) {
+							profile = refreshed;
+						}
+						toasts.success('Username saved');
+					}
+				}
+			}
+
+			// Update local state from latest DB snapshot for consistency
+			{
+				const { data: refreshed, error: refetchErr } = await getProfile(user.id);
+				if (!refetchErr && refreshed?.data) {
+					resumeData = refreshed.data;
+					profile = refreshed;
+				} else {
+					// Fallback to locally computed data
+					resumeData = updatedData;
+					if (profile) {
+						profile = { ...profile, data: updatedData, full_name: updatedData.name } as Profile;
+					}
+				}
 			}
 
 			toasts.success('Profile updated successfully!');
@@ -313,18 +369,18 @@
 			throw new Error('User not authenticated or no resume data');
 		}
 
-		const cleanData = {
+		const cleanData: ResumeData = {
 			...resumeData,
 			...newData,
 			template: selectedTemplate,
 			theme: selectedTheme,
-			customization: templateCustomization
+			customization: toCustomization(templateCustomization)
 		};
 
 		const updateData = {
 			data: cleanData,
-			full_name: cleanData.name || '',
-			username: profile?.username
+			full_name: cleanData.name || ''
+			// Do NOT include username here; it's saved separately to avoid overwrites
 		};
 
 		const { error } = await updateProfile(user.id, updateData);
@@ -339,6 +395,8 @@
 
 		return cleanData;
 	}
+
+
 
 	// Design handlers
 	async function handleDesignChange(type: 'template' | 'theme' | 'customization', data: any): Promise<void> {
@@ -432,7 +490,7 @@
 			console.error('Invalid status data received');
 			return;
 		}
-                profileStatus = status as 'draft' | 'published';
+		profileStatus = status as 'draft' | 'published';
 		toasts.success(`Profile status changed to ${status}`);
 	}
 
@@ -443,17 +501,16 @@
 			return;
 		}
 		try {
-			const photoUrl = await uploadProfilePhoto(file);
+			const photoUrl = await uploadPhotoUtil(file, user!.id);
 			if (resumeData) {
 				resumeData = { ...resumeData, photo_url: photoUrl };
+				const updateData = { data: resumeData, full_name: resumeData.name };
+				const { error } = await updateProfile(user!.id, updateData);
+				if (error) throw error;
 			}
 			toasts.success('Photo uploaded successfully!');
 		} catch (error) {
-			handleError(error, {
-				component: 'EditorPage',
-				action: 'uploadPhoto',
-				userMessage: 'Failed to upload photo'
-			});
+			handleError(error, { component: 'EditorPage', action: 'uploadPhoto', userMessage: 'Failed to upload photo' });
 		}
 	}
 
@@ -471,11 +528,23 @@
 		}
 	}
 
-	type TabIcon = typeof Layout | typeof Settings;
-	const tabs: Array<{ id: 'content' | 'settings'; label: string; icon: TabIcon }> = [
+	type TabIcon = typeof Layout | typeof Palette | typeof Settings;
+	const tabs: Array<{ id: 'content' | 'design' | 'settings'; label: string; icon: TabIcon }> = [
 		{ id: 'content', label: 'Content', icon: Layout },
+		{ id: 'design', label: 'Design', icon: Palette },
 		{ id: 'settings', label: 'Settings', icon: Settings }
 	];
+
+	// Event handlers used by buttons (avoid creating CustomEvent in markup)
+	async function onApplyTemplateClick() {
+		await handleTemplateApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } } as unknown as CustomEvent);
+	}
+	async function onApplyThemeClick() {
+		await handleThemeApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } } as unknown as CustomEvent);
+	}
+	async function onApplyCustomizationClick() {
+		await handleCustomizationApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } } as unknown as CustomEvent);
+	}
 </script>
 
 <div class="container mx-auto px-4 py-6">
@@ -557,9 +626,9 @@
 			</div>
 		</div>
 
-
-		<!-- Design Control Section -->
-		<div class="mt-8 space-y-6">
+	{:else if activeTab === 'design'}
+		<!-- Design Tab -->
+		<div class="space-y-6" role="tabpanel" aria-labelledby="design-tab">
 			<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 				<div class="p-6 border-b border-gray-200 dark:border-gray-700">
 					<h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
@@ -587,7 +656,7 @@
 							</div>
 
 							<TemplateSelector
-								profileData={resumeData}
+								profileData={toProfileData(resumeData)}
 								customizable={true}
 								bind:selectedTemplate
 								bind:selectedTheme
@@ -613,30 +682,18 @@
 							<!-- Apply Buttons -->
 							<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
 								<div class="flex flex-wrap gap-3">
-									<button
-										on:click={() => handleTemplateApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
-										disabled={applyingTemplate}
-										class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-									>
+									<button on:click={onApplyTemplateClick} disabled={applyingTemplate} class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm font-medium">
 										{#if applyingTemplate}
-											<div
-												class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"
-											/>
+											<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
 											Applying...
 										{:else}
 											<Eye class="w-4 h-4 mr-2" />
 											Apply Template
 										{/if}
 									</button>
-									<button
-										on:click={() => handleThemeApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
-										disabled={applyingTheme}
-										class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-									>
+									<button on:click={onApplyThemeClick} disabled={applyingTheme} class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm font-medium">
 										{#if applyingTheme}
-											<div
-												class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"
-											/>
+											<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
 											Applying...
 										{:else}
 											<Palette class="w-4 h-4 mr-2" />
@@ -644,15 +701,9 @@
 										{/if}
 									</button>
 									{#if showAdvancedCustomization}
-										<button
-											on:click={() => handleCustomizationApply({ detail: { template: selectedTemplate, theme: selectedTheme, customization: templateCustomization } })}
-											disabled={applyingCustomization}
-											class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-										>
+										<button on:click={onApplyCustomizationClick} disabled={applyingCustomization} class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors text-sm font-medium">
 											{#if applyingCustomization}
-												<div
-													class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"
-												/>
+												<div class="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
 												Applying...
 											{:else}
 												<Settings class="w-4 h-4 mr-2" />
@@ -661,9 +712,7 @@
 										</button>
 									{/if}
 								</div>
-								<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-									Click apply buttons to see changes reflected in your profile preview
-								</p>
+								<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Click apply buttons to see changes reflected in your profile preview</p>
 							</div>
 						</div>
 					</div>
@@ -761,8 +810,8 @@
 					</div>
 				</div>
 			</div>
-		</div>
-	{/if}
+	</div>
+{/if}
 </div>
 
 <!-- Preview Modal -->
@@ -791,10 +840,10 @@
 			</div>
 			<div class="p-6 overflow-auto max-h-[calc(90vh-120px)]">
 				{#if resumeData}
-                                    <TemplateSelector
-                                            profileData={resumeData}
-                                            customizable={false}
-                                    />
+					<TemplateSelector
+							profileData={toProfileData(resumeData)}
+							customizable={false}
+						/>
 				{/if}
 			</div>
 		</div>

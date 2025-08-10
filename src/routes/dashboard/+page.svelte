@@ -113,10 +113,9 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 				await loadProfile();
 				await loadSites();
 			} catch (error) {
-				handleAuthErr(error, { component: 'Dashboard', action: 'authentication' });
-				await handleAuthError(error);
-				return;
-			}
+			handleAuthError(error);
+			return;
+		}
 		})();
 
 		// Return cleanup function
@@ -708,10 +707,7 @@ import { handleError, handleAuthError as handleAuthErr, handleNetworkError, hand
 
 			// Check if user is available
 				if (!user || !user.id) {
-					handleAuthError(new Error('User session not found. Please log in again.'), {
-						component: 'Dashboard',
-						action: 'validateUserSession'
-					});
+			handleAuthError(new Error('User session not found. Please log in again.'));
 					throw new Error('User session not found. Please log in again.');
 				}
 
